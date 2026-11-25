@@ -274,6 +274,8 @@ const SHOP_ITEMS = [
   { id: 'melonhat', name: '수박 모자', emoji: '🍉', price: 0, slot: 'hat', prize: true },
   { id: 'beret', name: '단풍 베레모', emoji: '🍁', price: 0, slot: 'hat', prize: true },
   { id: 'knithat', name: '방울 털모자', emoji: '🧶', price: 0, slot: 'hat', prize: true },
+  // 친구와 단짝이 되면 받아요
+  { id: 'bffheart', name: '단짝 하트 스티커', emoji: '💗', price: 0, slot: 'face', prize: true },
 ];
 function itemModel(id) {
   const g = new THREE.Group();
@@ -371,6 +373,15 @@ function itemModel(id) {
     h.scale.y = 1.05;
     add(new THREE.CylinderGeometry(0.62, 0.62, 0.2, 18), 0xffffff, 0, -0.17, 0, g);
     add(new THREE.SphereGeometry(0.17, 12, 10), 0xffffff, 0, 0.45, 0, g);
+  } else if (id === 'bffheart') {
+    const hs = new THREE.Shape();
+    hs.moveTo(0, -0.1);
+    hs.bezierCurveTo(-0.03, -0.07, -0.11, -0.02, -0.11, 0.03);
+    hs.bezierCurveTo(-0.11, 0.09, -0.04, 0.11, 0, 0.06);
+    hs.bezierCurveTo(0.04, 0.11, 0.11, 0.09, 0.11, 0.03);
+    hs.bezierCurveTo(0.11, -0.02, 0.03, -0.07, 0, -0.1);
+    const h = add(new THREE.ExtrudeGeometry(hs, { depth: 0.03, bevelEnabled: false }), toon({ color: 0xff5f90, emissive: 0xff3f70, emissiveIntensity: 0.25 }), 0.4, -0.16, -0.12, g, false);
+    h.rotation.y = 0.65;
   } else if (id === 'catmask') {
     const face = add(new THREE.SphereGeometry(0.3, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), 0xffffff, 0.3, 0.3, 0.02, g, false);
     face.rotation.set(Math.PI / 2, 0, -0.5);

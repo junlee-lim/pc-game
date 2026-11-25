@@ -24,11 +24,15 @@ const S = {
   seasonDay: save.get('seasonDay', 1),
   tokens: save.get('tokens', {}),       // 계절 축제 토큰
   snowman: save.get('snowman', 0),
+  friends: save.get('friends', {}),     // 친구 호감도 { 이름: 0~100 }
+  friendDay: save.get('friendDay', {}), // 오늘 이미 이야기했는지
+  giftDay: save.get('giftDay', {}),     // 오늘 이미 선물했는지
+  favKnown: save.get('favKnown', {}),   // 좋아하는 것을 알아냈는지
 };
 function persist() {
   save.set('coins', S.coins); save.set('full', Math.round(S.full)); save.set('energy', Math.round(S.energy));
   save.set('owned', S.owned); save.set('equipped', S.equipped);
-  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented', 'layout', 'season', 'seasonDay', 'tokens', 'snowman']) save.set(k, S[k]);
+  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented', 'layout', 'season', 'seasonDay', 'tokens', 'snowman', 'friends', 'friendDay', 'giftDay', 'favKnown']) save.set(k, S[k]);
 }
 const bagAdd = (k, n = 1) => { S.bag[k] = Math.max(0, (S.bag[k] || 0) + n); if (!S.bag[k]) delete S.bag[k]; persist(); };
 const slotGroups = { hat: player.hatSlot, face: player.faceSlot, hand: player.handSlot };

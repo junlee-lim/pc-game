@@ -286,6 +286,7 @@ function openEventBooth() {
     desc: () => `오늘은 <b>${se.name} ${S.seasonDay}일째</b> (하루가 ${DAYS_PER_SEASON - S.seasonDay + 1}번 더 지나면 다음 계절)<br>마을에 떠 있는 ${se.token.emoji} ${se.token.name}을(를) 모아 한정 상품과 바꿔요!<br>내 ${se.token.name} ${se.token.emoji} ${tokenCount()} · 코인 🪙 ${S.coins}`,
     items: () => [
       { label: `${food.emoji} ${food.name} 사 먹기`, right: `🪙 ${food.price}`, dim: S.coins < food.price, act: () => { eat(se.food); return false; } },
+      { label: `${food.emoji} 포장해서 가방에 넣기 🎒`, right: `🪙 ${food.price}`, dim: S.coins < food.price, act: () => { if (S.coins < food.price) { sfx.no(); return true; } S.coins -= food.price; bagAdd(se.food); sfx.ok(); toast(`${food.emoji} ${food.name}을(를) 포장했어요! 친구들이 아주 좋아할 거예요`); return true; } },
       { label: `${hat.emoji} ${hat.name}`, right: S.owned.includes(hat.id) ? '✅ 갖고 있어요' : `${se.token.emoji} 5`, dim: !S.owned.includes(hat.id) && tokenCount() < 5,
         act: () => {
           if (S.owned.includes(hat.id)) return true;

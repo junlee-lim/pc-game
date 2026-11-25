@@ -89,6 +89,12 @@ function updateNPCs(dt) {
   for (const n of npcs) {
     const r = n.c.root;
     let moving = false;
+    if (n.follow) {
+      const f = updateFollower(n, dt);
+      r.position.y = groundY(r.position.x, r.position.z);
+      animateCreature(n.c, f.moving, f.speed || 2.2, dt, elapsed);
+      continue;
+    }
     if (n.talk > 0) {
       n.talk -= dt;
       r.rotation.y = lerpAngle(r.rotation.y, Math.atan2(pp.x - r.position.x, pp.z - r.position.z), damp(8, dt));

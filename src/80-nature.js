@@ -159,7 +159,7 @@ const npcs = [
     get x() { return c.root.position.x; },
     get z() { return c.root.position.z; },
     r: 2.3,
-    label: `${n.name}에게 말 걸기`,
+    get label() { return `${n.name}에게 말 걸기 ${heartsStr(n.name)}${n.follow ? ' · 🚶 산책 중' : ''}`; },
     action: () => talkTo(npc),
   });
   return npc;
