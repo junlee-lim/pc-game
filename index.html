@@ -26,6 +26,7 @@
     <canvas id="minimap" width="340" height="340"></canvas>
     <div id="keys" class="card">
       <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / 방향키 이동 &nbsp; <kbd>Shift</kbd> 달리기<br />
+      <kbd>Q</kbd><kbd>R</kbd> 카메라 회전 &nbsp; <kbd>C</kbd> 시점 초기화<br />
       <kbd>E</kbd> / <kbd>Space</kbd> 상호작용 &nbsp; <kbd>H</kbd> 도움말 &nbsp; <kbd>M</kbd> 소리
     </div>
   </div>
@@ -38,6 +39,7 @@
     <h2>🌼 포근마을 안내</h2>
     <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 또는 방향키 — 걷기</div>
     <div><kbd>Shift</kbd> — 달리기</div>
+    <div><kbd>Q</kbd> / <kbd>R</kbd> — 카메라 왼쪽·오른쪽으로 돌리기 &nbsp; <kbd>C</kbd> — 시점 초기화</div>
     <div><kbd>E</kbd> / <kbd>Space</kbd> / <kbd>Enter</kbd> — 말 걸기 · 이용하기</div>
     <div><kbd>Esc</kbd> — 닫기 · 그만두기</div>
     <div><kbd>M</kbd> — 소리 켜기/끄기 &nbsp; <kbd>H</kbd> — 이 창 열기/닫기</div>
@@ -1458,6 +1460,11 @@
       if (state === 'menu') { menuKey(code); return; }
       if (state === 'nap') { if (napTime > 0.8) endNap(); return; }
       if (state === 'fireworks') { if (code === 'Escape' || code === 'KeyE') endFireworks(true); return; }
+      if (state === 'play' && code === 'KeyC') {
+        // 가장 가까운 '정면' 각도(0)로 부드럽게 되돌리기
+        camYawTarget = Math.round(camYawTarget / (Math.PI * 2)) * Math.PI * 2;
+        return;
+      }
       if (state === 'play' && (code === 'KeyE' || code === 'Space' || code === 'Enter') && currentInteract) {
         currentInteract.action();
       }
@@ -1507,6 +1514,10 @@
       mm.fillStyle = '#ffffff';
       for (const n of npcs) { mm.beginPath(); mm.arc(c + n.c.root.position.x * s, c + n.c.root.position.z * s, 5, 0, 7); mm.fill(); }
       const p = player.root.position, r = player.root.rotation.y;
+      // 카메라가 보는 방향 (부채꼴)
+      const fa = Math.atan2(-Math.cos(camYaw), -Math.sin(camYaw));
+      mm.fillStyle = 'rgba(255, 255, 255, 0.45)';
+      mm.beginPath(); mm.moveTo(c + p.x * s, c + p.z * s); mm.arc(c + p.x * s, c + p.z * s, 46, fa - 0.55, fa + 0.55); mm.closePath(); mm.fill();
       mm.save();
       mm.translate(c + p.x * s, c + p.z * s);
       mm.rotate(-r);
@@ -1520,6 +1531,7 @@
        메인 루프
        ========================================================= */
     const clock = new THREE.Clock();
+    let camYaw = 0, camYawTarget = 0;
     let elapsed = 0, currentInteract = null, stepT = 0, warnT = 6, hudT = 0;
     const camTarget = new THREE.Vector3(), camPos = new THREE.Vector3(), lookAt = new THREE.Vector3(0, 0, 0);
     const playerVel = new THREE.Vector3();
@@ -1547,6 +1559,9 @@
       if (moving) {
         const l = Math.hypot(dx, dz);
         dx /= l; dz /= l;
+        // 카메라가 바라보는 방향 기준으로 이동
+        const cy = Math.cos(camYaw), sy = Math.sin(camYaw);
+        [dx, dz] = [dx * cy + dz * sy, -dx * sy + dz * cy];
         playerVel.set(dx * speed, 0, dz * speed);
         p.x += playerVel.x * dt;
         p.z += playerVel.z * dt;
@@ -1669,7 +1684,7 @@
         camTarget.set(p.x, p.y + 0.5, p.z - 1.0);
         camera.position.lerp(camPos, damp(1.2, dt));
       } else {
-        camPos.set(p.x, p.y + 13, p.z + 16);
+        camPos.set(p.x + Math.sin(camYaw) * 16, p.y + 13, p.z + Math.cos(camYaw) * 16);
         camTarget.set(p.x, p.y + 1.4, p.z);
         camera.position.lerp(camPos, damp(4, dt));
       }
@@ -1820,6 +1835,13 @@
         fireflyGeo.attributes.position.needsUpdate = true;
       }
 
+      if (state === 'play' || state === 'menu') {
+        if (state === 'play') {
+          if (down('KeyQ')) camYawTarget -= dt * 1.9;
+          if (down('KeyR')) camYawTarget += dt * 1.9;
+        }
+        camYaw = lerp(camYaw, camYawTarget, damp(8, dt));
+      }
       updateCamera(dt);
       hudT -= dt;
       updateHUD(dt);
