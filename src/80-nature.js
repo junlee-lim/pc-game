@@ -50,6 +50,7 @@ const free = (x, z, m = 0) => avoid.every(([ax, az, ar]) => Math.hypot(x - ax, z
   }
   im.count = stemIm.count = n;
   scene.add(im, stemIm);
+  SEASONAL.flowers.push(im, stemIm);
   // 풀숲
   const bush = new THREE.InstancedMesh(new THREE.SphereGeometry(0.5, 10, 8), mat(0x86cf6a), 90);
   let k = 0; tries = 0;
@@ -66,6 +67,7 @@ const free = (x, z, m = 0) => avoid.every(([ax, az, ar]) => Math.hypot(x - ax, z
   bush.castShadow = true;
   bush.receiveShadow = true;
   scene.add(bush);
+  SEASONAL.bushes = bush;
 }
 // 섬 가장자리 울타리 (남쪽 선착장 입구는 비워둬요)
 {
@@ -157,7 +159,7 @@ const npcs = [
     get x() { return c.root.position.x; },
     get z() { return c.root.position.z; },
     r: 2.3,
-    label: `${n.name}에게 말 걸기`,
+    get label() { return `${n.name}에게 말 걸기 ${heartsStr(n.name)}${n.follow ? ' · 🚶 산책 중' : ''}`; },
     action: () => talkTo(npc),
   });
   return npc;

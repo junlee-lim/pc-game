@@ -3,15 +3,15 @@
    ========================================================= */
 // when: 언제 나오는지, home: 어디에 사는지
 const BUGS = [
-  { id: 'butterfly', name: '노랑나비', emoji: '🦋', when: () => tod < 1.5 && !isRaining(), home: 'flower', fly: true, hint: '맑은 낮, 꽃밭' },
-  { id: 'ladybug', name: '무당벌레', emoji: '🐞', when: () => tod < 1.5 && !isRaining(), home: 'bush', hint: '낮, 풀숲' },
-  { id: 'bee', name: '꿀벌', emoji: '🐝', when: () => tod < 1.2 && !isRaining(), home: 'sunflower', fly: true, hint: '낮, 해바라기 미로' },
-  { id: 'beetle', name: '장수풍뎅이', emoji: '🪲', when: () => tod > 1.2, home: 'tree', hint: '저녁~밤, 나무' },
-  { id: 'cricket', name: '귀뚜라미', emoji: '🦗', when: () => tod > 1.5, home: 'grass', hint: '밤, 풀밭' },
-  { id: 'firefly', name: '반딧불이', emoji: '✨', when: () => tod > 1.6 && !isRaining(), home: 'hill', fly: true, hint: '밤, 낮잠 언덕' },
-  { id: 'snail', name: '달팽이', emoji: '🐌', when: () => isRaining() || W.afterRain > 0, home: 'grass', hint: '비 오는 날이나 비 온 뒤' },
-  { id: 'frog', name: '청개구리', emoji: '🐸', when: () => isRaining(), home: 'pond', hint: '비 오는 날, 호숫가' },
-  { id: 'dragonfly', name: '고추잠자리', emoji: '🔸', when: () => tod > 0.6 && tod < 1.6 && !isRaining(), home: 'grass', fly: true, hint: '노을 질 무렵' },
+  { id: 'butterfly', seasons: ['spring', 'summer'], name: '노랑나비', emoji: '🦋', when: () => tod < 1.5 && !isRaining(), home: 'flower', fly: true, hint: '맑은 낮, 꽃밭' },
+  { id: 'ladybug', seasons: ['spring', 'summer', 'autumn'], name: '무당벌레', emoji: '🐞', when: () => tod < 1.5 && !isRaining(), home: 'bush', hint: '낮, 풀숲' },
+  { id: 'bee', seasons: ['spring', 'summer'], name: '꿀벌', emoji: '🐝', when: () => tod < 1.2 && !isRaining(), home: 'sunflower', fly: true, hint: '낮, 해바라기 미로' },
+  { id: 'beetle', seasons: ['summer'], name: '장수풍뎅이', emoji: '🪲', when: () => tod > 1.2, home: 'tree', hint: '저녁~밤, 나무' },
+  { id: 'cricket', seasons: ['summer', 'autumn'], name: '귀뚜라미', emoji: '🦗', when: () => tod > 1.5, home: 'grass', hint: '밤, 풀밭' },
+  { id: 'firefly', seasons: ['summer'], name: '반딧불이', emoji: '✨', when: () => tod > 1.6 && !isRaining(), home: 'hill', fly: true, hint: '밤, 낮잠 언덕' },
+  { id: 'snail', seasons: ['spring', 'summer', 'autumn'], name: '달팽이', emoji: '🐌', when: () => isRaining() || W.afterRain > 0, home: 'grass', hint: '비 오는 날이나 비 온 뒤' },
+  { id: 'frog', seasons: ['spring', 'summer'], name: '청개구리', emoji: '🐸', when: () => isRaining(), home: 'pond', hint: '비 오는 날, 호숫가' },
+  { id: 'dragonfly', seasons: ['summer', 'autumn'], name: '고추잠자리', emoji: '🔸', when: () => tod > 0.6 && tod < 1.6 && !isRaining(), home: 'grass', fly: true, hint: '노을 질 무렵' },
 ];
 function bugModel(id) {
   const g = new THREE.Group();
@@ -38,6 +38,9 @@ function bugModel(id) {
   g.scale.setScalar(1.6);
   return g;
 }
+const SEASON_KO = { spring: '봄', summer: '여름', autumn: '가을', winter: '겨울' };
+BUGS.forEach((b) => (b.hint = `${b.seasons.map((x) => SEASON_KO[x]).join('·')} — ${b.hint}`));
+const inSeason = (b) => b.seasons.includes(season().id);
 const bugModels = Object.fromEntries(BUGS.map((b) => [b.id, null]));
 
 function habitatSpot(home) {
@@ -57,7 +60,7 @@ function habitatSpot(home) {
 // 동시에 6마리까지 마을 어딘가에 나타나요
 const bugSlots = Array.from({ length: 6 }, () => ({ bug: null, m: null, base: new THREE.Vector3(), cool: rr(1, 6), flee: 0, ph: rr(0, 9) }));
 function spawnBug(slot, forceId) {
-  const cands = forceId ? BUGS.filter((b) => b.id === forceId) : BUGS.filter((b) => b.when() && !bugSlots.some((s) => s.bug === b && s !== slot));
+  const cands = forceId ? BUGS.filter((b) => b.id === forceId) : BUGS.filter((b) => b.when() && inSeason(b) && !bugSlots.some((s) => s.bug === b && s !== slot));
   if (!cands.length) { slot.cool = 5; return; }
   const bug = pick(cands);
   const spot = habitatSpot(bug.home);
@@ -71,12 +74,14 @@ function spawnBug(slot, forceId) {
   scene.add(slot.m);
 }
 function despawnBug(slot, cool = rr(6, 14)) {
+  slot.forced = false;
   if (slot.m) scene.remove(slot.m);
   slot.m = null; slot.bug = null; slot.cool = cool;
 }
 function spawnBugNear(id) {
   const s = bugSlots[0];
   spawnBug(s, id);
+  s.forced = true;
   const p = player.root.position;
   s.base.set(p.x + 2, groundY(p.x + 2, p.z) + (s.bug.fly ? 0.8 : 0), p.z);
 }
@@ -111,7 +116,7 @@ tickers.push((dt) => {
   const loud = down('ShiftLeft', 'ShiftRight') || riding;
   for (const s of bugSlots) {
     if (!s.m) { if (state === 'play') { s.cool -= dt; if (s.cool <= 0) spawnBug(s); } continue; }
-    if (!s.bug.when() && s.flee <= 0) { despawnBug(s, 2); continue; }
+    if ((!s.bug.when() || !inSeason(s.bug)) && s.flee <= 0 && !s.forced) { despawnBug(s, 2); continue; }
     s.ph += dt;
     const d = Math.hypot(s.m.position.x - pp.x, s.m.position.z - pp.z);
     // 뛰거나 자전거로 다가가면 깜짝 놀라 도망가요

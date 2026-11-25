@@ -26,10 +26,10 @@ let pendingLetter = null;
 function makeLetter() {
   const npc = pick(npcs).name;
   const kinds = [
-    () => { const k = pick(Object.keys(FOODS)); const f = FOODS[k]; return { type: 'food', key: k, text: `먹자골목 ${f.name}이(가) 너무 먹고 싶어… 하나만 포장해서 가져다줄래? ${f.emoji}`, short: `${f.emoji} ${f.name} 포장해서 전해주기` }; },
+    () => { const k = pick(Object.keys(FOODS).filter((x) => !FOODS[x].seasonal)); const f = FOODS[k]; return { type: 'food', key: k, text: `먹자골목 ${f.name}이(가) 너무 먹고 싶어… 하나만 포장해서 가져다줄래? ${f.emoji}`, short: `${f.emoji} ${f.name} 포장해서 전해주기` }; },
     () => ({ type: 'melon', key: 'melon', text: '해바라기 미로 어딘가에 수박이 숨어 있대! 하나 가져다줄 수 있어? 🍉', short: '🍉 수박 전해주기' }),
     () => { const f = pick(FISH.filter((x) => !['boot', 'rainbow', 'jelly'].includes(x.id))); return { type: 'fish', key: f.id, base: S.fishDex[f.id] || 0, text: `선착장에서 ${f.emoji} ${f.name}을(를) 낚으면 나한테 보여줘! 꼭 보고 싶어~`, short: `${f.emoji} ${f.name} 낚아서 보여주기` }; },
-    () => { const avail = BUGS.filter((b) => b.when()); const b = pick(avail.length ? avail : BUGS); return { type: 'bug', key: b.id, base: S.bugDex[b.id] || 0, text: `${b.emoji} ${b.name}을(를) 잡아서 보여줄래? (${b.hint}에서 볼 수 있대)`, short: `${b.emoji} ${b.name} 잡아서 보여주기` }; },
+    () => { const avail = BUGS.filter((b) => inSeason(b)); if (!avail.length) return { type: 'melon', key: 'melon', text: '추운 날엔 시원한 수박이 오히려 생각나… 해바라기 미로에 있대! 🍉', short: '🍉 수박 전해주기' }; const b = pick(avail); return { type: 'bug', key: b.id, base: S.bugDex[b.id] || 0, text: `${b.emoji} ${b.name}을(를) 잡아서 보여줄래? (${b.hint}에서 볼 수 있대)`, short: `${b.emoji} ${b.name} 잡아서 보여주기` }; },
   ];
   return { npc, reward: Math.floor(rr(6, 10)), ...pick(kinds)() };
 }
@@ -76,22 +76,12 @@ function completeQuest(npc) {
   S.questsDone++;
   S.quest = null;
   persist();
+  addFriendship(npc, 12);
   sfx.fanfare();
   const p = npc.c.root.position;
   sparkle(p.x, p.y + 2, p.z, new THREE.Color(0xff8fb1), 40);
   say(npc.c, pick(['우와, 진짜 고마워! 최고야 💖', '정말? 너무 기뻐! 고마워~ 🥰', '역시 넌 믿음직해! 💕']), 3.4, npc.name);
   toast(`💌 부탁 완료! 🪙 ${q.reward}개를 받았어요 (지금까지 ${S.questsDone}번 도와줬어요)`, 3.5);
-}
-function giveGift(npc, key) {
-  const info = BAG_INFO()[key];
-  bagAdd(key, -1);
-  S.coins += 2;
-  persist();
-  sfx.ding();
-  const p = npc.c.root.position;
-  sparkle(p.x, p.y + 2, p.z, new THREE.Color(0xff8fb1), 24);
-  say(npc.c, `${info.emoji} ${info.name}? 나 주는 거야? 고마워~! 💕`, 3.2, npc.name);
-  toast(`🎁 ${npc.name}에게 ${info.name}을(를) 선물했어요! 답례로 🪙 2개`);
 }
 talkHooks.push((npc) => {
   const q = S.quest;
@@ -100,19 +90,7 @@ talkHooks.push((npc) => {
     say(npc.c, `${q.short.replace(/(전해주기|보여주기)$/, '')}… 기다리고 있을게! 😊`, 3, npc.name);
     return true;
   }
-  const bagKeys = Object.keys(S.bag).filter((k) => S.bag[k] > 0 && !(q && q.key === k));
-  if (!bagKeys.length) return false;
-  const info = BAG_INFO();
-  openMenu({
-    title: `💬 ${npc.name}`,
-    desc: () => '무엇을 할까요?',
-    items: () => [
-      { label: '이야기하기', act: () => { setTimeout(() => npcChat(npc), 0); return false; } },
-      ...bagKeys.filter((k) => S.bag[k] > 0).map((k) => ({ label: `${info[k].emoji} ${info[k].name} 선물하기`, right: `가방에 ${S.bag[k]}개`, act: () => { giveGift(npc, k); return false; } })),
-      { label: '그만두기', act: () => false },
-    ],
-  });
-  return true;
+  return false; // 그 밖의 대화·선물은 40-friends.js 가 맡아요
 });
 
 let lastStatus = '';

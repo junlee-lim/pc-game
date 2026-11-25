@@ -20,7 +20,7 @@ function tree(x, z, s = 1, kind = 'green') {
   add(new THREE.CylinderGeometry(0.22 * s, 0.34 * s, 1.8 * s, 8), 0xb07a56, 0, 0.9 * s, 0, g);
   const palette = kind === 'pink' ? [0xffbcd4, 0xffa9c6, 0xffd0e0] : kind === 'round' ? [0x7fcf6b, 0x93db78, 0x6cbf5d] : [0x8bd66f, 0x76c460, 0xa2e283];
   const blobs = [[0, 2.5, 0, 1.25], [0.7, 2.15, 0.35, 0.95], [-0.65, 2.25, -0.3, 0.95], [0.1, 3.2, -0.1, 0.85]];
-  blobs.forEach(([bx, by, bz, br], i) => add(new THREE.SphereGeometry(br * s, 16, 12), palette[i % 3], bx * s, by * s, bz * s, g));
+  blobs.forEach(([bx, by, bz, br], i) => SEASONAL.leaves.push({ m: add(new THREE.SphereGeometry(br * s, 16, 12), palette[i % 3], bx * s, by * s, bz * s, g), kind, i }));
   collide(x, z, 0.75 * s);
   TREES.push({ x, z, s });
   return g;
@@ -143,7 +143,16 @@ function makeCreature({ color = 0xfff1df, ears = 'bear', accent = 0xffb4c8, scal
   const faceSlot = new THREE.Group(); faceSlot.position.set(0, 0.04, 0.62); head.add(faceSlot);
   const handSlot = new THREE.Group(); handSlot.position.set(0.75, 0.85, 0.15); body.add(handSlot);
   root.scale.setScalar(scale);
-  return { root, body, head, feet, hatSlot, faceSlot, handSlot, phase: Math.random() * 10 };
+  // 겨울 목도리 (평소엔 숨겨 둬요)
+  const scarf = add(new THREE.TorusGeometry(0.5, 0.13, 8, 20), pick([0xff6f6f, 0x8fb8ff, 0xffd166, 0x9fe3c8, 0xff8fb1]), 0, 1.25, 0, body);
+  scarf.rotation.x = Math.PI / 2;
+  const tail = add(new THREE.BoxGeometry(0.2, 0.45, 0.08), scarf.material, 0.22, 1.0, 0.48, body);
+  tail.rotation.z = 0.2;
+  const scarfG = [scarf, tail];
+  scarfG.forEach((m) => (m.visible = false));
+  const creature = { root, body, head, feet, hatSlot, faceSlot, handSlot, scarf: scarfG, phase: Math.random() * 10 };
+  CREATURES.push(creature);
+  return creature;
 }
 function animateCreature(c, moving, speed, dt, t) {
   if (moving) {
