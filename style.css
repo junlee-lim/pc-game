@@ -377,3 +377,32 @@ kbd {
   border-radius: 18px;
   box-shadow: var(--shadow);
 }
+
+/* ---------- 저장 코드 ---------- */
+#savebox {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, calc(100vw - 32px));
+  padding: 20px 22px 16px;
+}
+#savebox h2 { margin: 0 0 6px; font-weight: normal; font-size: 26px; }
+#savebox .desc { margin: 0 0 12px; color: var(--ink-soft); font-size: 16px; line-height: 1.55; }
+#saveText {
+  width: 100%;
+  height: 130px;
+  resize: none;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 2px solid #ecd4bb;
+  background: #fffdf8;
+  color: var(--ink);
+  font: 13px/1.45 ui-monospace, Menlo, Consolas, monospace;
+  word-break: break-all;
+  outline: none;
+}
+#saveText:focus { border-color: var(--pink); }
+#savebox .foot { margin-top: 10px; text-align: right; color: var(--ink-soft); font-size: 14px; line-height: 1.8; }
+#savebox .foot .ok { color: #3aa77a; }
+#savebox .foot .err { color: #e0566e; }

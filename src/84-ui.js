@@ -240,6 +240,11 @@ let state = 'loading';
 let helpOpen = false;
 addEventListener('keydown', (e) => {
   const code = e.code;
+  // 저장 코드 입력칸에 글자를 쓰는 동안엔 게임 조작을 멈춰요
+  if (e.target && e.target.tagName === 'TEXTAREA') {
+    if (code === 'Escape' || (code === 'Enter' && !e.shiftKey)) { e.preventDefault(); if (modes[state]) modes[state].key(code); }
+    return;
+  }
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Tab'].includes(code)) e.preventDefault();
   if (e.repeat && !['ArrowUp', 'ArrowDown'].includes(code)) { keys.add(code); return; }
   keys.add(code);
