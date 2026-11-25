@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>포근마을</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="labels"></div>
+  <div id="bubbles"></div>
+  <div id="nap"><div class="msg">쿨쿨… 아무 키나 누르면 일어나요</div></div>
+
+  <div id="hud" class="hidden">
+    <div class="card stats">
+      <div class="row"><span class="ico">🪙</span><b id="coins">0</b></div>
+      <div class="row"><span class="ico">🍙</span><div class="bar"><i id="fullBar"></i></div></div>
+      <div class="row"><span class="ico">⚡</span><div class="bar"><i id="energyBar"></i></div></div>
+      <div class="row"><span class="ico" id="todIco">☀️</span><span id="todText">맑은 낮</span></div>
+      <div class="row small hidden" id="questLine"></div>
+      <div class="row small hidden" id="bagLine"></div>
+    </div>
+    <canvas id="minimap" width="340" height="340"></canvas>
+    <div id="keys" class="card">
+      <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / 방향키 이동 &nbsp; <kbd>Shift</kbd> 달리기<br />
+      <kbd>Q</kbd><kbd>R</kbd> 카메라 회전 &nbsp; <kbd>C</kbd> 시점 초기화<br />
+      <kbd>E</kbd> / <kbd>Space</kbd> 상호작용 &nbsp; <kbd>B</kbd> 자전거 &nbsp; <kbd>G</kbd> 도감<br />
+      <kbd>H</kbd> 도움말 &nbsp; <kbd>M</kbd> 소리
+    </div>
+  </div>
+
+  <div id="prompt" class="card hidden"><kbd>E</kbd> <span></span></div>
+  <div id="toast" class="card"></div>
+  <div id="menu" class="card hidden"></div>
+  <div id="scene-msg" class="hidden"></div>
+  <div id="reel" class="card hidden">
+    <div class="reel-title">🎣 영차영차! 초록 칸에서 <kbd>Space</kbd></div>
+    <div class="reel-track"><div class="reel-zone"></div><div class="reel-mark"></div></div>
+  </div>
+  <div id="mini" class="card hidden">
+    <h2 id="miniTitle"></h2>
+    <canvas id="miniCanvas" width="640" height="400"></canvas>
+    <div id="miniInfo"></div>
+  </div>
+  <div id="fade"></div>
+
+  <div id="help" class="card hidden">
+    <h2>🌼 포근마을 안내</h2>
+    <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 또는 방향키 — 걷기</div>
+    <div><kbd>Shift</kbd> — 달리기</div>
+    <div><kbd>Q</kbd> / <kbd>R</kbd> — 카메라 왼쪽·오른쪽으로 돌리기 &nbsp; <kbd>C</kbd> — 시점 초기화</div>
+    <div><kbd>E</kbd> / <kbd>Space</kbd> / <kbd>Enter</kbd> — 말 걸기 · 이용하기</div>
+    <div><kbd>Esc</kbd> — 닫기 · 그만두기</div>
+    <div><kbd>B</kbd> — 자전거 타기/내리기 (대여소에서 빌린 뒤) &nbsp; <kbd>G</kbd> — 곤충·물고기 도감</div>
+    <div><kbd>M</kbd> — 소리 켜기/끄기 &nbsp; <kbd>H</kbd> — 이 창 열기/닫기</div>
+    <div class="tip">
+      🎆 북쪽 호숫가에서 여름밤 불꽃축제를, 🍢 동쪽 먹자골목에서 길거리 음식을,<br />
+      😴 서쪽 언덕 해먹에서 낮잠을, 🛍️ 북동쪽 잡화점에서 쇼핑을 즐겨 보세요.<br />
+      🎣 남쪽 선착장 낚시, 🌻 해바라기 미로, ♨️ 온천, 🎠 축제 놀이터, 🏠 내 집, 🚲 자전거, 📮 우체통도 있어요.<br />
+      🐞 곤충은 살금살금 다가가야 잡혀요 — 달리면 도망가요!<br />
+      마을 곳곳의 반짝이는 🪙 코인을 모으면 맛있는 걸 사 먹을 수 있어요!
+    </div>
+  </div>
+
+  <div id="title">
+    <h1>포근마을</h1>
+    <div class="sub">작은 마을에서 보내는 느긋한 여름 하루</div>
+    <div class="start card"><kbd>Enter</kbd> 를 눌러 시작하기</div>
+    <div class="hint">키보드만으로 즐기는 게임이에요 · 소리가 함께 나와요 (<kbd>M</kbd> 으로 끄기)</div>
+  </div>
+
+  <div id="loading">마을을 짓는 중… 🏡</div>
+
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js';
+/*__GAME_SRC__*/
+  </script>
+</body>
+</html>
