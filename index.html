@@ -57,12 +57,14 @@
     <div><kbd>E</kbd> / <kbd>Space</kbd> / <kbd>Enter</kbd> — 말 걸기 · 이용하기</div>
     <div><kbd>Esc</kbd> — 닫기 · 그만두기</div>
     <div><kbd>B</kbd> — 자전거 타기/내리기 (대여소에서 빌린 뒤) &nbsp; <kbd>G</kbd> — 곤충·물고기 도감</div>
+    <div><kbd>F</kbd> — 내 집 안에서 가구 배치하기</div>
     <div><kbd>M</kbd> — 소리 켜기/끄기 &nbsp; <kbd>H</kbd> — 이 창 열기/닫기</div>
     <div class="tip">
       🎆 북쪽 호숫가에서 여름밤 불꽃축제를, 🍢 동쪽 먹자골목에서 길거리 음식을,<br />
       😴 서쪽 언덕 해먹에서 낮잠을, 🛍️ 북동쪽 잡화점에서 쇼핑을 즐겨 보세요.<br />
       🎣 남쪽 선착장 낚시, 🌻 해바라기 미로, ♨️ 온천, 🎠 축제 놀이터, 🏠 내 집, 🚲 자전거, 📮 우체통도 있어요.<br />
       🐞 곤충은 살금살금 다가가야 잡혀요 — 달리면 도망가요!<br />
+      🗓️ 하루가 3번 지나면 계절이 바뀌어요. 광장 옆 계절 축제 부스에서 한정 상품을 받아 보세요!<br />
       마을 곳곳의 반짝이는 🪙 코인을 모으면 맛있는 걸 사 먹을 수 있어요!
     </div>
   </div>
@@ -78,7 +80,24 @@
 
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js';
-// ---------- 00-core.js ----------
+// ---------- 00-hooks.js ----------
+/* =========================================================
+   확장 포인트: 각 장소 파일이 여기에 자기 것을 등록해요
+   ========================================================= */
+const modes = {};        // state 이름 → { key(code), update(dt), camera(p) → {pos, target, fov, speed}, onExit() }
+const tickers = [];      // 매 프레임 호출 (dt)
+const ZONE_LABELS = [];  // [이름표, x, y, z]
+const MAP_MARKS = [];    // [이모지, x, z]  미니맵 아이콘
+const AVOID = [];        // [x, z, r]  나무·풀숲을 두지 않을 곳
+const TREES = [];        // 나무 위치 (곤충이 사는 곳)
+const talkHooks = [];    // (npc) → true 를 돌려주면 기본 대화 대신 처리
+// 계절이 바꾸는 것들 (각 파일이 채워 넣어요)
+const SEASONAL = { ground: null, hill: null, pondWater: null, bushes: null, flowers: [], petals: null, leaves: [] };
+const CREATURES = [];     // 겨울 목도리를 두를 동물 친구들
+const SHOW_HUD_STATES = new Set(['play', 'menu']);
+const playKeyHooks = []; // play 상태에서 눌린 키 (code) → true 면 처리됨
+
+// ---------- 01-core.js ----------
 
 /* =========================================================
    유틸
@@ -279,7 +298,7 @@ const colliders = [];
 const collide = (x, z, r) => colliders.push({ x, z, r });
 
 // 섬
-add(new THREE.CylinderGeometry(ISLAND_R, ISLAND_R, 1, 72), 0x9fdc7c, 0, -0.5, 0, scene, false);
+SEASONAL.ground = add(new THREE.CylinderGeometry(ISLAND_R, ISLAND_R, 1, 72), toon({ color: 0x9fdc7c }), 0, -0.5, 0, scene, false);
 add(new THREE.CylinderGeometry(ISLAND_R + 0.3, ISLAND_R - 6, 7, 72), 0xd9a878, 0, -4.5, 0, scene, false);
 add(new THREE.CylinderGeometry(ISLAND_R + 0.6, ISLAND_R + 0.6, 0.5, 72), 0xf6e3b4, 0, -0.65, 0, scene, false);
 const sea = new THREE.Mesh(new THREE.CircleGeometry(400, 64), toon({ color: 0x7fd3ea, transparent: true, opacity: 0.95 }));
@@ -299,7 +318,7 @@ scene.add(sea);
     pos.setY(i, Math.hypot(x - HILL.x, z - HILL.z) < HILL.r ? groundY(x, z) + 0.01 : -0.1);
   }
   geo.computeVertexNormals();
-  add(geo, 0xb3e68c, HILL.x, 0, HILL.z, scene, false);
+  SEASONAL.hill = add(geo, toon({ color: 0xb3e68c }), HILL.x, 0, HILL.z, scene, false);
 }
 function terrainPatch(w, d, cx, cz, material, lift = 0.04) {
   const geo = new THREE.PlaneGeometry(w, d, 12, 12);
@@ -339,20 +358,6 @@ function distToSegment(px, pz, x1, z1, x2, z2) {
 }
 const nearPath = (x, z, m) => PATHS.some((p) => distToSegment(x, z, ...p) < m);
 
-// ---------- 05-hooks.js ----------
-/* =========================================================
-   확장 포인트: 각 장소 파일이 여기에 자기 것을 등록해요
-   ========================================================= */
-const modes = {};        // state 이름 → { key(code), update(dt), camera(p) → {pos, target, fov, speed}, onExit() }
-const tickers = [];      // 매 프레임 호출 (dt)
-const ZONE_LABELS = [];  // [이름표, x, y, z]
-const MAP_MARKS = [];    // [이모지, x, z]  미니맵 아이콘
-const AVOID = [];        // [x, z, r]  나무·풀숲을 두지 않을 곳
-const TREES = [];        // 나무 위치 (곤충이 사는 곳)
-const talkHooks = [];    // (npc) → true 를 돌려주면 기본 대화 대신 처리
-const SHOW_HUD_STATES = new Set(['play', 'menu']);
-const playKeyHooks = []; // play 상태에서 눌린 키 (code) → true 면 처리됨
-
 // ---------- 10-objects.js ----------
 /* =========================================================
    재사용 오브젝트
@@ -376,7 +381,7 @@ function tree(x, z, s = 1, kind = 'green') {
   add(new THREE.CylinderGeometry(0.22 * s, 0.34 * s, 1.8 * s, 8), 0xb07a56, 0, 0.9 * s, 0, g);
   const palette = kind === 'pink' ? [0xffbcd4, 0xffa9c6, 0xffd0e0] : kind === 'round' ? [0x7fcf6b, 0x93db78, 0x6cbf5d] : [0x8bd66f, 0x76c460, 0xa2e283];
   const blobs = [[0, 2.5, 0, 1.25], [0.7, 2.15, 0.35, 0.95], [-0.65, 2.25, -0.3, 0.95], [0.1, 3.2, -0.1, 0.85]];
-  blobs.forEach(([bx, by, bz, br], i) => add(new THREE.SphereGeometry(br * s, 16, 12), palette[i % 3], bx * s, by * s, bz * s, g));
+  blobs.forEach(([bx, by, bz, br], i) => SEASONAL.leaves.push({ m: add(new THREE.SphereGeometry(br * s, 16, 12), palette[i % 3], bx * s, by * s, bz * s, g), kind, i }));
   collide(x, z, 0.75 * s);
   TREES.push({ x, z, s });
   return g;
@@ -499,7 +504,16 @@ function makeCreature({ color = 0xfff1df, ears = 'bear', accent = 0xffb4c8, scal
   const faceSlot = new THREE.Group(); faceSlot.position.set(0, 0.04, 0.62); head.add(faceSlot);
   const handSlot = new THREE.Group(); handSlot.position.set(0.75, 0.85, 0.15); body.add(handSlot);
   root.scale.setScalar(scale);
-  return { root, body, head, feet, hatSlot, faceSlot, handSlot, phase: Math.random() * 10 };
+  // 겨울 목도리 (평소엔 숨겨 둬요)
+  const scarf = add(new THREE.TorusGeometry(0.5, 0.13, 8, 20), pick([0xff6f6f, 0x8fb8ff, 0xffd166, 0x9fe3c8, 0xff8fb1]), 0, 1.25, 0, body);
+  scarf.rotation.x = Math.PI / 2;
+  const tail = add(new THREE.BoxGeometry(0.2, 0.45, 0.08), scarf.material, 0.22, 1.0, 0.48, body);
+  tail.rotation.z = 0.2;
+  const scarfG = [scarf, tail];
+  scarfG.forEach((m) => (m.visible = false));
+  const creature = { root, body, head, feet, hatSlot, faceSlot, handSlot, scarf: scarfG, phase: Math.random() * 10 };
+  CREATURES.push(creature);
+  return creature;
 }
 function animateCreature(c, moving, speed, dt, t) {
   if (moving) {
@@ -556,6 +570,7 @@ const POND = { x: 0, z: -44, r: 10.5 };
   water.position.set(POND.x, 0.05, POND.z);
   water.receiveShadow = true;
   scene.add(water);
+  SEASONAL.pondWater = water;
   collide(POND.x, POND.z, POND.r + 0.1);
   for (let i = 0; i < 9; i++) {
     const a = rr(0, Math.PI * 2), d = rr(3, POND.r - 1.5);
@@ -607,6 +622,11 @@ const FOODS = {
   fish: { name: '붕어빵', emoji: '🐟', price: 2, full: 22, energy: 5, desc: '바삭한 껍질에 달콤한 팥이 가득', line: '머리부터 먹을까, 꼬리부터 먹을까~' },
   cotton: { name: '솜사탕', emoji: '🍭', price: 2, full: 12, energy: 15, desc: '구름처럼 폭신한 분홍 솜사탕', line: '입에서 사르르 녹아요~ ☁️' },
   bingsu: { name: '팥빙수', emoji: '🍧', price: 4, full: 25, energy: 12, desc: '여름엔 역시 시원한 빙수!', line: '으~ 머리가 찡! 그래도 시원해 ❄️' },
+  // 계절 축제 부스에서만 파는 음식
+  mochi: { name: '딸기 찹쌀떡', emoji: '🍓', price: 3, full: 20, energy: 15, desc: '봄 딸기가 쏙 들어간 말랑 찹쌀떡', line: '말랑말랑 새콤달콤~ 봄 맛이야! 🌸', seasonal: true },
+  hwachae: { name: '수박 화채', emoji: '🍉', price: 3, full: 22, energy: 15, desc: '동글동글 수박이 동동 뜬 시원한 화채', line: '시원하고 달콤해~ 여름 최고! 🌻', seasonal: true },
+  goguma: { name: '군고구마', emoji: '🍠', price: 3, full: 30, energy: 10, desc: '드럼통에서 노릇노릇 구운 군고구마', line: '앗 뜨거! 호호~ 달달하다 🍂', seasonal: true },
+  cocoa: { name: '마시멜로 코코아', emoji: '☕', price: 3, full: 15, energy: 25, desc: '마시멜로를 동동 띄운 따끈한 코코아', line: '몸이 사르르 녹는다~ ⛄', seasonal: true },
 };
 function foodModel(key) {
   const g = new THREE.Group();
@@ -627,6 +647,25 @@ function foodModel(key) {
   } else if (key === 'cotton') {
     add(new THREE.CylinderGeometry(0.03, 0.03, 0.8, 6), 0xfff1df, 0, 0.4, 0, g);
     for (const [x, y, z, r] of [[0, 0.95, 0, 0.32], [0.18, 0.85, 0.1, 0.22], [-0.17, 0.88, -0.05, 0.24], [0, 1.15, 0, 0.2]]) add(new THREE.SphereGeometry(r, 14, 10), 0xffb8d8, x, y, z, g);
+  } else if (key === 'mochi') {
+    add(new THREE.CylinderGeometry(0.4, 0.4, 0.05, 16), 0xffffff, 0, 0.03, 0, g);
+    for (const x of [-0.17, 0.17]) {
+      add(new THREE.SphereGeometry(0.2, 14, 10), 0xfff6fa, x, 0.2, 0, g).scale.y = 0.8;
+      add(new THREE.SphereGeometry(0.09, 10, 8), 0xff4d6d, x, 0.36, 0.05, g, false);
+    }
+  } else if (key === 'hwachae') {
+    add(new THREE.CylinderGeometry(0.42, 0.3, 0.3, 16), 0xe8f6ff, 0, 0.15, 0, g);
+    add(new THREE.CylinderGeometry(0.39, 0.39, 0.03, 16), 0xffb3c6, 0, 0.29, 0, g, false);
+    for (let i = 0; i < 6; i++) add(new THREE.SphereGeometry(0.08, 8, 6), i % 2 ? 0xff5a6e : 0xffffff, Math.cos(i) * 0.22, 0.32, Math.sin(i) * 0.22, g, false);
+  } else if (key === 'goguma') {
+    const b = add(new THREE.CapsuleGeometry(0.16, 0.35, 6, 10), 0x8a3f5c, 0, 0.2, 0, g);
+    b.rotation.z = Math.PI / 2;
+    add(new THREE.SphereGeometry(0.15, 10, 8), 0xffc23d, 0.25, 0.24, 0, g, false).scale.set(0.5, 1, 1);
+  } else if (key === 'cocoa') {
+    add(new THREE.CylinderGeometry(0.25, 0.22, 0.45, 16), 0xff8fb1, 0, 0.23, 0, g);
+    add(new THREE.CylinderGeometry(0.22, 0.22, 0.02, 16), 0x8a5a3c, 0, 0.44, 0, g, false);
+    add(new THREE.TorusGeometry(0.11, 0.035, 6, 12), 0xff8fb1, 0.28, 0.25, 0, g, false);
+    for (const [x, z] of [[0.06, 0.04], [-0.07, -0.03]]) add(new THREE.BoxGeometry(0.1, 0.08, 0.1), 0xffffff, x, 0.48, z, g, false);
   } else {
     add(new THREE.CylinderGeometry(0.4, 0.28, 0.28, 16), 0xb8e6ff, 0, 0.14, 0, g);
     add(new THREE.SphereGeometry(0.4, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), 0xfffaf4, 0, 0.28, 0, g);
@@ -766,6 +805,11 @@ const SHOP_ITEMS = [
   { id: 'fishbag', name: '금붕어 봉지', emoji: '🐠', price: 0, slot: 'hand', prize: true },
   { id: 'starband', name: '별 머리띠', emoji: '⭐', price: 0, slot: 'hat', prize: true },
   { id: 'catmask', name: '고양이 가면', emoji: '😺', price: 0, slot: 'face', prize: true },
+  // 계절 축제 한정 (토큰으로 교환)
+  { id: 'blossom', name: '벚꽃 화관', emoji: '🌸', price: 0, slot: 'hat', prize: true },
+  { id: 'melonhat', name: '수박 모자', emoji: '🍉', price: 0, slot: 'hat', prize: true },
+  { id: 'beret', name: '단풍 베레모', emoji: '🍁', price: 0, slot: 'hat', prize: true },
+  { id: 'knithat', name: '방울 털모자', emoji: '🧶', price: 0, slot: 'hat', prize: true },
 ];
 function itemModel(id) {
   const g = new THREE.Group();
@@ -842,6 +886,27 @@ function itemModel(id) {
       add(new THREE.CylinderGeometry(0.015, 0.015, 0.35, 4), 0xffffff, sx, 0.18, 0, g, false);
       const st = add(new THREE.ExtrudeGeometry(star, { depth: 0.06, bevelEnabled: false }), toon({ color: 0xffd34d, emissive: 0xffb000, emissiveIntensity: 0.3 }), sx, 0.38, -0.03, g, false);
     }
+  } else if (id === 'blossom') {
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      add(new THREE.SphereGeometry(0.1, 8, 6), i % 2 ? 0xffc4d8 : 0xffffff, Math.cos(a) * 0.48, -0.08, Math.sin(a) * 0.48, g, false);
+    }
+    for (let i = 0; i < 5; i++) add(new THREE.SphereGeometry(0.06, 6, 4), 0x9fe38a, Math.cos(i * 1.3 + 0.3) * 0.5, -0.08, Math.sin(i * 1.3 + 0.3) * 0.5, g, false);
+  } else if (id === 'melonhat') {
+    const shell = add(new THREE.SphereGeometry(0.55, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), toon({ map: melonTex }), 0, -0.12, 0, g);
+    shell.scale.y = 0.8;
+    add(new THREE.CylinderGeometry(0.56, 0.56, 0.06, 18), 0xff5a6e, 0, -0.12, 0, g, false);
+    add(new THREE.CylinderGeometry(0.03, 0.02, 0.2, 5), 0x6a8a3c, 0, 0.36, 0, g, false);
+  } else if (id === 'beret') {
+    const b = add(new THREE.SphereGeometry(0.55, 18, 10), 0xe8663d, 0.08, 0.05, 0, g);
+    b.scale.set(1, 0.32, 1);
+    b.rotation.z = -0.2;
+    add(new THREE.CylinderGeometry(0.03, 0.03, 0.12, 5), 0x8a3f2c, 0.08, 0.22, 0, g, false);
+  } else if (id === 'knithat') {
+    const h = add(new THREE.SphereGeometry(0.6, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), 0xff6f6f, 0, -0.2, 0, g);
+    h.scale.y = 1.05;
+    add(new THREE.CylinderGeometry(0.62, 0.62, 0.2, 18), 0xffffff, 0, -0.17, 0, g);
+    add(new THREE.SphereGeometry(0.17, 12, 10), 0xffffff, 0, 0.45, 0, g);
   } else if (id === 'catmask') {
     const face = add(new THREE.SphereGeometry(0.3, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), 0xffffff, 0.3, 0.3, 0.02, g, false);
     face.rotation.set(Math.PI / 2, 0, -0.5);
@@ -1164,6 +1229,7 @@ AVOID.push([MAZE_CENTER[0], MAZE_CENTER[1], 11]);
       leaf.setMatrixAt(i * 2 + s, m4);
     }
   });
+  SEASONAL.petals = petals;
   for (const im of [stem, petals, center, leaf]) { im.castShadow = true; im.receiveShadow = true; scene.add(im); }
   const sign = signPlane('🌻 해바라기 미로', 3.2, { w: 640, h: 160, font: 76, border: '#ffd23f' });
   const [ex, ez] = mazeCell(8, 3);
@@ -1829,14 +1895,21 @@ MAP_MARKS.push(['🏠', MYHOUSE.x, MYHOUSE.z]);
 
 // 집 안 (앞쪽 벽은 낮게 잘라 인형의 집처럼 들여다봐요)
 const FURNITURE = [
-  { id: 'rug', name: '폭신 러그', emoji: '🟣', price: 4 },
-  { id: 'plant', name: '몬스테라 화분', emoji: '🪴', price: 3 },
-  { id: 'tank', name: '금붕어 어항', emoji: '🐠', price: 6 },
-  { id: 'shelf', name: '책장', emoji: '📚', price: 5 },
-  { id: 'lamp', name: '버섯 스탠드', emoji: '🍄', price: 4 },
-  { id: 'teddy', name: '커다란 곰인형', emoji: '🧸', price: 7 },
-  { id: 'radio', name: '레트로 라디오', emoji: '📻', price: 5 },
+  { id: 'rug', name: '폭신 러그', emoji: '🟣', price: 4, r: 0 },
+  { id: 'plant', name: '몬스테라 화분', emoji: '🪴', price: 3, r: 0.45 },
+  { id: 'tank', name: '금붕어 어항', emoji: '🐠', price: 6, r: 0.8 },
+  { id: 'shelf', name: '책장', emoji: '📚', price: 5, r: 1.0 },
+  { id: 'lamp', name: '버섯 스탠드', emoji: '🍄', price: 4, r: 0.4 },
+  { id: 'teddy', name: '커다란 곰인형', emoji: '🧸', price: 7, r: 0.45 },
+  { id: 'radio', name: '레트로 라디오', emoji: '📻', price: 5, r: 0.4 },
+  // 계절 축제 한정 (토큰으로 교환)
+  { id: 'sakurapot', name: '벚꽃 분재', emoji: '🌸', price: 0, r: 0.5, season: 'spring' },
+  { id: 'fan', name: '하늘색 선풍기', emoji: '🌀', price: 0, r: 0.45, season: 'summer' },
+  { id: 'pumpkin', name: '호박 랜턴', emoji: '🎃', price: 0, r: 0.5, season: 'autumn' },
+  { id: 'xtree', name: '미니 크리스마스 트리', emoji: '🎄', price: 0, r: 0.6, season: 'winter' },
 ];
+const FURN_DEFAULT = {};
+const furnColliders = {};
 const furnitureModels = {};
 {
   const R = ROOM, hw = R.w / 2, hd = R.d / 2;
@@ -1885,25 +1958,50 @@ const furnitureModels = {};
   book.rotation.y = 0.3;
   collide(desk.position.x, desk.position.z, 1.1);
   // 가구 (사면 나타나요)
-  const F = (id, x, z, build) => { const g = new THREE.Group(); g.position.set(R.x + x, 0, R.z + z); build(g); g.visible = false; scene.add(g); furnitureModels[id] = g; };
+  const F = (id, x, z, build) => {
+    const g = new THREE.Group();
+    build(g);
+    g.visible = false;
+    scene.add(g);
+    furnitureModels[id] = g;
+    FURN_DEFAULT[id] = [x, z, 0];
+    const r = FURNITURE.find((f) => f.id === id).r;
+    if (r) { const c = { x: 0, z: 0, r, off: true }; colliders.push(c); furnColliders[id] = c; }
+  };
   F('rug', 0, 0.5, (g) => { add(new THREE.CylinderGeometry(2.4, 2.4, 0.04, 32), 0xd8c8ff, 0, 0.02, 0, g, false).scale.z = 0.7; add(new THREE.CylinderGeometry(1.6, 1.6, 0.05, 32), 0xffd6e2, 0, 0.03, 0, g, false).scale.z = 0.7; });
   F('plant', -hw + 0.8, hd - 1, (g) => { add(new THREE.CylinderGeometry(0.35, 0.28, 0.6, 12), 0xe58e6b, 0, 0.3, 0, g); for (let i = 0; i < 6; i++) { const l = add(new THREE.SphereGeometry(0.35, 10, 8), 0x5fbf4a, Math.cos(i) * 0.35, 0.95 + (i % 3) * 0.2, Math.sin(i) * 0.35, g); l.scale.set(1, 0.3, 0.7); l.rotation.y = i; } });
   F('tank', -hw + 0.7, 0.6, (g) => { add(new THREE.BoxGeometry(0.9, 0.8, 1.6), 0xd69a6a, 0, 0.4, 0, g); add(new THREE.BoxGeometry(0.8, 0.7, 1.4), new THREE.MeshToonMaterial({ color: 0xbfeeff, transparent: true, opacity: 0.55, gradientMap: gradTex }), 0, 1.15, 0, g, false); for (let i = 0; i < 3; i++) { const f = add(new THREE.SphereGeometry(0.08, 8, 6), 0xff7a3d, 0, 1.1 + i * 0.12, -0.4 + i * 0.4, g, false); f.scale.set(0.6, 0.8, 1.6); f.name = 'fish'; } });
   F('shelf', 0.6, -hd + 0.5, (g) => { add(new THREE.BoxGeometry(2.2, 2.2, 0.6), 0xd69a6a, 0, 1.1, 0, g); for (let r = 0; r < 3; r++) for (let i = 0; i < 6; i++) add(new THREE.BoxGeometry(0.22, 0.5, 0.45), pick([0xff8fb1, 0x9fd6ff, 0xffd166, 0x9fe3c8, 0xc3a6ff]), -0.85 + i * 0.32, 0.5 + r * 0.68, 0.1, g, false); });
   F('lamp', -hw + 3.1, -hd + 0.6, (g) => { add(new THREE.CylinderGeometry(0.08, 0.12, 1.3, 8), 0xfff1df, 0, 0.65, 0, g); const cap = add(new THREE.SphereGeometry(0.5, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), toon({ color: 0xff6f6f, emissive: 0xffa060, emissiveIntensity: 0.4 }), 0, 1.3, 0, g); cap.scale.y = 0.7; for (let i = 0; i < 4; i++) add(new THREE.SphereGeometry(0.07, 6, 6), 0xffffff, Math.cos(i * 1.6) * 0.35, 1.5, Math.sin(i * 1.6) * 0.35, g, false); });
-  F('teddy', -hw + 1.5, -hd + 1.1, (g) => { const t = makeCreature({ color: 0xc69a6b, ears: 'bear', accent: 0xffa3b8, scale: 0.45 }); t.root.position.y = 0.75; t.root.rotation.x = -0.25; g.add(t.root); });
-  F('radio', hw - 0.9, 1.6, (g) => { add(new THREE.BoxGeometry(0.55, 0.35, 0.3), 0x9fd6ff, 0, 1.13, 0, g); add(new THREE.CylinderGeometry(0.1, 0.1, 0.05, 12), 0xfff1df, 0.12, 1.13, 0.16, g, false).rotation.x = Math.PI / 2; });
+  F('teddy', -hw + 3.1, -hd + 2.3, (g) => { const t = makeCreature({ color: 0xc69a6b, ears: 'bear', accent: 0xffa3b8, scale: 0.6 }); g.add(t.root); });
+  F('radio', hw - 0.7, hd - 1.0, (g) => { add(new THREE.BoxGeometry(0.7, 0.8, 0.5), 0xd69a6a, 0, 0.4, 0, g); add(new THREE.BoxGeometry(0.55, 0.35, 0.3), 0x9fd6ff, 0, 0.98, 0, g); add(new THREE.CylinderGeometry(0.1, 0.1, 0.05, 12), 0xfff1df, 0.12, 0.98, 0.16, g, false).rotation.x = Math.PI / 2; });
+  F('sakurapot', hw - 0.8, hd - 2.4, (g) => { add(new THREE.CylinderGeometry(0.4, 0.32, 0.4, 12), 0x8fb8ff, 0, 0.2, 0, g); add(new THREE.CylinderGeometry(0.06, 0.1, 0.9, 6), 0x8a5a3c, 0, 0.75, 0, g); for (let i = 0; i < 7; i++) add(new THREE.SphereGeometry(0.28, 10, 8), i % 2 ? 0xffc4d8 : 0xffd6e4, Math.cos(i) * 0.32, 1.2 + (i % 3) * 0.12, Math.sin(i) * 0.32, g); });
+  F('fan', -2.2, -hd + 0.9, (g) => { add(new THREE.CylinderGeometry(0.35, 0.4, 0.1, 16), 0xffffff, 0, 0.05, 0, g); add(new THREE.CylinderGeometry(0.05, 0.05, 1.1, 8), 0xffffff, 0, 0.6, 0, g); const head = new THREE.Group(); head.position.set(0, 1.2, 0.1); head.name = 'fanhead'; g.add(head); const cage = add(new THREE.TorusGeometry(0.38, 0.03, 6, 20), 0x9fd6ff, 0, 0, 0.05, head); for (let i = 0; i < 3; i++) { const b = add(new THREE.BoxGeometry(0.12, 0.34, 0.02), 0x9fd6ff, Math.cos(i * 2.09) * 0.17, Math.sin(i * 2.09) * 0.17, 0.05, head, false); b.rotation.z = i * 2.09 - Math.PI / 2; } add(new THREE.SphereGeometry(0.08, 8, 6), 0xffffff, 0, 0, 0.08, head, false); });
+  F('pumpkin', 3.3, -hd + 0.8, (g) => { for (let i = 0; i < 6; i++) { const s = add(new THREE.SphereGeometry(0.3, 12, 10), toon({ color: 0xff8f2c, emissive: 0xff6a00, emissiveIntensity: 0.35 }), Math.cos(i * 1.05) * 0.18, 0.34, Math.sin(i * 1.05) * 0.18, g); s.scale.set(0.7, 1, 0.7); } add(new THREE.CylinderGeometry(0.05, 0.06, 0.2, 6), 0x6a8a3c, 0, 0.72, 0, g, false); for (const s of [-1, 1]) add(new THREE.ConeGeometry(0.07, 0.1, 3), 0x3b2a25, s * 0.13, 0.42, 0.42, g, false).rotation.x = -Math.PI / 2; });
+  F('xtree', -1.8, 2.6, (g) => { add(new THREE.CylinderGeometry(0.28, 0.24, 0.35, 10), 0xff6f6f, 0, 0.18, 0, g); for (const [y, r, h] of [[0.7, 0.6, 0.7], [1.15, 0.45, 0.6], [1.55, 0.3, 0.5]]) add(new THREE.ConeGeometry(r, h, 10), 0x4fae6a, 0, y, 0, g); add(new THREE.OctahedronGeometry(0.13, 0), toon({ color: 0xffd34d, emissive: 0xffc000, emissiveIntensity: 0.8 }), 0, 1.9, 0, g, false); for (let i = 0; i < 10; i++) add(new THREE.SphereGeometry(0.05, 6, 4), lanternMats[i % 5], Math.cos(i * 2.3) * (0.5 - i * 0.035), 0.5 + i * 0.11, Math.sin(i * 2.3) * (0.5 - i * 0.035), g, false); });
   glowLights.push((() => { const l = new THREE.PointLight(0xffc890, 0, 16, 1.2); l.position.set(R.x, 3, R.z); scene.add(l); return l; })());
 
   interact({ x: bed.position.x + 1.6, z: bed.position.z + 0.8, r: 1.8, label: '침대에서 잠자기 🛏️', action: () => sleepInBed() });
   interact({ x: ward.position.x - 0.2, z: ward.position.z + 1.4, r: 1.6, label: '옷장 열기 👗', action: () => openWardrobe() });
   interact({ x: desk.position.x - 1.3, z: desk.position.z, r: 1.6, label: '가구 카탈로그 보기 📖', action: () => openCatalog() });
   interact({ x: R.x, z: R.z + hd - 0.6, r: 1.6, label: '밖으로 나가기 🚪', action: () => exitHouse() });
-  interact({ x: R.x + hw - 0.9 - 1.3, z: R.z + 2.6, get r() { return S.furniture.includes('radio') ? 1.2 : 0; }, label: '라디오 켜기 📻', action: () => { for (let i = 0; i < 8; i++) tone(pick([523, 659, 784, 880, 1047]), 0.35, 'triangle', 0.07, 0, i * 0.18); say(player, '♪ 랄랄라~ 🎶', 2); } });
+  interact({ get x() { return furnitureModels.radio.position.x; }, get z() { return furnitureModels.radio.position.z + 0.9; }, get r() { return furnitureModels.radio.visible && state === 'play' ? 1.3 : 0; }, label: '라디오 켜기 📻', action: () => { for (let i = 0; i < 8; i++) tone(pick([523, 659, 784, 880, 1047]), 0.35, 'triangle', 0.07, 0, i * 0.18); say(player, '♪ 랄랄라~ 🎶', 2); } });
 }
-function refreshFurniture() { for (const [id, m] of Object.entries(furnitureModels)) m.visible = S.furniture.includes(id); }
+const furnLayout = (id) => S.layout[id] || [...FURN_DEFAULT[id], 0];
+function refreshFurniture() {
+  for (const [id, m] of Object.entries(furnitureModels)) {
+    const [x, z, rot, stored] = furnLayout(id);
+    m.position.set(ROOM.x + x, 0, ROOM.z + z);
+    m.rotation.y = rot;
+    m.visible = S.furniture.includes(id) && !stored;
+    const c = furnColliders[id];
+    if (c) { c.x = m.position.x; c.z = m.position.z; c.off = !m.visible; }
+  }
+}
 tickers.push(() => {
   const t = furnitureModels.tank;
+  const fan = furnitureModels.fan.getObjectByName('fanhead');
+  if (furnitureModels.fan.visible) { fan.rotation.z += 0.3; fan.parent.rotation.y = furnLayout('fan')[2] + Math.sin(elapsed * 0.6) * 0.5; }
   if (t.visible) t.children.filter((c) => c.name === 'fish').forEach((f, i) => { f.position.z = Math.sin(elapsed * 0.8 + i * 2) * 0.5; f.position.y = 1.1 + i * 0.12 + Math.sin(elapsed * 1.7 + i) * 0.05; });
 });
 function clampToRoom(p) {
@@ -1950,6 +2048,7 @@ function sleepInBed() {
     tod = todTarget = wasNight ? 0 : Math.min(2, Math.round(todTarget) + 1);
     S.energy = 100;
     persist();
+    if (wasNight) setTimeout(newDay, 3400);
     toast(wasNight ? '☀️ 좋은 아침! 새로운 하루가 밝았어요' : todTarget === 2 ? '🌙 푹 자고 일어나니 밤이 되었어요' : '🌇 한숨 자고 나니 노을이 지고 있어요', 3.2);
     say(player, '으~ 개운하다! 🙆', 2.5);
   }, 1400);
@@ -1976,7 +2075,7 @@ function openCatalog() {
     title: '📖 포근 가구 카탈로그',
     desc: () => `사면 바로 집에 배달돼요! &nbsp;|&nbsp; 내 코인 🪙 ${S.coins}`,
     items: () => [
-      ...FURNITURE.map((f) => {
+      ...FURNITURE.filter((f) => !f.season).map((f) => {
         const owned = S.furniture.includes(f.id);
         return {
           label: `${f.emoji} ${f.name}`,
@@ -1992,15 +2091,100 @@ function openCatalog() {
             sfx.fanfare();
             const m = furnitureModels[f.id].position;
             sparkle(m.x, 1.2, m.z, new THREE.Color(0xfff1a8), 30);
-            toast(`${f.emoji} ${f.name}이(가) 배달됐어요!`);
+            toast(`${f.emoji} ${f.name}이(가) 배달됐어요! 🛋️ 가구 배치하기로 옮길 수 있어요`);
             return true;
           },
         };
       }),
+      { label: '🛋️ 가구 배치하기', right: '자유롭게 옮기기 (F)', act: () => { setTimeout(startDecorate, 0); return false; } },
       { label: '닫기', act: () => false },
     ],
   });
 }
+
+/* ---------- 🛋️ 가구 자유 배치 모드 ---------- */
+const decoRing = new THREE.Mesh(new THREE.TorusGeometry(1, 0.06, 8, 32), new THREE.MeshBasicMaterial({ color: 0xff6f91 }));
+decoRing.rotation.x = Math.PI / 2;
+decoRing.visible = false;
+scene.add(decoRing);
+const DECO = { list: [], idx: 0 };
+function startDecorate() {
+  DECO.list = FURNITURE.filter((f) => S.furniture.includes(f.id));
+  if (!DECO.list.length) { sfx.no(); toast('아직 가구가 없어요. 책상 위 카탈로그에서 가구를 사 보세요 📖', 3); return; }
+  DECO.idx = clamp(DECO.idx, 0, DECO.list.length - 1);
+  // 처음 배치하는 가구는 기본 자리를 저장해 둬요
+  for (const f of DECO.list) if (!S.layout[f.id]) S.layout[f.id] = furnLayout(f.id);
+  state = 'decorate';
+  $('prompt').classList.add('hidden');
+  decoRing.visible = true;
+  player.root.visible = false;
+  sfx.ok();
+  updateDecoMsg();
+}
+function endDecorate() {
+  state = 'play';
+  decoRing.visible = false;
+  player.root.visible = true;
+  sceneMsg(null);
+  $('scene-msg').classList.remove('panel');
+  refreshFurniture();
+  persist();
+  sfx.ok();
+  toast('🏠 가구 배치를 저장했어요!');
+}
+function updateDecoMsg() {
+  const f = DECO.list[DECO.idx];
+  const stored = S.layout[f.id][3];
+  $('scene-msg').classList.add('panel');
+  sceneMsg(`🛋️ <b>${f.emoji} ${f.name}</b> (${DECO.idx + 1}/${DECO.list.length})${stored ? ' · 📦 보관 중' : ''}<br>` +
+    `<kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> 옮기기 · <kbd>Q</kbd><kbd>R</kbd> 돌리기 · <kbd>Tab</kbd> 다음 가구 · <kbd>P</kbd> 넣기/꺼내기 · <kbd>Enter</kbd> 완료`);
+}
+modes.decorate = {
+  key(code) {
+    const f = DECO.list[DECO.idx], L = S.layout[f.id];
+    if (code === 'Tab' || code === 'BracketRight') { DECO.idx = (DECO.idx + 1) % DECO.list.length; sfx.select(); }
+    else if (code === 'BracketLeft') { DECO.idx = (DECO.idx - 1 + DECO.list.length) % DECO.list.length; sfx.select(); }
+    else if (code === 'KeyQ') { L[2] += Math.PI / 4; sfx.select(); }
+    else if (code === 'KeyR') { L[2] -= Math.PI / 4; sfx.select(); }
+    else if (code === 'KeyP') { L[3] = L[3] ? 0 : 1; sfx.pop(); }
+    else if (code === 'Enter' || code === 'Escape' || code === 'KeyF') { endDecorate(); return; }
+    else return;
+    refreshFurniture();
+    updateDecoMsg();
+  },
+  update(dt) {
+    animateCreature(player, false, 0, dt, elapsed);
+    const f = DECO.list[DECO.idx], L = S.layout[f.id];
+    let dx = 0, dz = 0;
+    if (down('ArrowLeft', 'KeyA')) dx -= 1;
+    if (down('ArrowRight', 'KeyD')) dx += 1;
+    if (down('ArrowUp', 'KeyW')) dz -= 1;
+    if (down('ArrowDown', 'KeyS')) dz += 1;
+    if (dx || dz) {
+      const hw = ROOM.w / 2 - 0.6, hd = ROOM.d / 2 - 0.6;
+      L[0] = clamp(L[0] + dx * 3 * dt, -hw, hw);
+      L[1] = clamp(L[1] + dz * 3 * dt, -hd, hd);
+      refreshFurniture();
+    }
+    const m = furnitureModels[f.id];
+    // 고른 가구는 살짝 들어 올려 반짝반짝
+    for (const g of Object.values(furnitureModels)) g.position.y = 0;
+    m.position.y = L[3] ? 0 : 0.15 + Math.abs(Math.sin(elapsed * 4)) * 0.1;
+    if (L[3]) m.visible = true; // 보관 중인 가구도 고르는 동안엔 보여 줘요
+    decoRing.position.set(ROOM.x + L[0], 0.05, ROOM.z + L[1]);
+    const r = Math.max(0.6, f.r || 1.8);
+    decoRing.scale.setScalar(r * (1.1 + Math.sin(elapsed * 5) * 0.05));
+    decoRing.material.color.setHex(L[3] ? 0xb0b0b0 : 0xff6f91);
+  },
+  camera() {
+    return { pos: tmpCamPos.set(ROOM.x, 15, ROOM.z + 9.5), target: tmpCamTarget.set(ROOM.x, 0, ROOM.z + 0.6), fov: 52, speed: 3 };
+  },
+};
+playKeyHooks.push((code) => {
+  if (code !== 'KeyF' || !insideHouse) return false;
+  startDecorate();
+  return true;
+});
 
 // ---------- 35-bike.js ----------
 /* =========================================================
@@ -2205,7 +2389,7 @@ tickers.push((dt) => {
   if (state === 'fireworks' && W.raining) stopRain();
   if (state === 'play' && !insideHouse) {
     W.timer -= dt;
-    if (W.timer <= 0) (W.raining ? stopRain() : tod < 1.6 ? startRain() : (W.timer = 60));
+    if (W.timer <= 0) (W.raining ? stopRain() : tod < 1.6 && season().id !== 'winter' ? startRain() : (W.timer = 60));
   }
   W.rain = lerp(W.rain, W.raining ? 1 : 0, damp(0.7, dt));
   W.rainbowT -= dt;
@@ -2249,15 +2433,15 @@ tickers.push((dt) => {
    ========================================================= */
 // when: 언제 나오는지, home: 어디에 사는지
 const BUGS = [
-  { id: 'butterfly', name: '노랑나비', emoji: '🦋', when: () => tod < 1.5 && !isRaining(), home: 'flower', fly: true, hint: '맑은 낮, 꽃밭' },
-  { id: 'ladybug', name: '무당벌레', emoji: '🐞', when: () => tod < 1.5 && !isRaining(), home: 'bush', hint: '낮, 풀숲' },
-  { id: 'bee', name: '꿀벌', emoji: '🐝', when: () => tod < 1.2 && !isRaining(), home: 'sunflower', fly: true, hint: '낮, 해바라기 미로' },
-  { id: 'beetle', name: '장수풍뎅이', emoji: '🪲', when: () => tod > 1.2, home: 'tree', hint: '저녁~밤, 나무' },
-  { id: 'cricket', name: '귀뚜라미', emoji: '🦗', when: () => tod > 1.5, home: 'grass', hint: '밤, 풀밭' },
-  { id: 'firefly', name: '반딧불이', emoji: '✨', when: () => tod > 1.6 && !isRaining(), home: 'hill', fly: true, hint: '밤, 낮잠 언덕' },
-  { id: 'snail', name: '달팽이', emoji: '🐌', when: () => isRaining() || W.afterRain > 0, home: 'grass', hint: '비 오는 날이나 비 온 뒤' },
-  { id: 'frog', name: '청개구리', emoji: '🐸', when: () => isRaining(), home: 'pond', hint: '비 오는 날, 호숫가' },
-  { id: 'dragonfly', name: '고추잠자리', emoji: '🔸', when: () => tod > 0.6 && tod < 1.6 && !isRaining(), home: 'grass', fly: true, hint: '노을 질 무렵' },
+  { id: 'butterfly', seasons: ['spring', 'summer'], name: '노랑나비', emoji: '🦋', when: () => tod < 1.5 && !isRaining(), home: 'flower', fly: true, hint: '맑은 낮, 꽃밭' },
+  { id: 'ladybug', seasons: ['spring', 'summer', 'autumn'], name: '무당벌레', emoji: '🐞', when: () => tod < 1.5 && !isRaining(), home: 'bush', hint: '낮, 풀숲' },
+  { id: 'bee', seasons: ['spring', 'summer'], name: '꿀벌', emoji: '🐝', when: () => tod < 1.2 && !isRaining(), home: 'sunflower', fly: true, hint: '낮, 해바라기 미로' },
+  { id: 'beetle', seasons: ['summer'], name: '장수풍뎅이', emoji: '🪲', when: () => tod > 1.2, home: 'tree', hint: '저녁~밤, 나무' },
+  { id: 'cricket', seasons: ['summer', 'autumn'], name: '귀뚜라미', emoji: '🦗', when: () => tod > 1.5, home: 'grass', hint: '밤, 풀밭' },
+  { id: 'firefly', seasons: ['summer'], name: '반딧불이', emoji: '✨', when: () => tod > 1.6 && !isRaining(), home: 'hill', fly: true, hint: '밤, 낮잠 언덕' },
+  { id: 'snail', seasons: ['spring', 'summer', 'autumn'], name: '달팽이', emoji: '🐌', when: () => isRaining() || W.afterRain > 0, home: 'grass', hint: '비 오는 날이나 비 온 뒤' },
+  { id: 'frog', seasons: ['spring', 'summer'], name: '청개구리', emoji: '🐸', when: () => isRaining(), home: 'pond', hint: '비 오는 날, 호숫가' },
+  { id: 'dragonfly', seasons: ['summer', 'autumn'], name: '고추잠자리', emoji: '🔸', when: () => tod > 0.6 && tod < 1.6 && !isRaining(), home: 'grass', fly: true, hint: '노을 질 무렵' },
 ];
 function bugModel(id) {
   const g = new THREE.Group();
@@ -2284,6 +2468,9 @@ function bugModel(id) {
   g.scale.setScalar(1.6);
   return g;
 }
+const SEASON_KO = { spring: '봄', summer: '여름', autumn: '가을', winter: '겨울' };
+BUGS.forEach((b) => (b.hint = `${b.seasons.map((x) => SEASON_KO[x]).join('·')} — ${b.hint}`));
+const inSeason = (b) => b.seasons.includes(season().id);
 const bugModels = Object.fromEntries(BUGS.map((b) => [b.id, null]));
 
 function habitatSpot(home) {
@@ -2303,7 +2490,7 @@ function habitatSpot(home) {
 // 동시에 6마리까지 마을 어딘가에 나타나요
 const bugSlots = Array.from({ length: 6 }, () => ({ bug: null, m: null, base: new THREE.Vector3(), cool: rr(1, 6), flee: 0, ph: rr(0, 9) }));
 function spawnBug(slot, forceId) {
-  const cands = forceId ? BUGS.filter((b) => b.id === forceId) : BUGS.filter((b) => b.when() && !bugSlots.some((s) => s.bug === b && s !== slot));
+  const cands = forceId ? BUGS.filter((b) => b.id === forceId) : BUGS.filter((b) => b.when() && inSeason(b) && !bugSlots.some((s) => s.bug === b && s !== slot));
   if (!cands.length) { slot.cool = 5; return; }
   const bug = pick(cands);
   const spot = habitatSpot(bug.home);
@@ -2317,12 +2504,14 @@ function spawnBug(slot, forceId) {
   scene.add(slot.m);
 }
 function despawnBug(slot, cool = rr(6, 14)) {
+  slot.forced = false;
   if (slot.m) scene.remove(slot.m);
   slot.m = null; slot.bug = null; slot.cool = cool;
 }
 function spawnBugNear(id) {
   const s = bugSlots[0];
   spawnBug(s, id);
+  s.forced = true;
   const p = player.root.position;
   s.base.set(p.x + 2, groundY(p.x + 2, p.z) + (s.bug.fly ? 0.8 : 0), p.z);
 }
@@ -2357,7 +2546,7 @@ tickers.push((dt) => {
   const loud = down('ShiftLeft', 'ShiftRight') || riding;
   for (const s of bugSlots) {
     if (!s.m) { if (state === 'play') { s.cool -= dt; if (s.cool <= 0) spawnBug(s); } continue; }
-    if (!s.bug.when() && s.flee <= 0) { despawnBug(s, 2); continue; }
+    if ((!s.bug.when() || !inSeason(s.bug)) && s.flee <= 0 && !s.forced) { despawnBug(s, 2); continue; }
     s.ph += dt;
     const d = Math.hypot(s.m.position.x - pp.x, s.m.position.z - pp.z);
     // 뛰거나 자전거로 다가가면 깜짝 놀라 도망가요
@@ -2432,10 +2621,10 @@ let pendingLetter = null;
 function makeLetter() {
   const npc = pick(npcs).name;
   const kinds = [
-    () => { const k = pick(Object.keys(FOODS)); const f = FOODS[k]; return { type: 'food', key: k, text: `먹자골목 ${f.name}이(가) 너무 먹고 싶어… 하나만 포장해서 가져다줄래? ${f.emoji}`, short: `${f.emoji} ${f.name} 포장해서 전해주기` }; },
+    () => { const k = pick(Object.keys(FOODS).filter((x) => !FOODS[x].seasonal)); const f = FOODS[k]; return { type: 'food', key: k, text: `먹자골목 ${f.name}이(가) 너무 먹고 싶어… 하나만 포장해서 가져다줄래? ${f.emoji}`, short: `${f.emoji} ${f.name} 포장해서 전해주기` }; },
     () => ({ type: 'melon', key: 'melon', text: '해바라기 미로 어딘가에 수박이 숨어 있대! 하나 가져다줄 수 있어? 🍉', short: '🍉 수박 전해주기' }),
     () => { const f = pick(FISH.filter((x) => !['boot', 'rainbow', 'jelly'].includes(x.id))); return { type: 'fish', key: f.id, base: S.fishDex[f.id] || 0, text: `선착장에서 ${f.emoji} ${f.name}을(를) 낚으면 나한테 보여줘! 꼭 보고 싶어~`, short: `${f.emoji} ${f.name} 낚아서 보여주기` }; },
-    () => { const avail = BUGS.filter((b) => b.when()); const b = pick(avail.length ? avail : BUGS); return { type: 'bug', key: b.id, base: S.bugDex[b.id] || 0, text: `${b.emoji} ${b.name}을(를) 잡아서 보여줄래? (${b.hint}에서 볼 수 있대)`, short: `${b.emoji} ${b.name} 잡아서 보여주기` }; },
+    () => { const avail = BUGS.filter((b) => inSeason(b)); if (!avail.length) return { type: 'melon', key: 'melon', text: '추운 날엔 시원한 수박이 오히려 생각나… 해바라기 미로에 있대! 🍉', short: '🍉 수박 전해주기' }; const b = pick(avail); return { type: 'bug', key: b.id, base: S.bugDex[b.id] || 0, text: `${b.emoji} ${b.name}을(를) 잡아서 보여줄래? (${b.hint}에서 볼 수 있대)`, short: `${b.emoji} ${b.name} 잡아서 보여주기` }; },
   ];
   return { npc, reward: Math.floor(rr(6, 10)), ...pick(kinds)() };
 }
@@ -2536,6 +2725,365 @@ function updateStatusLines() {
   $('bagLine').classList.toggle('hidden', !bs && !riding);
 }
 
+// ---------- 39-seasons.js ----------
+/* =========================================================
+   🌸🌻🍁⛄ 사계절 & 계절 축제
+   하루(밤 → 아침)가 3번 지나면 다음 계절이 와요.
+   ========================================================= */
+const DAYS_PER_SEASON = 3;
+const SEASONS = [
+  { id: 'spring', name: '봄', emoji: '🌸', event: '벚꽃 축제', token: { name: '벚꽃잎', emoji: '🌸' }, food: 'mochi', hat: 'blossom', furn: 'sakurapot',
+    ground: 0xa9e38c, hill: 0xbdeb9c, bush: 0x9edc7a, petals: 0xffd23f, leaves: [[0xffc4d8, 0xffd6e4, 0xa8e38a], [0xffb3cc, 0xffc4d8, 0xffe0ea]], fall: 0xffc4d8 },
+  { id: 'summer', name: '여름', emoji: '🌻', event: '여름 축제', token: { name: '조개껍데기', emoji: '🐚' }, food: 'hwachae', hat: 'melonhat', furn: 'fan',
+    ground: 0x9fdc7c, hill: 0xb3e68c, bush: 0x86cf6a, petals: 0xffd23f, leaves: null, fall: null },
+  { id: 'autumn', name: '가을', emoji: '🍁', event: '수확 축제', token: { name: '단풍잎', emoji: '🍁' }, food: 'goguma', hat: 'beret', furn: 'pumpkin',
+    ground: 0xcfd57e, hill: 0xdedc8c, bush: 0xd9a548, petals: 0xd9962c, leaves: [[0xff9f43, 0xffc14d, 0xe8663d], [0xffb36b, 0xff8a5c, 0xffd07a]], fall: 0xff9f43 },
+  { id: 'winter', name: '겨울', emoji: '⛄', event: '눈꽃 축제', token: { name: '눈꽃 결정', emoji: '❄️' }, food: 'cocoa', hat: 'knithat', furn: 'xtree',
+    ground: 0xe4ecf7, hill: 0xedf2fa, bush: 0xe3ecf8, petals: 0xf4f4f4, leaves: [[0xf4f8ff, 0xe3eefc, 0xffffff], [0xf4f8ff, 0xe3eefc, 0xffffff]], fall: 0xffffff },
+];
+const season = () => SEASONS[S.season] || SEASONS[1];
+const SEASON_LINES = {
+  spring: ['벚꽃이 활짝 폈어! 꽃잎이 눈처럼 날려 🌸', '봄바람이 살랑~ 소풍 가고 싶다!', '축제 부스에서 딸기 찹쌀떡 팔더라 🍓', '꽃잎을 모으면 벚꽃 화관이랑 바꿔 준대!'],
+  summer: ['여름이다! 바닷가에서 조개껍데기를 주웠어 🐚', '수박 화채 먹어 봤어? 시원해~', '조개껍데기 모으면 수박 모자랑 바꿔 준대!'],
+  autumn: ['나뭇잎이 알록달록 물들었어 🍁', '군고구마 냄새 솔솔~ 축제 부스에 가 봐!', '허수아비 아저씨가 해바라기 미로를 지키고 있어', '단풍잎 모으면 베레모랑 바꿔 준대!'],
+  winter: ['눈이다아~! ⛄ 광장에서 눈사람 만들자!', '목도리 두르니까 따뜻해~', '온천은 겨울에 더 좋더라 ♨️', '크리스마스 트리 반짝반짝 예쁘다 🎄', '눈꽃 결정 모으면 방울 털모자랑 바꿔 준대!'],
+};
+
+/* ---------- 계절 축제 부스 ---------- */
+const EVENT_BOOTH = { x: -9, z: 12.5 };
+const boothSigns = {};
+{
+  const g = new THREE.Group();
+  g.position.set(EVENT_BOOTH.x, 0, EVENT_BOOTH.z);
+  scene.add(g);
+  add(new THREE.BoxGeometry(3.8, 1.0, 1.4), 0xf2d3a8, 0, 0.5, 0, g);
+  add(new THREE.BoxGeometry(3.82, 0.5, 0.05), 0xc3a6ff, 0, 0.55, 0.72, g);
+  for (const px of [-1.8, 1.8]) for (const pz of [-0.7, 0.7]) add(new THREE.CylinderGeometry(0.07, 0.07, 2.8, 6), 0xb07a56, px, 1.4, pz, g);
+  for (let i = 0; i < 7; i++) {
+    const s = add(new THREE.BoxGeometry(4.2 / 7 + 0.01, 0.12, 2.1), i % 2 ? 0xffffff : 0xc3a6ff, -2.1 + 4.2 / 14 + (i * 4.2) / 7, 2.85, 0.15, g);
+    s.rotation.x = 0.18;
+  }
+  for (const se of SEASONS) {
+    const sign = signPlane(`${se.emoji} ${se.event}`, 2.8, { font: 74, border: '#c3a6ff' });
+    sign.position.set(0, 3.5, 0.3);
+    g.add(sign);
+    boothSigns[se.id] = sign;
+  }
+  const k = makeCreature({ color: 0xfff6c8, ears: 'bunny', accent: 0xc3a6ff });
+  k.root.position.set(0, 0, -1.3);
+  g.add(k.root);
+  stallKeepers.push(k);
+  // 달력 판
+  const cal = add(new THREE.BoxGeometry(0.9, 1.1, 0.08), 0xffffff, 1.2, 1.55, 0.3, g, false);
+  add(new THREE.BoxGeometry(0.9, 0.25, 0.1), 0xff8fb1, 1.2, 2.0, 0.31, g, false);
+  collide(EVENT_BOOTH.x, EVENT_BOOTH.z, 2.1); collide(EVENT_BOOTH.x - 1.4, EVENT_BOOTH.z, 1.3); collide(EVENT_BOOTH.x + 1.4, EVENT_BOOTH.z, 1.3);
+  interact({ x: EVENT_BOOTH.x, z: EVENT_BOOTH.z + 2.4, r: 2.4, get label() { return `${season().emoji} ${season().event} 부스`; }, action: () => openEventBooth() });
+}
+ZONE_LABELS.push(['🗓️ 계절 축제', EVENT_BOOTH.x, 4.6, EVENT_BOOTH.z]);
+MAP_MARKS.push(['🗓️', EVENT_BOOTH.x, EVENT_BOOTH.z]);
+AVOID.push([EVENT_BOOTH.x, EVENT_BOOTH.z, 4]);
+
+/* ---------- 계절 장식 ---------- */
+const decor = { spring: new THREE.Group(), summer: new THREE.Group(), autumn: new THREE.Group(), winter: new THREE.Group() };
+const decorColliders = { spring: [], summer: [], autumn: [], winter: [] };
+const seasonCollide = (id, x, z, r) => { const c = { x, z, r, off: true }; colliders.push(c); decorColliders[id].push(c); };
+Object.values(decor).forEach((g) => { g.visible = false; scene.add(g); });
+const xmasLights = [];
+// 봄: 광장 옆 벚꽃 소풍
+{
+  const g = decor.spring;
+  const mat0 = add(new THREE.BoxGeometry(3, 0.04, 2.2), toon({ map: stripeTexture('#ffc4d8', '#ffffff', 8) }), 4.6, 0.04, -10, g, false);
+  mat0.rotation.y = 0.4;
+  add(new THREE.BoxGeometry(0.7, 0.35, 0.5), 0xff8fb1, 4.2, 0.22, -10.2, g);
+  add(new THREE.BoxGeometry(0.72, 0.08, 0.52), 0xffffff, 4.2, 0.42, -10.2, g, false);
+  for (let i = 0; i < 3; i++) add(new THREE.SphereGeometry(0.12, 8, 6), 0xffffff, 5 + i * 0.25, 0.14, -9.6, g, false);
+  for (const [x, z] of [[-24, -16], [7.5, 12], [-30, -4]]) {
+    add(new THREE.CylinderGeometry(0.3, 0.3, 0.5, 10), 0xe58e6b, x, 0.25, z, g);
+    for (let i = 0; i < 5; i++) add(new THREE.SphereGeometry(0.22, 8, 6), 0xffc4d8, x + Math.cos(i) * 0.25, 0.65, z + Math.sin(i) * 0.25, g, false);
+  }
+}
+// 여름: 해변 파라솔과 튜브
+{
+  const g = decor.summer;
+  for (const [x, z, c] of [[-4.5, 56, '#ff8fb1'], [4.8, 55.5, '#8fd3ff']]) {
+    add(new THREE.CylinderGeometry(0.05, 0.05, 2.6, 6), 0xffffff, x, 1.3, z, g);
+    add(new THREE.ConeGeometry(1.6, 0.6, 12), toon({ map: stripeTexture(c, '#ffffff', 12) }), x, 2.7, z, g);
+    seasonCollide('summer', x, z, 0.4);
+  }
+  const tube = add(new THREE.TorusGeometry(0.45, 0.18, 10, 20), toon({ map: stripeTexture('#ffd166', '#ff6f91', 8) }), -2.5, 0.2, 54, g);
+  tube.rotation.x = Math.PI / 2;
+  const ball = add(new THREE.SphereGeometry(0.35, 14, 10), toon({ map: stripeTexture('#ff6f91', '#ffffff', 6) }), 3, 0.35, 52.5, g);
+}
+// 가을: 허수아비와 호박
+{
+  const g = decor.autumn;
+  const sx = -23.5, sz = -17.5;
+  add(new THREE.CylinderGeometry(0.08, 0.08, 2.6, 6), 0xb07a56, sx, 1.3, sz, g);
+  add(new THREE.CylinderGeometry(0.06, 0.06, 1.8, 6), 0xb07a56, sx, 1.8, sz, g).rotation.z = Math.PI / 2;
+  add(new THREE.BoxGeometry(0.9, 0.9, 0.4), 0x8fb8ff, sx, 1.6, sz, g);
+  add(new THREE.SphereGeometry(0.35, 12, 10), 0xf3d27a, sx, 2.45, sz, g);
+  const hat = add(new THREE.ConeGeometry(0.5, 0.45, 12), 0xd9a548, sx, 2.85, sz, g);
+  add(new THREE.CylinderGeometry(0.6, 0.6, 0.04, 14), 0xd9a548, sx, 2.65, sz, g);
+  for (const s of [-1, 1]) add(new THREE.SphereGeometry(0.05, 6, 6), 0x3b2a25, sx + s * 0.12, 2.5, sz + 0.32, g, false);
+  seasonCollide('autumn', sx, sz, 0.5);
+  for (const [x, z, r] of [[-21.5, -16, 0.5], [-22.3, -19.6, 0.4], [6, -9.5, 0.55], [-6.5, 10, 0.45], [10, 4, 0.5], [-11.5, 14.8, 0.4]]) {
+    const p = add(new THREE.SphereGeometry(r, 14, 10), 0xff8f2c, x, r * 0.8, z, g);
+    p.scale.y = 0.8;
+    add(new THREE.CylinderGeometry(0.05, 0.06, 0.2, 5), 0x6a8a3c, x, r * 1.55, z, g, false);
+    seasonCollide('autumn', x, z, r);
+  }
+  // 군고구마 드럼통
+  add(new THREE.CylinderGeometry(0.45, 0.45, 1, 14), 0x6a6a7a, EVENT_BOOTH.x + 2.9, 0.5, EVENT_BOOTH.z + 0.6, g);
+  add(new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8), 0x6a6a7a, EVENT_BOOTH.x + 3.1, 1.4, EVENT_BOOTH.z + 0.6, g);
+  seasonCollide('autumn', EVENT_BOOTH.x + 2.9, EVENT_BOOTH.z + 0.6, 0.6);
+}
+// 겨울: 크리스마스 트리와 눈사람 자리
+const snowmanParts = [];
+const SNOWMAN = { x: -4.2, z: -10 };
+{
+  const g = decor.winter;
+  const tx = 9.6, tz = 4.2;
+  add(new THREE.CylinderGeometry(0.25, 0.3, 0.8, 8), 0x8a5a3c, tx, 0.4, tz, g);
+  for (const [y, r, h] of [[1.4, 1.7, 1.8], [2.5, 1.35, 1.6], [3.5, 0.95, 1.4]]) add(new THREE.ConeGeometry(r, h, 12), 0x4fae6a, tx, y, tz, g);
+  const star = add(new THREE.OctahedronGeometry(0.32, 0), toon({ color: 0xffd34d, emissive: 0xffc000, emissiveIntensity: 0.8 }), tx, 4.4, tz, g, false);
+  star.name = 'star';
+  for (let i = 0; i < 26; i++) {
+    const y = 0.9 + (i / 26) * 3.0, a = i * 2.3, r = 1.6 * (1 - (y - 0.6) / 3.8) + 0.05;
+    const l = add(new THREE.SphereGeometry(0.1, 8, 6), lanternMats[i % lanternMats.length], tx + Math.cos(a) * r, y, tz + Math.sin(a) * r, g, false);
+    xmasLights.push(l);
+  }
+  for (const [x, z, c] of [[tx + 1.3, tz + 1, 0xff6f6f], [tx - 1.1, tz + 1.2, 0x8fb8ff], [tx + 0.2, tz + 1.6, 0xffd166]]) {
+    add(new THREE.BoxGeometry(0.5, 0.45, 0.5), c, x, 0.23, z, g);
+    add(new THREE.BoxGeometry(0.52, 0.47, 0.1), 0xffffff, x, 0.23, z, g, false);
+  }
+  seasonCollide('winter', tx, tz, 1.7);
+  // 눈사람 (만들수록 하나씩 나타나요)
+  const base = withOutline(add(new THREE.SphereGeometry(0.85, 18, 14), 0xffffff, SNOWMAN.x, 0.75, SNOWMAN.z, g), 1.04);
+  const head = withOutline(add(new THREE.SphereGeometry(0.55, 18, 14), 0xffffff, SNOWMAN.x, 1.9, SNOWMAN.z, g), 1.04);
+  const deco = new THREE.Group();
+  g.add(deco);
+  for (const s of [-1, 1]) add(new THREE.SphereGeometry(0.07, 8, 6), 0x3b2a25, SNOWMAN.x + s * 0.18, 2.0, SNOWMAN.z + 0.5, deco, false);
+  const nose = add(new THREE.ConeGeometry(0.08, 0.4, 8), 0xff8f2c, SNOWMAN.x, 1.88, SNOWMAN.z + 0.65, deco, false);
+  nose.rotation.x = Math.PI / 2;
+  const sc = add(new THREE.TorusGeometry(0.5, 0.12, 8, 18), 0xff6f6f, SNOWMAN.x, 1.45, SNOWMAN.z, deco);
+  sc.rotation.x = Math.PI / 2;
+  add(new THREE.CylinderGeometry(0.42, 0.42, 0.06, 14), 0x3b3b4a, SNOWMAN.x, 2.38, SNOWMAN.z, deco);
+  add(new THREE.CylinderGeometry(0.3, 0.3, 0.45, 14), 0x3b3b4a, SNOWMAN.x, 2.6, SNOWMAN.z, deco);
+  for (const s of [-1, 1]) rod(new THREE.Vector3(SNOWMAN.x + s * 0.7, 1.1, SNOWMAN.z), new THREE.Vector3(SNOWMAN.x + s * 1.4, 1.6, SNOWMAN.z), 0.04, 0x8a5a3c, deco);
+  snowmanParts.push(base, head, deco);
+  // 눈 더미 (만들기 전 표시)
+  const pile = add(new THREE.SphereGeometry(0.6, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), 0xffffff, SNOWMAN.x, 0, SNOWMAN.z, g);
+  pile.scale.y = 0.5;
+  pile.name = 'pile';
+  seasonCollide('winter', SNOWMAN.x, SNOWMAN.z, 0.9);
+  interact({
+    x: SNOWMAN.x, z: SNOWMAN.z + 2.0,
+    get r() { return season().id === 'winter' && S.snowman < 3 ? 2.2 : 0; },
+    get label() { return ['눈을 굴려 몸통 만들기 ⛄', '머리 올리기 ⛄', '눈·코·목도리 꾸미기 ⛄'][S.snowman] || ''; },
+    action: () => buildSnowman(),
+  });
+}
+function refreshSnowman() {
+  snowmanParts.forEach((p, i) => (p.visible = S.snowman > i));
+  decor.winter.getObjectByName('pile').visible = S.snowman === 0;
+}
+function buildSnowman() {
+  S.snowman++;
+  refreshSnowman();
+  sparkle(SNOWMAN.x, 1.5, SNOWMAN.z, new THREE.Color(0xffffff), 24);
+  sfx.ok();
+  if (S.snowman >= 3) {
+    addToken(3);
+    sfx.fanfare();
+    say(player, '눈사람 완성! 안녕, 눈사람아~ ⛄', 3);
+    toast('⛄ 눈사람을 완성했어요! 눈꽃 결정 3개를 받았어요', 3.5);
+  } else say(player, S.snowman === 1 ? '데굴데굴~ 몸통 완성!' : '영차! 머리를 올렸다!', 2);
+  persist();
+}
+
+/* ---------- 떨어지는 꽃잎 · 낙엽 · 눈 ---------- */
+const FALL_N = 500;
+const fallGeo = new THREE.BufferGeometry();
+fallGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(FALL_N * 3), 3));
+const fallTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 32;
+  const g = c.getContext('2d');
+  const gr = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.6, 'rgba(255,255,255,0.9)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 32, 32);
+  return new THREE.CanvasTexture(c);
+})();
+const fallMat = new THREE.PointsMaterial({ map: fallTex, size: 0.35, transparent: true, depthWrite: false, color: 0xffffff });
+const fallPts = new THREE.Points(fallGeo, fallMat);
+fallPts.frustumCulled = false;
+scene.add(fallPts);
+const fallSeed = Array.from({ length: FALL_N }, () => [rr(-32, 32), rr(0, 22), rr(-32, 32), rr(0, 9)]);
+
+/* ---------- 축제 토큰 (마을 곳곳에 떠 있어요) ---------- */
+const tokenTex = {};
+for (const se of SEASONS) {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d');
+  const gr = g.createRadialGradient(64, 64, 10, 64, 64, 62);
+  gr.addColorStop(0, 'rgba(255,255,255,0.95)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+  g.font = '76px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(se.token.emoji, 64, 70);
+  tokenTex[se.id] = new THREE.CanvasTexture(c);
+  tokenTex[se.id].colorSpace = THREE.SRGBColorSpace;
+}
+const tokenMat = new THREE.SpriteMaterial({ map: tokenTex.summer, transparent: true, depthWrite: false });
+const tokens = Array.from({ length: 8 }, () => {
+  const s = new THREE.Sprite(tokenMat);
+  s.scale.setScalar(1.3);
+  s.visible = false;
+  scene.add(s);
+  return { s, respawn: rr(1, 4), base: 0 };
+});
+function addToken(n = 1) {
+  const id = season().id;
+  S.tokens[id] = (S.tokens[id] || 0) + n;
+  persist();
+}
+const tokenCount = () => S.tokens[season().id] || 0;
+
+/* ---------- 계절 바꾸기 ---------- */
+function applySeason() {
+  const se = season();
+  const summer = SEASONS[1];
+  SEASONAL.ground.material.color.setHex(se.ground);
+  SEASONAL.hill.material.color.setHex(se.hill);
+  SEASONAL.bushes.material = mat(se.bush);
+  SEASONAL.petals.material = mat(se.petals);
+  SEASONAL.flowers.forEach((f) => (f.visible = se.id !== 'winter'));
+  for (const l of SEASONAL.leaves) {
+    if (!se.leaves) {
+      const pal = l.kind === 'pink' ? [0xffbcd4, 0xffa9c6, 0xffd0e0] : l.kind === 'round' ? [0x7fcf6b, 0x93db78, 0x6cbf5d] : [0x8bd66f, 0x76c460, 0xa2e283];
+      l.m.material = mat(pal[l.i % 3]);
+    } else {
+      const pal = se.leaves[l.kind === 'pink' || (se.id === 'spring' && l.i % 2) ? 1 : 0];
+      l.m.material = mat(pal[l.i % 3]);
+    }
+  }
+  const pond = SEASONAL.pondWater.material;
+  pond.color.setHex(se.id === 'winter' ? 0xd8efff : 0x77cdea);
+  pond.emissive.setHex(se.id === 'winter' ? 0x6a8ab0 : 0x1a4e7a);
+  for (const id of Object.keys(decor)) {
+    decor[id].visible = id === se.id;
+    decorColliders[id].forEach((c) => (c.off = id !== se.id));
+  }
+  for (const [id, sign] of Object.entries(boothSigns)) sign.visible = id === se.id;
+  CREATURES.forEach((c) => c.scarf.forEach((m) => (m.visible = se.id === 'winter')));
+  tokenMat.map = tokenTex[se.id];
+  tokenMat.needsUpdate = true;
+  tokens.forEach((t) => { t.s.visible = false; t.respawn = rr(0.5, 3); });
+  if (se.fall) fallMat.color.setHex(se.fall);
+  fallMat.size = se.id === 'winter' ? 0.3 : 0.4;
+  refreshSnowman();
+  if (season().id === 'winter' && W.raining) stopRain();
+}
+function setSeason(i, announce = true) {
+  S.season = ((i % 4) + 4) % 4;
+  S.seasonDay = 1;
+  if (season().id === 'winter') S.snowman = 0;
+  persist();
+  applySeason();
+  if (announce) {
+    const se = season();
+    sfx.fanfare();
+    toast(`${se.emoji} ${se.name}이 왔어요! 광장 옆에서 ${se.event}가 열렸어요`, 4);
+    say(player, { spring: '와, 벚꽃이다! 🌸', summer: '여름이다~ 바다 가자! 🌻', autumn: '알록달록 단풍이 예쁘다 🍁', winter: '눈이다아~! ⛄' }[se.id], 3);
+  }
+}
+function newDay() {
+  S.seasonDay++;
+  if (S.seasonDay > DAYS_PER_SEASON) { setSeason(S.season + 1); return; }
+  persist();
+  toast(`${season().emoji} ${season().name} ${S.seasonDay}일째 아침이에요`, 2.6);
+}
+
+function openEventBooth() {
+  const se = season();
+  const food = FOODS[se.food];
+  const hat = SHOP_ITEMS.find((i) => i.id === se.hat);
+  const furn = FURNITURE.find((f) => f.id === se.furn);
+  sfx.ok();
+  openMenu({
+    title: `${se.emoji} ${se.event}`,
+    desc: () => `오늘은 <b>${se.name} ${S.seasonDay}일째</b> (하루가 ${DAYS_PER_SEASON - S.seasonDay + 1}번 더 지나면 다음 계절)<br>마을에 떠 있는 ${se.token.emoji} ${se.token.name}을(를) 모아 한정 상품과 바꿔요!<br>내 ${se.token.name} ${se.token.emoji} ${tokenCount()} · 코인 🪙 ${S.coins}`,
+    items: () => [
+      { label: `${food.emoji} ${food.name} 사 먹기`, right: `🪙 ${food.price}`, dim: S.coins < food.price, act: () => { eat(se.food); return false; } },
+      { label: `${hat.emoji} ${hat.name}`, right: S.owned.includes(hat.id) ? '✅ 갖고 있어요' : `${se.token.emoji} 5`, dim: !S.owned.includes(hat.id) && tokenCount() < 5,
+        act: () => {
+          if (S.owned.includes(hat.id)) return true;
+          if (tokenCount() < 5) { sfx.no(); toast(`${se.token.emoji} ${se.token.name}이(가) ${5 - tokenCount()}개 더 필요해요`); return true; }
+          S.tokens[se.id] -= 5; givePrize(hat.id, 0); return true;
+        } },
+      { label: `${furn.emoji} ${furn.name} (가구)`, right: S.furniture.includes(furn.id) ? '✅ 우리 집에 있어요' : `${se.token.emoji} 8`, dim: !S.furniture.includes(furn.id) && tokenCount() < 8,
+        act: () => {
+          if (S.furniture.includes(furn.id)) return true;
+          if (tokenCount() < 8) { sfx.no(); toast(`${se.token.emoji} ${se.token.name}이(가) ${8 - tokenCount()}개 더 필요해요`); return true; }
+          S.tokens[se.id] -= 8; S.furniture.push(furn.id); persist(); refreshFurniture(); sfx.fanfare();
+          toast(`${furn.emoji} ${furn.name}이(가) 내 집으로 배달됐어요!`, 3); return true;
+        } },
+      { label: '⏭️ 시계탑 마법으로 다음 계절 부르기', right: `→ ${SEASONS[(S.season + 1) % 4].emoji} ${SEASONS[(S.season + 1) % 4].name}`, act: () => { setTimeout(() => setSeason(S.season + 1), 200); return false; } },
+      { label: '닫기', act: () => false },
+    ],
+  });
+}
+
+/* ---------- 매 프레임 ---------- */
+tickers.push((dt) => {
+  const se = season();
+  // 떨어지는 것들
+  fallPts.visible = !!se.fall && !insideHouse && state !== 'title';
+  if (fallPts.visible) {
+    const c = camera.position, arr = fallGeo.attributes.position.array;
+    const speed = se.id === 'winter' ? 1.6 : 1.1;
+    for (let i = 0; i < FALL_N; i++) {
+      const [sx, sy, sz, o] = fallSeed[i];
+      const y = (((sy - elapsed * speed) % 22) + 22) % 22;
+      arr[i * 3] = c.x + sx + Math.sin(elapsed * 0.8 + o) * 1.5;
+      arr[i * 3 + 1] = y;
+      arr[i * 3 + 2] = c.z - 12 + sz + Math.cos(elapsed * 0.6 + o) * 1.2;
+    }
+    fallGeo.attributes.position.needsUpdate = true;
+  }
+  // 반딧불이는 여름 밤에만
+  if (se.id !== 'summer') fireflyMat.opacity = 0;
+  if (se.id === 'winter') {
+    scene.fog.color.lerp(tmpC.setHex(0xe8f0ff), 0.25 * (1 - clamp(tod - 1, 0, 1)));
+    xmasLights.forEach((l, i) => (l.visible = Math.sin(elapsed * 3 + i) > -0.4));
+    const st = decor.winter.getObjectByName('star');
+    if (st) st.rotation.y += dt;
+  }
+  // 토큰
+  const pp = player.root.position;
+  for (const t of tokens) {
+    if (!t.s.visible) {
+      if (state !== 'play' && state !== 'title') continue;
+      t.respawn -= dt;
+      if (t.respawn <= 0) {
+        const [x, z] = randomFreeSpot();
+        t.base = groundY(x, z) + 1.0;
+        t.s.position.set(x, t.base, z);
+        t.s.visible = true;
+      }
+      continue;
+    }
+    t.s.position.y = t.base + Math.sin(elapsed * 2.5 + t.s.position.x) * 0.2;
+    if (state === 'play' && !insideHouse && Math.hypot(t.s.position.x - pp.x, t.s.position.z - pp.z) < 1.4) {
+      t.s.visible = false;
+      t.respawn = rr(25, 45);
+      addToken();
+      sfx.ding();
+      sparkle(t.s.position.x, t.s.position.y, t.s.position.z, new THREE.Color(se.fall || 0xfff1a8), 18);
+      if (tokenCount() === 1 || tokenCount() === 5 || tokenCount() === 8) toast(`${se.token.emoji} ${se.token.name} ${tokenCount()}개! 계절 축제 부스에서 바꿀 수 있어요`, 2.8);
+    }
+  }
+});
+
 // ---------- 80-nature.js ----------
 /* =========================================================
    집 · 나무 · 꽃 · 구름
@@ -2589,6 +3137,7 @@ const free = (x, z, m = 0) => avoid.every(([ax, az, ar]) => Math.hypot(x - ax, z
   }
   im.count = stemIm.count = n;
   scene.add(im, stemIm);
+  SEASONAL.flowers.push(im, stemIm);
   // 풀숲
   const bush = new THREE.InstancedMesh(new THREE.SphereGeometry(0.5, 10, 8), mat(0x86cf6a), 90);
   let k = 0; tries = 0;
@@ -2605,6 +3154,7 @@ const free = (x, z, m = 0) => avoid.every(([ax, az, ar]) => Math.hypot(x - ax, z
   bush.castShadow = true;
   bush.receiveShadow = true;
   scene.add(bush);
+  SEASONAL.bushes = bush;
 }
 // 섬 가장자리 울타리 (남쪽 선착장 입구는 비워둬요)
 {
@@ -2724,11 +3274,16 @@ const S = {
   quest: save.get('quest', null),      // 우체통 부탁
   questsDone: save.get('questsDone', 0),
   bikeRented: save.get('bikeRented', false),
+  layout: save.get('layout', {}),       // 내 집 가구 배치 { id: [x, z, 회전, 보관중] }
+  season: save.get('season', 1),        // 0 봄 · 1 여름 · 2 가을 · 3 겨울
+  seasonDay: save.get('seasonDay', 1),
+  tokens: save.get('tokens', {}),       // 계절 축제 토큰
+  snowman: save.get('snowman', 0),
 };
 function persist() {
   save.set('coins', S.coins); save.set('full', Math.round(S.full)); save.set('energy', Math.round(S.energy));
   save.set('owned', S.owned); save.set('equipped', S.equipped);
-  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented']) save.set(k, S[k]);
+  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented', 'layout', 'season', 'seasonDay', 'tokens', 'snowman']) save.set(k, S[k]);
 }
 const bagAdd = (k, n = 1) => { S.bag[k] = Math.max(0, (S.bag[k] || 0) + n); if (!S.bag[k]) delete S.bag[k]; persist(); };
 const slotGroups = { hat: player.hatSlot, face: player.faceSlot, hand: player.handSlot };
@@ -3140,6 +3695,7 @@ function npcChat(npc) {
   if (S.equipped.hat === 'straw' && Math.random() < 0.5) line = '우와, 밀짚모자 진짜 잘 어울린다! 👒';
   if (S.equipped.hand === 'balloon' && Math.random() < 0.4) line = '하트 풍선 귀엽다~ 나도 갖고 싶어 🎈';
   if (tod > 1.5 && Math.random() < 0.5) line = pick(['밤하늘 별 좀 봐… 반짝반짝 ✨', '불꽃놀이 같이 볼래? 호숫가 데크로 가자!', '하암… 슬슬 졸리다~']);
+  if (Math.random() < 0.35) line = pick(SEASON_LINES[season().id]);
   if (S.full < 25 && Math.random() < 0.6) line = '배에서 꼬르륵 소리가 나는데? 먹자골목에 가 봐! 🍢';
   say(npc.c, line, 3.6, npc.name);
 }
@@ -3210,7 +3766,7 @@ let state = 'loading';
 let helpOpen = false;
 addEventListener('keydown', (e) => {
   const code = e.code;
-  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(code)) e.preventDefault();
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Tab'].includes(code)) e.preventDefault();
   if (e.repeat && !['ArrowUp', 'ArrowDown'].includes(code)) { keys.add(code); return; }
   keys.add(code);
   initAudio();
@@ -3319,6 +3875,7 @@ const playerVel = new THREE.Vector3();
 
 function resolve(p, r, isPlayer = false) {
   for (let pass = 0; pass < 2; pass++) for (const c of colliders) {
+    if (c.off) continue;
     const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz), m = c.r + r;
     if (d < m && d > 1e-5) { p.x = c.x + (dx / d) * m; p.z = c.z + (dz / d) * m; }
   }
@@ -3483,7 +4040,7 @@ function updateSky(dt) {
   stars.position.copy(camera.position);
   const ico = tod < 0.5 ? ['☀️', '맑은 낮'] : tod < 1.5 ? ['🌇', '노을 지는 저녁'] : ['🌙', '여름밤'];
   $('todIco').textContent = ico[0];
-  $('todText').textContent = ico[1];
+  $('todText').textContent = `${ico[1]} · ${season().emoji} ${season().name} ${S.seasonDay}일째`;
 }
 
 let modeFov = 45;
@@ -3598,6 +4155,7 @@ function frame() {
     if (napTime > 5 && !napAdvanced) {
       napAdvanced = true;
       todTarget = todTarget >= 2 ? 0 : todTarget + 1;
+      if (todTarget === 0) setTimeout(newDay, 3200);
       toast(todTarget === 0 ? '🌅 상쾌한 아침이 밝았어요' : todTarget === 1 ? '🌇 어느새 노을이 지고 있어요' : '🌙 별이 반짝이는 여름밤이 되었어요', 3);
     }
     zTimer -= dt;
@@ -3689,6 +4247,7 @@ addEventListener('resize', () => {
 });
 
 refreshFurniture();
+applySeason();
 $('loading').remove();
 state = 'title';
 window.__game = {
@@ -3696,7 +4255,7 @@ window.__game = {
   setTod: (t) => (tod = todTarget = t), warp: (x, z) => player.root.position.set(x, groundY(x, z), z),
   act: () => currentInteract && currentInteract.action(), get prompt() { return currentInteract && currentInteract.label; },
   peek: (expr) => eval(expr), // 개발용: 콘솔에서 내부 상태 보기
-  startRain: () => startRain(), stopRain: () => stopRain(), spawnBugNear: (id) => spawnBugNear(id), enterHouse: () => enterHouse(),
+  startRain: () => startRain(), setSeason: (i) => setSeason(i), newDay: () => newDay(), stopRain: () => stopRain(), spawnBugNear: (id) => spawnBugNear(id), enterHouse: () => enterHouse(),
 };
 requestAnimationFrame(frame);
 

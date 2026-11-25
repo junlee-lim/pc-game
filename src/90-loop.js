@@ -9,6 +9,7 @@ const playerVel = new THREE.Vector3();
 
 function resolve(p, r, isPlayer = false) {
   for (let pass = 0; pass < 2; pass++) for (const c of colliders) {
+    if (c.off) continue;
     const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz), m = c.r + r;
     if (d < m && d > 1e-5) { p.x = c.x + (dx / d) * m; p.z = c.z + (dz / d) * m; }
   }
@@ -173,7 +174,7 @@ function updateSky(dt) {
   stars.position.copy(camera.position);
   const ico = tod < 0.5 ? ['☀️', '맑은 낮'] : tod < 1.5 ? ['🌇', '노을 지는 저녁'] : ['🌙', '여름밤'];
   $('todIco').textContent = ico[0];
-  $('todText').textContent = ico[1];
+  $('todText').textContent = `${ico[1]} · ${season().emoji} ${season().name} ${S.seasonDay}일째`;
 }
 
 let modeFov = 45;
@@ -288,6 +289,7 @@ function frame() {
     if (napTime > 5 && !napAdvanced) {
       napAdvanced = true;
       todTarget = todTarget >= 2 ? 0 : todTarget + 1;
+      if (todTarget === 0) setTimeout(newDay, 3200);
       toast(todTarget === 0 ? '🌅 상쾌한 아침이 밝았어요' : todTarget === 1 ? '🌇 어느새 노을이 지고 있어요' : '🌙 별이 반짝이는 여름밤이 되었어요', 3);
     }
     zTimer -= dt;
@@ -379,6 +381,7 @@ addEventListener('resize', () => {
 });
 
 refreshFurniture();
+applySeason();
 $('loading').remove();
 state = 'title';
 window.__game = {
@@ -386,6 +389,6 @@ window.__game = {
   setTod: (t) => (tod = todTarget = t), warp: (x, z) => player.root.position.set(x, groundY(x, z), z),
   act: () => currentInteract && currentInteract.action(), get prompt() { return currentInteract && currentInteract.label; },
   peek: (expr) => eval(expr), // 개발용: 콘솔에서 내부 상태 보기
-  startRain: () => startRain(), stopRain: () => stopRain(), spawnBugNear: (id) => spawnBugNear(id), enterHouse: () => enterHouse(),
+  startRain: () => startRain(), setSeason: (i) => setSeason(i), newDay: () => newDay(), stopRain: () => stopRain(), spawnBugNear: (id) => spawnBugNear(id), enterHouse: () => enterHouse(),
 };
 requestAnimationFrame(frame);

@@ -72,7 +72,7 @@ tickers.push((dt) => {
   if (state === 'fireworks' && W.raining) stopRain();
   if (state === 'play' && !insideHouse) {
     W.timer -= dt;
-    if (W.timer <= 0) (W.raining ? stopRain() : tod < 1.6 ? startRain() : (W.timer = 60));
+    if (W.timer <= 0) (W.raining ? stopRain() : tod < 1.6 && season().id !== 'winter' ? startRain() : (W.timer = 60));
   }
   W.rain = lerp(W.rain, W.raining ? 1 : 0, damp(0.7, dt));
   W.rainbowT -= dt;

@@ -169,6 +169,7 @@ function npcChat(npc) {
   if (S.equipped.hat === 'straw' && Math.random() < 0.5) line = '우와, 밀짚모자 진짜 잘 어울린다! 👒';
   if (S.equipped.hand === 'balloon' && Math.random() < 0.4) line = '하트 풍선 귀엽다~ 나도 갖고 싶어 🎈';
   if (tod > 1.5 && Math.random() < 0.5) line = pick(['밤하늘 별 좀 봐… 반짝반짝 ✨', '불꽃놀이 같이 볼래? 호숫가 데크로 가자!', '하암… 슬슬 졸리다~']);
+  if (Math.random() < 0.35) line = pick(SEASON_LINES[season().id]);
   if (S.full < 25 && Math.random() < 0.6) line = '배에서 꼬르륵 소리가 나는데? 먹자골목에 가 봐! 🍢';
   say(npc.c, line, 3.6, npc.name);
 }
@@ -239,7 +240,7 @@ let state = 'loading';
 let helpOpen = false;
 addEventListener('keydown', (e) => {
   const code = e.code;
-  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(code)) e.preventDefault();
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Tab'].includes(code)) e.preventDefault();
   if (e.repeat && !['ArrowUp', 'ArrowDown'].includes(code)) { keys.add(code); return; }
   keys.add(code);
   initAudio();

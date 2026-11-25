@@ -48,6 +48,7 @@ AVOID.push([MAZE_CENTER[0], MAZE_CENTER[1], 11]);
       leaf.setMatrixAt(i * 2 + s, m4);
     }
   });
+  SEASONAL.petals = petals;
   for (const im of [stem, petals, center, leaf]) { im.castShadow = true; im.receiveShadow = true; scene.add(im); }
   const sign = signPlane('🌻 해바라기 미로', 3.2, { w: 640, h: 160, font: 76, border: '#ffd23f' });
   const [ex, ez] = mazeCell(8, 3);

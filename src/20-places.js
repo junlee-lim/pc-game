@@ -34,6 +34,7 @@ const POND = { x: 0, z: -44, r: 10.5 };
   water.position.set(POND.x, 0.05, POND.z);
   water.receiveShadow = true;
   scene.add(water);
+  SEASONAL.pondWater = water;
   collide(POND.x, POND.z, POND.r + 0.1);
   for (let i = 0; i < 9; i++) {
     const a = rr(0, Math.PI * 2), d = rr(3, POND.r - 1.5);
@@ -85,6 +86,11 @@ const FOODS = {
   fish: { name: '붕어빵', emoji: '🐟', price: 2, full: 22, energy: 5, desc: '바삭한 껍질에 달콤한 팥이 가득', line: '머리부터 먹을까, 꼬리부터 먹을까~' },
   cotton: { name: '솜사탕', emoji: '🍭', price: 2, full: 12, energy: 15, desc: '구름처럼 폭신한 분홍 솜사탕', line: '입에서 사르르 녹아요~ ☁️' },
   bingsu: { name: '팥빙수', emoji: '🍧', price: 4, full: 25, energy: 12, desc: '여름엔 역시 시원한 빙수!', line: '으~ 머리가 찡! 그래도 시원해 ❄️' },
+  // 계절 축제 부스에서만 파는 음식
+  mochi: { name: '딸기 찹쌀떡', emoji: '🍓', price: 3, full: 20, energy: 15, desc: '봄 딸기가 쏙 들어간 말랑 찹쌀떡', line: '말랑말랑 새콤달콤~ 봄 맛이야! 🌸', seasonal: true },
+  hwachae: { name: '수박 화채', emoji: '🍉', price: 3, full: 22, energy: 15, desc: '동글동글 수박이 동동 뜬 시원한 화채', line: '시원하고 달콤해~ 여름 최고! 🌻', seasonal: true },
+  goguma: { name: '군고구마', emoji: '🍠', price: 3, full: 30, energy: 10, desc: '드럼통에서 노릇노릇 구운 군고구마', line: '앗 뜨거! 호호~ 달달하다 🍂', seasonal: true },
+  cocoa: { name: '마시멜로 코코아', emoji: '☕', price: 3, full: 15, energy: 25, desc: '마시멜로를 동동 띄운 따끈한 코코아', line: '몸이 사르르 녹는다~ ⛄', seasonal: true },
 };
 function foodModel(key) {
   const g = new THREE.Group();
@@ -105,6 +111,25 @@ function foodModel(key) {
   } else if (key === 'cotton') {
     add(new THREE.CylinderGeometry(0.03, 0.03, 0.8, 6), 0xfff1df, 0, 0.4, 0, g);
     for (const [x, y, z, r] of [[0, 0.95, 0, 0.32], [0.18, 0.85, 0.1, 0.22], [-0.17, 0.88, -0.05, 0.24], [0, 1.15, 0, 0.2]]) add(new THREE.SphereGeometry(r, 14, 10), 0xffb8d8, x, y, z, g);
+  } else if (key === 'mochi') {
+    add(new THREE.CylinderGeometry(0.4, 0.4, 0.05, 16), 0xffffff, 0, 0.03, 0, g);
+    for (const x of [-0.17, 0.17]) {
+      add(new THREE.SphereGeometry(0.2, 14, 10), 0xfff6fa, x, 0.2, 0, g).scale.y = 0.8;
+      add(new THREE.SphereGeometry(0.09, 10, 8), 0xff4d6d, x, 0.36, 0.05, g, false);
+    }
+  } else if (key === 'hwachae') {
+    add(new THREE.CylinderGeometry(0.42, 0.3, 0.3, 16), 0xe8f6ff, 0, 0.15, 0, g);
+    add(new THREE.CylinderGeometry(0.39, 0.39, 0.03, 16), 0xffb3c6, 0, 0.29, 0, g, false);
+    for (let i = 0; i < 6; i++) add(new THREE.SphereGeometry(0.08, 8, 6), i % 2 ? 0xff5a6e : 0xffffff, Math.cos(i) * 0.22, 0.32, Math.sin(i) * 0.22, g, false);
+  } else if (key === 'goguma') {
+    const b = add(new THREE.CapsuleGeometry(0.16, 0.35, 6, 10), 0x8a3f5c, 0, 0.2, 0, g);
+    b.rotation.z = Math.PI / 2;
+    add(new THREE.SphereGeometry(0.15, 10, 8), 0xffc23d, 0.25, 0.24, 0, g, false).scale.set(0.5, 1, 1);
+  } else if (key === 'cocoa') {
+    add(new THREE.CylinderGeometry(0.25, 0.22, 0.45, 16), 0xff8fb1, 0, 0.23, 0, g);
+    add(new THREE.CylinderGeometry(0.22, 0.22, 0.02, 16), 0x8a5a3c, 0, 0.44, 0, g, false);
+    add(new THREE.TorusGeometry(0.11, 0.035, 6, 12), 0xff8fb1, 0.28, 0.25, 0, g, false);
+    for (const [x, z] of [[0.06, 0.04], [-0.07, -0.03]]) add(new THREE.BoxGeometry(0.1, 0.08, 0.1), 0xffffff, x, 0.48, z, g, false);
   } else {
     add(new THREE.CylinderGeometry(0.4, 0.28, 0.28, 16), 0xb8e6ff, 0, 0.14, 0, g);
     add(new THREE.SphereGeometry(0.4, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), 0xfffaf4, 0, 0.28, 0, g);
@@ -244,6 +269,11 @@ const SHOP_ITEMS = [
   { id: 'fishbag', name: '금붕어 봉지', emoji: '🐠', price: 0, slot: 'hand', prize: true },
   { id: 'starband', name: '별 머리띠', emoji: '⭐', price: 0, slot: 'hat', prize: true },
   { id: 'catmask', name: '고양이 가면', emoji: '😺', price: 0, slot: 'face', prize: true },
+  // 계절 축제 한정 (토큰으로 교환)
+  { id: 'blossom', name: '벚꽃 화관', emoji: '🌸', price: 0, slot: 'hat', prize: true },
+  { id: 'melonhat', name: '수박 모자', emoji: '🍉', price: 0, slot: 'hat', prize: true },
+  { id: 'beret', name: '단풍 베레모', emoji: '🍁', price: 0, slot: 'hat', prize: true },
+  { id: 'knithat', name: '방울 털모자', emoji: '🧶', price: 0, slot: 'hat', prize: true },
 ];
 function itemModel(id) {
   const g = new THREE.Group();
@@ -320,6 +350,27 @@ function itemModel(id) {
       add(new THREE.CylinderGeometry(0.015, 0.015, 0.35, 4), 0xffffff, sx, 0.18, 0, g, false);
       const st = add(new THREE.ExtrudeGeometry(star, { depth: 0.06, bevelEnabled: false }), toon({ color: 0xffd34d, emissive: 0xffb000, emissiveIntensity: 0.3 }), sx, 0.38, -0.03, g, false);
     }
+  } else if (id === 'blossom') {
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      add(new THREE.SphereGeometry(0.1, 8, 6), i % 2 ? 0xffc4d8 : 0xffffff, Math.cos(a) * 0.48, -0.08, Math.sin(a) * 0.48, g, false);
+    }
+    for (let i = 0; i < 5; i++) add(new THREE.SphereGeometry(0.06, 6, 4), 0x9fe38a, Math.cos(i * 1.3 + 0.3) * 0.5, -0.08, Math.sin(i * 1.3 + 0.3) * 0.5, g, false);
+  } else if (id === 'melonhat') {
+    const shell = add(new THREE.SphereGeometry(0.55, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), toon({ map: melonTex }), 0, -0.12, 0, g);
+    shell.scale.y = 0.8;
+    add(new THREE.CylinderGeometry(0.56, 0.56, 0.06, 18), 0xff5a6e, 0, -0.12, 0, g, false);
+    add(new THREE.CylinderGeometry(0.03, 0.02, 0.2, 5), 0x6a8a3c, 0, 0.36, 0, g, false);
+  } else if (id === 'beret') {
+    const b = add(new THREE.SphereGeometry(0.55, 18, 10), 0xe8663d, 0.08, 0.05, 0, g);
+    b.scale.set(1, 0.32, 1);
+    b.rotation.z = -0.2;
+    add(new THREE.CylinderGeometry(0.03, 0.03, 0.12, 5), 0x8a3f2c, 0.08, 0.22, 0, g, false);
+  } else if (id === 'knithat') {
+    const h = add(new THREE.SphereGeometry(0.6, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), 0xff6f6f, 0, -0.2, 0, g);
+    h.scale.y = 1.05;
+    add(new THREE.CylinderGeometry(0.62, 0.62, 0.2, 18), 0xffffff, 0, -0.17, 0, g);
+    add(new THREE.SphereGeometry(0.17, 12, 10), 0xffffff, 0, 0.45, 0, g);
   } else if (id === 'catmask') {
     const face = add(new THREE.SphereGeometry(0.3, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), 0xffffff, 0.3, 0.3, 0.02, g, false);
     face.rotation.set(Math.PI / 2, 0, -0.5);

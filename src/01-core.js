@@ -198,7 +198,7 @@ const colliders = [];
 const collide = (x, z, r) => colliders.push({ x, z, r });
 
 // 섬
-add(new THREE.CylinderGeometry(ISLAND_R, ISLAND_R, 1, 72), 0x9fdc7c, 0, -0.5, 0, scene, false);
+SEASONAL.ground = add(new THREE.CylinderGeometry(ISLAND_R, ISLAND_R, 1, 72), toon({ color: 0x9fdc7c }), 0, -0.5, 0, scene, false);
 add(new THREE.CylinderGeometry(ISLAND_R + 0.3, ISLAND_R - 6, 7, 72), 0xd9a878, 0, -4.5, 0, scene, false);
 add(new THREE.CylinderGeometry(ISLAND_R + 0.6, ISLAND_R + 0.6, 0.5, 72), 0xf6e3b4, 0, -0.65, 0, scene, false);
 const sea = new THREE.Mesh(new THREE.CircleGeometry(400, 64), toon({ color: 0x7fd3ea, transparent: true, opacity: 0.95 }));
@@ -218,7 +218,7 @@ scene.add(sea);
     pos.setY(i, Math.hypot(x - HILL.x, z - HILL.z) < HILL.r ? groundY(x, z) + 0.01 : -0.1);
   }
   geo.computeVertexNormals();
-  add(geo, 0xb3e68c, HILL.x, 0, HILL.z, scene, false);
+  SEASONAL.hill = add(geo, toon({ color: 0xb3e68c }), HILL.x, 0, HILL.z, scene, false);
 }
 function terrainPatch(w, d, cx, cz, material, lift = 0.04) {
   const geo = new THREE.PlaneGeometry(w, d, 12, 12);

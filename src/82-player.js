@@ -19,11 +19,16 @@ const S = {
   quest: save.get('quest', null),      // 우체통 부탁
   questsDone: save.get('questsDone', 0),
   bikeRented: save.get('bikeRented', false),
+  layout: save.get('layout', {}),       // 내 집 가구 배치 { id: [x, z, 회전, 보관중] }
+  season: save.get('season', 1),        // 0 봄 · 1 여름 · 2 가을 · 3 겨울
+  seasonDay: save.get('seasonDay', 1),
+  tokens: save.get('tokens', {}),       // 계절 축제 토큰
+  snowman: save.get('snowman', 0),
 };
 function persist() {
   save.set('coins', S.coins); save.set('full', Math.round(S.full)); save.set('energy', Math.round(S.energy));
   save.set('owned', S.owned); save.set('equipped', S.equipped);
-  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented']) save.set(k, S[k]);
+  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented', 'layout', 'season', 'seasonDay', 'tokens', 'snowman']) save.set(k, S[k]);
 }
 const bagAdd = (k, n = 1) => { S.bag[k] = Math.max(0, (S.bag[k] || 0) + n); if (!S.bag[k]) delete S.bag[k]; persist(); };
 const slotGroups = { hat: player.hatSlot, face: player.faceSlot, hand: player.handSlot };
