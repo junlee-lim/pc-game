@@ -49,8 +49,28 @@ const cleanLook = (l) => (l && typeof l === 'object' ? {
 } : null);
 const cleanState = (m) => ({
   x: num(m.x), y: num(m.y), z: num(m.z), r: num(m.r, 100),
-  mv: !!m.mv, run: !!m.run, isl: str(m.isl, 20), hid: !!m.hid, eq: cleanEq(m.eq), look: cleanLook(m.look),
+  mv: !!m.mv, run: !!m.run, isl: str(m.isl, 20), hid: !!m.hid, room: str(m.room, 20), eq: cleanEq(m.eq), look: cleanLook(m.look),
 });
+// 선물 · 집 방문: 한 사람에게만 전하는 메시지 (값은 받는 쪽 게임이 한 번 더 검사해요)
+const id20 = (v) => { const s = str(v, 20); return /^[a-z0-9_]+$/i.test(s) ? s : ''; };
+const cleanHouse = (h) => {
+  if (!h || typeof h !== 'object') return null;
+  const layout = {};
+  if (h.layout && typeof h.layout === 'object') for (const [k, v] of Object.entries(h.layout).slice(0, 40)) {
+    if (id20(k) && Array.isArray(v)) layout[k] = [num(v[0], 50), num(v[1], 50), num(v[2], 20), !!v[3]];
+  }
+  return {
+    houseLv: Math.max(1, Math.min(3, Math.round(num(h.houseLv, 3)) || 1)),
+    furniture: Array.isArray(h.furniture) ? h.furniture.slice(0, 40).map(id20).filter(Boolean) : [],
+    layout,
+  };
+};
+const DIRECT = {
+  gift: (m) => ({ gid: Math.round(num(m.gid, 1e9)), kind: m.kind === 'item' ? 'item' : 'bag', key: id20(m.key) }),
+  giftres: (m) => ({ gid: Math.round(num(m.gid, 1e9)), ok: !!m.ok, why: str(m.why, 40) }),
+  visit: () => ({}),
+  visitres: (m) => ({ ok: !!m.ok, why: str(m.why, 40), house: m.ok ? cleanHouse(m.house) : null }),
+};
 const pub = (p) => ({ id: p.id, name: p.name, ...p.st });
 
 function send(ws, msg) { if (ws.readyState === 1) ws.send(JSON.stringify(msg)); }
@@ -93,6 +113,19 @@ wss.on('connection', (ws) => {
       if (!e || now - me.lastChat < 400) return;
       me.lastChat = now;
       broadcast({ t: 'emo', id: me.id, e }, ws);
+    } else if (DIRECT[m.t]) {
+      // 1초에 6번까지
+      me.direct = (me.direct || []).filter((t) => now - t < 1000);
+      if (me.direct.length >= 6) return;
+      me.direct.push(now);
+      const target = [...players.entries()].find(([, p]) => p.id === m.to);
+      if (!target) {
+        // 받을 사람이 없으면 바로 실패로 알려 줘요
+        if (m.t === 'gift') send(ws, { t: 'giftres', from: m.to, gid: DIRECT.gift(m).gid, ok: false, why: 'gone' });
+        if (m.t === 'visit') send(ws, { t: 'visitres', from: m.to, ok: false, why: 'gone' });
+        return;
+      }
+      send(target[0], { t: m.t, from: me.id, ...DIRECT[m.t](m) });
     } else if (m.t === 'name') {
       me.name = cleanName(m.name);
       broadcast({ t: 'name', id: me.id, name: me.name });

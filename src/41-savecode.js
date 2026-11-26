@@ -145,7 +145,10 @@ function openPauseMenu() {
     desc: () => '진행 상황은 이 브라우저에 자동으로 저장돼요. 다른 기기에서 이어 하려면 저장 코드를 옮겨 주세요.',
     items: () => [
       { label: '🐻 내 모습 바꾸기', right: '색 · 귀 모양', act: () => { setTimeout(() => openLookMenu(), 0); return false; } },
-      ...(ON.url ? [{ label: '🌐 온라인 이름 바꾸기', right: escHtml(ON.name), act: () => { setTimeout(() => openChat('/이름 '), 0); return false; } }] : []),
+      ...(ON.url ? [
+        { label: '🌐 온라인 이름 바꾸기', right: escHtml(ON.name), act: () => { setTimeout(() => openChat('/이름 '), 0); return false; } },
+        { label: '🚪 친구가 우리 집에 놀러 오기', right: save.get('doorOpen', true) ? '🟢 열어 두기' : '🔒 닫아 두기', act: () => { save.set('doorOpen', !save.get('doorOpen', true)); sfx.select(); return true; } },
+      ] : []),
       { label: '💾 저장 코드 만들기', right: '다른 기기로 옮기기', act: () => { setTimeout(() => showSaveBox('export'), 0); return false; } },
       { label: '📥 저장 코드 불러오기', right: '다른 기기에서 이어 하기', act: () => { setTimeout(() => showSaveBox('import'), 0); return false; } },
       { label: soundOn ? '🔊 소리 끄기' : '🔇 소리 켜기', act: () => {

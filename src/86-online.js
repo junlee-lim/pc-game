@@ -100,7 +100,7 @@ function applyPeer(p, d) {
   if (typeof d.x === 'number') {
     // 배를 타거나 순간 이동하면 바로 그 자리로
     if (Math.hypot(d.x - p.tx, d.z - p.tz) > 12) p.c.root.position.set(d.x, d.y, d.z);
-    p.tx = d.x; p.ty = d.y; p.tz = d.z; p.tr = d.r; p.mv = d.mv; p.run = d.run; p.isl = d.isl; p.hid = d.hid;
+    p.tx = d.x; p.ty = d.y; p.tz = d.z; p.tr = d.r; p.mv = d.mv; p.run = d.run; p.isl = d.isl; p.hid = d.hid; p.room = d.room || '';
   }
   if (d.look) p.c.setLook(validLook(d.look));
   const eqKey = JSON.stringify(d.eq || {});
@@ -113,12 +113,18 @@ function applyPeer(p, d) {
 }
 
 // ---------- 서버 연결 ----------
+// 지금 있는 방: '' 바깥 · 'home<주인 id>' 온라인 집 · 'npc<x>' 동물 친구 집
+function myRoom() {
+  if (!insideHouse) return '';
+  if (curRoom === ROOM) return 'home' + (roomOwner ? roomOwner.hostId : ON.id);
+  return 'npc' + Math.round(curRoom.x);
+}
 function myState() {
   const p = player.root.position;
   const here = islandAt(insideHouse ? curRoom.exit : p);
   const mv = p.distanceTo(ON.lastPos) > 0.03;
   ON.lastPos.copy(p);
-  return { x: p.x, y: p.y, z: p.z, r: player.root.rotation.y, mv, run: down('ShiftLeft', 'ShiftRight'), isl: here.id, hid: insideHouse || state === 'title', eq: S.equipped, look: player.look };
+  return { x: p.x, y: p.y, z: p.z, r: player.root.rotation.y, mv, run: down('ShiftLeft', 'ShiftRight'), isl: here.id, hid: state === 'title', room: myRoom(), eq: S.equipped, look: player.look };
 }
 function netSend(m) { if (ON.connected && ON.ws.readyState === 1) ON.ws.send(JSON.stringify(m)); }
 function connectOnline() {
@@ -151,7 +157,11 @@ function connectOnline() {
     } else if (m.t === 'chat' || m.t === 'emo') {
       const p = ON.peers.get(m.id);
       if (p && p.c.root.visible) say(p.c, escHtml(m.t === 'chat' ? m.text : m.e), m.t === 'chat' ? 5 : 2.5, m.t === 'chat' ? escHtml(p.name) : '');
-    } else if (m.t === 'full') {
+    } else if (m.t === 'gift') onGift(m);
+    else if (m.t === 'giftres') onGiftRes(m);
+    else if (m.t === 'visit') onVisit(m);
+    else if (m.t === 'visitres') onVisitRes(m);
+    else if (m.t === 'full') {
       toast('🌐 서버가 꽉 찼어요. 잠시 뒤에 다시 들어올게요', 3);
     }
     refreshBadge();
@@ -179,9 +189,14 @@ tickers.push((dt) => {
   }
   // 친구들 움직이기
   const myIsl = islandAt(insideHouse ? curRoom.exit : player.root.position).id;
+  const room = myRoom();
   const showTags = SHOW_HUD_STATES.has(state);
+  const pp = player.root.position;
+  let near = null, nd = 2.2;
   for (const p of ON.peers.values()) {
-    const vis = !p.hid && !insideHouse && p.isl === myIsl;
+    // 같은 방(집 안) 이거나, 둘 다 바깥이면 같은 섬에 있을 때 보여요
+    const vis = !p.hid && p.room === room && (room !== '' || p.isl === myIsl);
+    if (vis) { const d = Math.hypot(p.tx - pp.x, p.tz - pp.z); if (d < nd) { nd = d; near = p; } }
     p.c.root.visible = vis;
     if (!vis) { p.tag.style.display = 'none'; continue; }
     const r = p.c.root;
@@ -201,7 +216,143 @@ tickers.push((dt) => {
   // 겨울엔 친구들도 목도리
   const winter = season().id === 'winter';
   for (const p of ON.peers.values()) if (p.c.scarf[0].visible !== winter) p.c.scarf.forEach((m) => (m.visible = winter));
+  ON.near = state === 'play' ? near : null;
   ON.badgeT = (ON.badgeT || 0) - dt;
   if (ON.badgeT <= 0) { ON.badgeT = 0.5; refreshBadge(); }
 });
+
+/* ---------- 💬 친구 가까이에서 E: 선물하기 · 집에 놀러 가기 ---------- */
+interact({
+  get x() { return ON.near ? ON.near.c.root.position.x : 1e9; },
+  get z() { return ON.near ? ON.near.c.root.position.z : 1e9; },
+  get r() { return ON.near ? 2.2 : 0; },
+  get label() { return ON.near ? `💬 ${ON.near.name}님과 놀기` : ''; },
+  action: () => ON.near && openPeerMenu(ON.near),
+});
+function openPeerMenu(p) {
+  sfx.ok();
+  const outside = !insideHouse;
+  openMenu({
+    title: `💬 ${escHtml(p.name)}`,
+    desc: () => '무엇을 할까요?',
+    items: () => [
+      { label: '🎁 선물하기', right: '음식 · 소품', act: () => { setTimeout(() => openGiftMenu(p), 0); return false; } },
+      ...(outside ? [{ label: `🏠 ${escHtml(p.name)}님 집에 놀러 가기`, act: () => { requestVisit(p); return false; } }] : []),
+      { label: '👋 인사하기', act: () => { say(player, '안녕~ 👋', 2.5); netSend({ t: 'emo', e: '👋' }); return false; } },
+      { label: '닫기', act: () => false },
+    ],
+  });
+}
+
+// ---------- 🎁 선물 ----------
+const giftPending = new Map(); // gid → { kind, key, name, timer }
+let giftSeq = 1;
+const giftName = (kind, key) => {
+  if (kind === 'item') { const it = SHOP_ITEMS.find((i) => i.id === key); return it ? `${it.emoji} ${it.name}` : null; }
+  const info = BAG_INFO()[key];
+  return info ? `${info.emoji} ${info.name}` : null;
+};
+const pendingCount = (kind, key) => [...giftPending.values()].filter((g) => g.kind === kind && g.key === key).length;
+function openGiftMenu(p) {
+  const list = () => [
+    ...Object.entries(S.bag).filter(([k, n]) => n - pendingCount('bag', k) > 0 && giftName('bag', k)).map(([k, n]) => ({ kind: 'bag', key: k, right: `${n - pendingCount('bag', k)}개` })),
+    ...S.owned.filter((id) => !pendingCount('item', id) && giftName('item', id)).map((id) => ({ kind: 'item', key: id, right: Object.values(S.equipped).includes(id) ? '착용 중' : '소품' })),
+  ];
+  openMenu({
+    title: `🎁 ${escHtml(p.name)}님에게 선물하기`,
+    desc: () => (list().length ? '가방 속 음식이나 갖고 있는 소품을 하나 골라 주세요. 친구가 받으면 내 것에서 빠져요.' : '선물할 게 없어요. 먹자골목에서 포장하거나 잡화점에서 소품을 사 보세요!'),
+    items: () => [
+      ...list().map((g) => ({ label: giftName(g.kind, g.key), right: g.right, act: () => { sendGift(p, g.kind, g.key); return false; } })),
+      { label: '닫기', act: () => false },
+    ],
+  });
+}
+function sendGift(p, kind, key) {
+  if (!ON.connected || !ON.peers.has(p.id)) { sfx.no(); toast('🌐 친구와 연결되어 있지 않아요'); return; }
+  const gid = giftSeq++;
+  const name = giftName(kind, key);
+  const timer = setTimeout(() => { if (giftPending.delete(gid)) toast(`🎁 ${p.name}님이 대답이 없어요. 선물은 그대로 갖고 있을게요`, 3); }, 8000);
+  giftPending.set(gid, { kind, key, name, peer: p.name, timer });
+  netSend({ t: 'gift', to: p.id, gid, kind, key });
+  say(player, `${name.split(' ')[0]} 이거 받아~ 🎁`, 2.5);
+}
+function onGiftRes(m) {
+  const g = giftPending.get(m.gid);
+  if (!g) return;
+  giftPending.delete(m.gid); clearTimeout(g.timer);
+  if (!m.ok) {
+    sfx.no();
+    toast(m.why === 'already' ? `🎁 ${g.peer}님은 ${g.name}을(를) 이미 갖고 있대요` : m.why === 'gone' ? `🎁 ${g.peer}님이 떠나서 못 줬어요` : `🎁 ${g.peer}님에게 선물을 못 줬어요`, 3);
+    return;
+  }
+  // 친구가 받았으니 내 것에서 빼요
+  if (g.kind === 'bag') bagAdd(g.key, -1);
+  else {
+    S.owned = S.owned.filter((id) => id !== g.key);
+    for (const [slot, id] of Object.entries(S.equipped)) if (id === g.key) S.equipped[slot] = null;
+    refreshEquip(); persist();
+  }
+  sfx.coin();
+  addXP(3, '선물');
+  toast(`🎁 ${g.peer}님에게 ${g.name}을(를) 선물했어요!`, 3);
+}
+function onGift(m) {
+  const p = ON.peers.get(m.from);
+  const reply = (ok, why = '') => netSend({ t: 'giftres', to: m.from, gid: m.gid, ok, why });
+  const name = giftName(m.kind, m.key);
+  if (!p || !name) { reply(false, 'bad'); return; }
+  if (m.kind === 'item') {
+    if (S.owned.includes(m.key)) { reply(false, 'already'); toast(`🎁 ${p.name}님이 ${name}을(를) 주려고 했는데, 이미 갖고 있어요`, 3); return; }
+    S.owned.push(m.key); persist();
+  } else bagAdd(m.key, 1);
+  reply(true);
+  sfx.fanfare();
+  if (p.c.root.visible) say(p.c, '🎁', 2.5);
+  toast(`🎁 ${p.name}님에게 ${name}을(를) 받았어요!${m.kind === 'item' ? ' (옷장에서 입어 보세요)' : ''}`, 3.5);
+}
+
+// ---------- 🏠 친구 집에 놀러 가기 ----------
+let visitPending = null;
+function requestVisit(p) {
+  if (!ON.connected) { sfx.no(); toast('🌐 친구와 연결되어 있지 않아요'); return; }
+  if (visitPending) return;
+  visitPending = { id: p.id, name: p.name, timer: setTimeout(() => { visitPending = null; toast(`🏠 ${p.name}님이 대답이 없어요`, 2.5); }, 8000) };
+  netSend({ t: 'visit', to: p.id });
+  say(player, '똑똑~ 놀러 가도 돼? 🏠', 2.5);
+}
+function onVisit(m) {
+  const p = ON.peers.get(m.from);
+  if (!p) return;
+  if (!save.get('doorOpen', true)) { netSend({ t: 'visitres', to: m.from, ok: false, why: 'closed' }); return; }
+  netSend({ t: 'visitres', to: m.from, ok: true, house: { houseLv: S.houseLv, furniture: S.furniture, layout: S.layout } });
+  sfx.bell();
+  toast(`🏠 ${p.name}님이 우리 집에 놀러 와요! (집에 가면 만날 수 있어요)`, 3.5);
+}
+function onVisitRes(m) {
+  const v = visitPending;
+  if (!v || v.id !== m.from) return;
+  clearTimeout(v.timer); visitPending = null;
+  if (!m.ok) { sfx.no(); toast(m.why === 'closed' ? `🏠 ${v.name}님 집 문이 닫혀 있어요` : `🏠 ${v.name}님 집에 갈 수 없어요`, 3); return; }
+  if (state !== 'play' || insideHouse) return;
+  // 받은 집 정보는 믿지 말고 아는 가구만 골라 써요
+  const h = m.house || {};
+  const ids = new Set(FURNITURE.map((f) => f.id));
+  const layout = {};
+  for (const [k, L] of Object.entries(h.layout || {})) if (ids.has(k) && Array.isArray(L)) layout[k] = [clamp(+L[0] || 0, -10, 10), clamp(+L[1] || 0, -6.5, 6.5), +L[2] || 0, !!L[3]];
+  const house = { houseLv: clamp(Math.round(+h.houseLv) || 1, 1, 3), furniture: (h.furniture || []).filter((id) => ids.has(id)), layout, name: v.name, hostId: v.id };
+  if (riding) setRiding(false);
+  sfx.ok();
+  fadeThen(() => {
+    roomOwner = house;
+    applyHouseLevel();
+    insideHouse = true;
+    curRoom = ROOM;
+    player.root.position.set(ROOM.x, 0, ROOM.z + ROOM.d / 2 - 1.2);
+    player.root.rotation.set(0, Math.PI, 0);
+    houseCamera(player.root.position, camera.position, lookAt);
+    say(player, `${v.name}님 집 구경 왔어요~ 🏠`, 3);
+    addXP(3, '친구 집 놀러 가기');
+  }, 300);
+}
+
 connectOnline();
