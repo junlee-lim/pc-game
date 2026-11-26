@@ -1,5 +1,5 @@
 /* =========================================================
-   🌧️ 날씨 — 여름 소나기 · 무지개
+   🌧️ 날씨 — 소나기 · 무지개
    ========================================================= */
 const W = { rain: 0, raining: false, timer: rr(70, 130), rainbow: 0, rainbowT: 0, afterRain: 0 };
 const isRaining = () => W.raining;
@@ -43,7 +43,7 @@ function startRain() {
   if (W.raining) return;
   W.raining = true;
   W.timer = rr(35, 55);
-  toast('🌧️ 여름 소나기가 내리기 시작했어요', 3);
+  toast('🌧️ 소나기가 내리기 시작했어요', 3);
   say(player, pick(['앗, 비다! ☔', '소나기다~ 시원하다!']), 2.5);
 }
 function stopRain() {

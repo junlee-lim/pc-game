@@ -91,14 +91,15 @@ function openFoodMenu(key) {
   });
 }
 let eatModel = null, eatTimer = 0;
-function eat(key) {
+// free: 직접 만든 음식이라 돈을 내지 않아요
+function eat(key, free = false) {
   const f = FOODS[key];
-  if (S.coins < f.price) {
+  if (!free && S.coins < f.price) {
     sfx.no();
     say(player, '코인이 모자라… 마을에서 반짝이는 코인을 찾아보자! 🪙', 3);
     return;
   }
-  S.coins -= f.price;
+  if (!free) S.coins -= f.price;
   S.full = clamp(S.full + f.full, 0, 100);
   S.energy = clamp(S.energy + f.energy, 0, 100);
   persist();
@@ -221,14 +222,14 @@ function startFireworks() {
   $('prompt').classList.add('hidden');
   player.root.position.set(0, 0.5, -30.9);
   player.root.rotation.set(0, Math.PI, 0);
-  toast('🎆 여름밤 불꽃축제가 시작돼요!  (Esc로 그만 보기)', 4);
+  toast('🎆 밤하늘 불꽃축제가 시작돼요!  (Esc로 그만 보기)', 4);
   say(player, '두근두근… 곧 시작한다! ✨', 3);
 }
 function endFireworks(early) {
   state = 'play';
   player.root.position.set(0, 0, -28.5);
   toast(early ? '불꽃놀이는 언제든 다시 볼 수 있어요 🎆' : '정말 예뻤다… 오늘 밤 잊지 못할 거야 ✨', 3);
-  if (!early) say(player, '최고의 여름밤이야! 💖', 3);
+  if (!early) say(player, '최고의 밤이야! 💖', 3);
 }
 interact({ x: 0, z: -29.3, r: 3.2, label: '데크에 앉아 불꽃놀이 보기', action: () => startFireworks() });
 

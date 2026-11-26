@@ -92,6 +92,14 @@ function updatePlayer(dt) {
     }
     bikeAnimate(moving, speed, dt);
   } else {
+    // 통통 버섯 위에 올라서면 높이 튀어 올라요
+    const pad = BOUNCE_PADS.find((b) => Math.hypot(p.x - b.x, p.z - b.z) < b.r);
+    if (pad && (!airborne || (pvy < 0 && p.y <= pad.h))) {
+      p.y = Math.max(p.y, pad.h);
+      airborne = true; airTime = 0; pvy = 13.5;
+      pad.squash = 0.25;
+      sfx.boing();
+    }
     if (airborne) {
       // 폴짝! (Space 점프)
       airTime += dt;
@@ -224,7 +232,7 @@ function updateSky(dt) {
   sun.target.position.copy(pp);
   sky.position.copy(camera.position);
   stars.position.copy(camera.position);
-  const ico = tod < 0.5 ? ['☀️', '맑은 낮'] : tod < 1.5 ? ['🌇', '노을 지는 저녁'] : ['🌙', '여름밤'];
+  const ico = tod < 0.5 ? ['☀️', '맑은 낮'] : tod < 1.5 ? ['🌇', '노을 지는 저녁'] : ['🌙', '별이 뜬 밤'];
   $('todIco').textContent = ico[0];
   $('todText').textContent = `${ico[1]} · ${season().emoji} ${season().name} ${S.seasonDay}일째`;
 }
@@ -347,7 +355,7 @@ function frame() {
       napAdvanced = true;
       todTarget = todTarget >= 2 ? 0 : todTarget + 1;
       if (todTarget === 0) setTimeout(newDay, 3200);
-      toast(todTarget === 0 ? '🌅 상쾌한 아침이 밝았어요' : todTarget === 1 ? '🌇 어느새 노을이 지고 있어요' : '🌙 별이 반짝이는 여름밤이 되었어요', 3);
+      toast(todTarget === 0 ? '🌅 상쾌한 아침이 밝았어요' : todTarget === 1 ? '🌇 어느새 노을이 지고 있어요' : '🌙 별이 반짝이는 밤이 되었어요', 3);
     }
     zTimer -= dt;
     if (zTimer <= 0) {

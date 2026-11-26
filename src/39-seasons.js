@@ -225,7 +225,7 @@ function applySeason() {
   const se = season();
   const summer = SEASONS[1];
   SEASONAL.ground.material.color.setHex(se.ground);
-  for (const I of ISLANDS) if (I.groundMesh) I.groundMesh.material.color.setHex(se.id === 'winter' ? 0xe4ecf7 : I.ground);
+  for (const I of ISLANDS) if (I.groundMesh) I.groundMesh.material.color.setHex(se.id === 'winter' && !I.warm ? 0xe4ecf7 : I.ground);
   SEASONAL.hill.material.color.setHex(se.hill);
   SEASONAL.bushes.material = mat(se.bush);
   SEASONAL.petals.material = mat(se.petals);
@@ -313,7 +313,7 @@ function openEventBooth() {
 tickers.push((dt) => {
   const se = season();
   // 떨어지는 것들
-  fallPts.visible = !!se.fall && !insideHouse && state !== 'title';
+  fallPts.visible = !!se.fall && !insideHouse && state !== 'title' && !islandAt(player.root.position).warm;
   if (fallPts.visible) {
     const c = camera.position, arr = fallGeo.attributes.position.array;
     const speed = se.id === 'winter' ? 1.6 : 1.1;
