@@ -194,7 +194,7 @@ function endMini() {
 modes.minigame = {
   key(code) {
     if (!mini) return;
-    if (mini.result) { if (['Space', 'Enter', 'Escape', 'KeyE'].includes(code)) { mini.result.give(); endMini(); } return; }
+    if (mini.result) { if (['Space', 'Enter', 'Escape', 'KeyE'].includes(code)) { mini.result.give(); if (!mini.noGeneric) { addXP(5, '미니게임'); daily('mini'); } endMini(); } return; }
     if (code === 'Escape') { mini.finish(); return; }
     mini.key(code);
   },

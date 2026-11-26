@@ -232,9 +232,9 @@ function updateSky(dt) {
   sun.target.position.copy(pp);
   sky.position.copy(camera.position);
   stars.position.copy(camera.position);
-  const ico = tod < 0.5 ? ['☀️', '맑은 낮'] : tod < 1.5 ? ['🌇', '노을 지는 저녁'] : ['🌙', '별이 뜬 밤'];
-  $('todIco').textContent = ico[0];
-  $('todText').textContent = `${ico[1]} · ${season().emoji} ${season().name} ${S.seasonDay}일째`;
+  const ico = tod < 0.5 ? '☀️' : tod < 1.5 ? '🌇' : '🌙';
+  const txt = `${clockText()} · ${season().emoji} ${season().name} ${S.seasonDay}일째`;
+  if ($('todText').textContent !== txt) { $('todIco').textContent = ico; $('todText').textContent = txt; }
 }
 
 let modeFov = 45;
@@ -353,9 +353,8 @@ function frame() {
     player.body.scale.set(1, 1, 1 + Math.sin(elapsed * 1.6) * 0.03);
     if (napTime > 5 && !napAdvanced) {
       napAdvanced = true;
-      todTarget = todTarget >= 2 ? 0 : todTarget + 1;
-      if (todTarget === 0) setTimeout(newDay, 3200);
-      toast(todTarget === 0 ? '🌅 상쾌한 아침이 밝았어요' : todTarget === 1 ? '🌇 어느새 노을이 지고 있어요' : '🌙 별이 반짝이는 밤이 되었어요', 3);
+      const next = skipToNextPhase();
+      toast(next === 0 ? '🌅 상쾌한 아침이 밝았어요' : next === 1 ? '🌇 어느새 노을이 지고 있어요' : '🌙 별이 반짝이는 밤이 되었어요', 3);
     }
     zTimer -= dt;
     if (zTimer <= 0) {
@@ -445,14 +444,18 @@ addEventListener('resize', () => {
   fwMat.uniforms.uScale.value = innerHeight * 0.5;
 });
 
-refreshFurniture();
+if (S.rentDue === null) S.rentDue = S.dayCount + RENT_EVERY;
+applyHouseLevel();
 refreshSky();
 applySeason();
+ensureDaily();
+refreshBirthdays();
+tod = todTarget = todFromClock(S.clock);
 $('loading').remove();
 state = 'title';
 window.__game = {
   S, get state() { return state; }, player, startFireworks, startNap, openShopMenu, openFoodMenu,
-  setTod: (t) => (tod = todTarget = t), warp: (x, z) => player.root.position.set(x, groundY(x, z), z),
+  setTod: (t) => { S.clock = [9 * 60, 17 * 60 + 20, 21 * 60][t]; tod = todTarget = todFromClock(S.clock); }, warp: (x, z) => player.root.position.set(x, groundY(x, z), z),
   act: () => currentInteract && currentInteract.action(), get prompt() { return currentInteract && currentInteract.label; },
   peek: (expr) => eval(expr), // 개발용: 콘솔에서 내부 상태 보기
   startRain: () => startRain(), setSeason: (i) => setSeason(i), newDay: () => newDay(), stopRain: () => stopRain(), spawnBugNear: (id) => spawnBugNear(id), enterHouse: () => enterHouse(),

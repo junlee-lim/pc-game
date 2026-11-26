@@ -190,7 +190,7 @@ function visitFriend(F, npc) {
       if (!S.visited[F.name]) {
         S.visited[F.name] = 1;
         persist();
-        setTimeout(() => { addFriendship(npc, 5); toast(`🏡 ${F.name}네 집에 처음 놀러 왔어요! 호감도가 올랐어요`, 3.2); }, 1300);
+        setTimeout(() => { addFriendship(npc, 5); addXP(5, '첫 방문'); toast(`🏡 ${F.name}네 집에 처음 놀러 왔어요! 호감도가 올랐어요`, 3.2); }, 1300);
       }
     }
     F.R.onExit = () => {

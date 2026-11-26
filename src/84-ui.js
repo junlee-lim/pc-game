@@ -99,7 +99,7 @@ function eat(key, free = false) {
     say(player, '코인이 모자라… 낚시나 미니게임, 섬 특산물로 벌어 오자! 🪙', 3);
     return;
   }
-  if (!free) S.coins -= f.price;
+  if (!free) { S.coins -= f.price; daily('eat'); }
   S.full = clamp(S.full + f.full, 0, 100);
   S.energy = clamp(S.energy + f.energy, 0, 100);
   persist();
@@ -218,7 +218,7 @@ function startFireworks() {
   state = 'fireworks';
   showTime = 0;
   nextRocket = tod > 1.6 ? 1.2 : 3.2;
-  todTarget = 2;
+  ensureNight();
   $('prompt').classList.add('hidden');
   player.root.position.set(0, 0.5, -30.9);
   player.root.rotation.set(0, Math.PI, 0);

@@ -18,11 +18,14 @@
 
   <div id="hud" class="hidden">
     <div class="card stats">
+      <div class="row lv-row"><span class="ico">⭐</span><b id="lvText">Lv.1</b><div class="bar xp"><i id="xpBar"></i></div><span id="xpGain"></span></div>
       <div class="row"><span class="ico">🪙</span><b id="coins">0</b><span class="tok-name">코인</span>
         <span class="ico tok-gap" id="tokenIco">🐚</span><b id="tokenCount">0</b><span class="tok-name" id="tokenName">조개껍데기</span></div>
       <div class="row"><span class="ico">🍙</span><div class="bar"><i id="fullBar"></i></div></div>
       <div class="row"><span class="ico">⚡</span><div class="bar"><i id="energyBar"></i></div></div>
       <div class="row"><span class="ico" id="todIco">☀️</span><span id="todText">맑은 낮</span></div>
+      <div class="row small" id="dailyLine"></div>
+      <div class="row small hidden" id="rentLine"></div>
       <div class="row small hidden" id="bikeLine"></div>
       <div class="row small hidden" id="questLine"></div>
       <div class="row small hidden" id="bagLine"></div>
@@ -33,7 +36,7 @@
       <div class="keys-body">
       <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / 방향키 이동 &nbsp; <kbd>Shift</kbd> 달리기<br />
       <kbd>Q</kbd><kbd>R</kbd> 카메라 회전 &nbsp; <kbd>C</kbd> 시점 초기화<br />
-      <kbd>E</kbd> 상호작용 &nbsp; <kbd>Space</kbd> 점프 &nbsp; <kbd>B</kbd> 자전거 &nbsp; <kbd>G</kbd> 도감 &nbsp; <kbd>K</kbd> 친구 &nbsp; <kbd>N</kbd> 지도<br />
+      <kbd>E</kbd> 상호작용 &nbsp; <kbd>Space</kbd> 점프 &nbsp; <kbd>B</kbd> 자전거 &nbsp; <kbd>G</kbd> 도감 &nbsp; <kbd>K</kbd> 친구 &nbsp; <kbd>N</kbd> 지도 &nbsp; <kbd>P</kbd> 사진<br />
       <kbd>Esc</kbd> 메뉴·저장 &nbsp; <kbd>H</kbd> 도움말 &nbsp; <kbd>M</kbd> 소리
       </div>
     </div>
@@ -67,6 +70,8 @@
     </div>
     <div class="foot"><kbd>←</kbd><kbd>→</kbd> 다른 섬 지도 · <kbd>N</kbd> / <kbd>Esc</kbd> / 클릭 닫기</div>
   </div>
+  <div id="photoHint" class="hidden">📸 사진 모드 · <kbd>←</kbd><kbd>→</kbd> 돌리기 · <kbd>↑</kbd><kbd>↓</kbd> 높이 · <kbd>Q</kbd>/<kbd>R</kbd> 멀리·가까이 · <kbd>Space</kbd> 찰칵! · <kbd>Esc</kbd> 나가기</div>
+  <div id="photoFlash"></div>
   <div id="fade"></div>
 
   <div id="help" class="card hidden">
@@ -79,7 +84,7 @@
     <div><kbd>Esc</kbd> — 닫기 · 그만두기 · (걷는 중엔) 메뉴 열기</div>
     <div><kbd>B</kbd> — 자전거 타기/내리기 (대여소에서 빌린 뒤) &nbsp; <kbd>G</kbd> — 곤충·물고기 도감</div>
     <div><kbd>F</kbd> — 내 집 안에서 가구 배치하기 &nbsp; <kbd>K</kbd> — 친구 수첩</div>
-    <div><kbd>N</kbd> 또는 오른쪽 위 지도 클릭 — 큰 지도 보기</div>
+    <div><kbd>N</kbd> 또는 오른쪽 위 지도 클릭 — 큰 지도 보기 &nbsp; <kbd>P</kbd> — 사진 모드</div>
     <div><kbd>M</kbd> — 소리 켜기/끄기 &nbsp; <kbd>H</kbd> — 이 창 열기/닫기</div>
     <div class="tip">
       🎆 북쪽 호숫가에서 밤하늘 불꽃축제를, 🍢 동쪽 먹자골목에서 길거리 음식을,<br />
@@ -93,7 +98,8 @@
       💗 친구들과 이야기하고 좋아하는 걸 선물하면 하트가 쌓여요. 하트 3개면 같이 산책할 수 있어요!<br />
       💾 다른 기기에서 이어 하려면 <kbd>Esc</kbd> 메뉴의 "저장 코드 만들기"로 코드를 복사해 옮기세요.<br />
       🗓️ 하루가 3번 지나면 계절이 바뀌어요. 광장 옆 계절 축제 부스에서 한정 상품을 받아 보세요!<br />
-      🪙 코인은 낚시, 미니게임, 우체통 부탁, 섬 특산물 판매로 벌 수 있어요!
+      🪙 코인은 아르바이트, 낚시, 미니게임, 우체통 부탁(하루 1통), 오늘의 할 일, 텃밭 수확, 섬 특산물 판매로 벌어요. 5일마다 월세가 나가요!<br />
+      ⭐ 활동할 때마다 경험치가 쌓여 레벨이 오르고, 레벨이 오르면 집 넓히기·새 씨앗이 열려요.
     </div>
   </div>
 
@@ -125,7 +131,8 @@ const CREATURES = [];
 const ISLANDS = [];        // { id, name, emoji, x, z, r, hill? } — 0번은 포근섬(본섬)
 const EXTRA_BAG = {};      // 음식이 아닌 가방 아이템 { key: { name, emoji } }
 const HOUSE_GROUPS = [];
-const BOUNCE_PADS = [];    // 통통 버섯 { x, z, r, h, m }   // 마을 집들 { g, x, z, rot }     // 겨울 목도리를 두를 동물 친구들
+const BOUNCE_PADS = [];
+const NEW_DAY_HOOKS = [];   // 아침(6시)이 될 때마다 불려요    // 통통 버섯 { x, z, r, h, m }   // 마을 집들 { g, x, z, rot }     // 겨울 목도리를 두를 동물 친구들
 const SHOW_HUD_STATES = new Set(['play', 'menu']);
 const playKeyHooks = []; // play 상태에서 눌린 키 (code) → true 면 처리됨
 
@@ -1218,6 +1225,8 @@ modes.fishing = {
         fish.coins ? sfx.fanfare() : sfx.no();
         say(player, fish.id === 'boot' ? '👢 …낡은 장화잖아! 하하' : `${fish.emoji} ${fish.name}을(를) 낚았다! (+${fish.coins + (first ? 2 : 0)}🪙)`, 3);
         if (first) toast(`📖 새로운 물고기! ${fish.emoji} ${fish.name} 도감에 기록했어요 (G)`, 3.2);
+        addXP(6 + (first ? 10 : 0), '낚시');
+        if (fish.id !== 'boot') daily('fish');
         sparkle(bobber.position.x, -1.2, bobber.position.z, waterColor, 30);
       } else {
         sfx.no();
@@ -1753,7 +1762,7 @@ function endMini() {
 modes.minigame = {
   key(code) {
     if (!mini) return;
-    if (mini.result) { if (['Space', 'Enter', 'Escape', 'KeyE'].includes(code)) { mini.result.give(); endMini(); } return; }
+    if (mini.result) { if (['Space', 'Enter', 'Escape', 'KeyE'].includes(code)) { mini.result.give(); if (!mini.noGeneric) { addXP(5, '미니게임'); daily('mini'); } endMini(); } return; }
     if (code === 'Escape') { mini.finish(); return; }
     mini.key(code);
   },
@@ -2009,8 +2018,11 @@ const FURNITURE = [
 const FURN_DEFAULT = {};
 const furnColliders = {};
 const furnitureModels = {};
+const roomShell = new THREE.Group();
+let roomShellBuild = null;
 {
-  const R = ROOM, hw = R.w / 2, hd = R.d / 2;
+  const R = ROOM;
+  let hw = R.w / 2, hd = R.d / 2;
   const lawn = add(new THREE.CircleGeometry(30, 40), 0x9fdc7c, R.x, -0.02, R.z, scene, false);
   lawn.rotation.x = -Math.PI / 2;
   const woodTex = (() => {
@@ -2019,42 +2031,57 @@ const furnitureModels = {};
     for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#e8c49a' : '#dfb98d'; g.fillRect(0, i * 16, 128, 16); g.fillStyle = 'rgba(106,76,63,0.25)'; g.fillRect(0, i * 16 + 15, 128, 1); }
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 2); return t;
   })();
-  add(new THREE.BoxGeometry(R.w, 0.2, R.d), toon({ map: woodTex }), R.x, -0.1, R.z, scene, false);
-  const wall = 0xfff1e6, wallH = 3.4;
-  add(new THREE.BoxGeometry(R.w, wallH, 0.3), wall, R.x, wallH / 2, R.z - hd);
-  add(new THREE.BoxGeometry(0.3, wallH, R.d), wall, R.x - hw, wallH / 2, R.z);
-  add(new THREE.BoxGeometry(0.3, wallH, R.d), wall, R.x + hw, wallH / 2, R.z);
-  // 앞쪽 낮은 벽 (가운데는 문)
-  for (const s of [-1, 1]) add(new THREE.BoxGeometry(hw - 1, 0.7, 0.3), wall, R.x + s * (hw / 2 + 0.5), 0.35, R.z + hd);
-  add(new THREE.BoxGeometry(R.w + 0.3, 0.25, 0.4), 0xff8fb1, R.x, wallH, R.z - hd);
-  // 벽지 줄무늬 · 창문
-  for (let i = 0; i < 13; i++) add(new THREE.BoxGeometry(0.12, wallH - 0.4, 0.02), 0xffe0ea, R.x - hw + 0.5 + i, wallH / 2, R.z - hd + 0.16, scene, false);
-  for (const wx of [-3.5, 3.5]) {
-    add(new THREE.BoxGeometry(1.8, 1.4, 0.05), windowMat, R.x + wx, 2.1, R.z - hd + 0.18, scene, false);
-    add(new THREE.BoxGeometry(2.0, 0.12, 0.2), 0xffffff, R.x + wx, 1.35, R.z - hd + 0.22, scene, false);
-    for (const s of [-1, 1]) add(new THREE.BoxGeometry(0.45, 1.6, 0.06), 0xffb4c8, R.x + wx + s * 1.05, 2.05, R.z - hd + 0.22, scene, false);
-  }
+  // 방 껍데기(바닥·벽)는 집 크기에 따라 다시 지어요 → rebuildRoomShell()
+  roomShellBuild = () => {
+    while (roomShell.children.length) roomShell.remove(roomShell.children[0]);
+    const hw = ROOM.w / 2, hd = ROOM.d / 2, wall = 0xfff1e6, wallH = 3.4, g = roomShell;
+    const tex = woodTex.clone(); tex.needsUpdate = true; tex.repeat.set(ROOM.w / 4.3, ROOM.d / 4.5);
+    add(new THREE.BoxGeometry(ROOM.w, 0.2, ROOM.d), toon({ map: tex }), R.x, -0.1, R.z, g, false);
+    add(new THREE.BoxGeometry(ROOM.w, wallH, 0.3), wall, R.x, wallH / 2, R.z - hd, g);
+    add(new THREE.BoxGeometry(0.3, wallH, ROOM.d), wall, R.x - hw, wallH / 2, R.z, g);
+    add(new THREE.BoxGeometry(0.3, wallH, ROOM.d), wall, R.x + hw, wallH / 2, R.z, g);
+    // 앞쪽 낮은 벽 (가운데는 문)
+    for (const sd of [-1, 1]) add(new THREE.BoxGeometry(hw - 1, 0.7, 0.3), wall, R.x + sd * (hw / 2 + 0.5), 0.35, R.z + hd, g);
+    add(new THREE.BoxGeometry(ROOM.w + 0.3, 0.25, 0.4), 0xff8fb1, R.x, wallH, R.z - hd, g);
+    // 벽지 줄무늬 · 창문
+    for (let i = 0; i < ROOM.w - 0.5; i++) add(new THREE.BoxGeometry(0.12, wallH - 0.4, 0.02), 0xffe0ea, R.x - hw + 0.5 + i, wallH / 2, R.z - hd + 0.16, g, false);
+    const wins = ROOM.w > 15 ? [-6, 0, 6] : [-3.5, 3.5];
+    for (const wx of wins) {
+      add(new THREE.BoxGeometry(1.8, 1.4, 0.05), windowMat, R.x + wx, 2.1, R.z - hd + 0.18, g, false);
+      add(new THREE.BoxGeometry(2.0, 0.12, 0.2), 0xffffff, R.x + wx, 1.35, R.z - hd + 0.22, g, false);
+      for (const sd of [-1, 1]) add(new THREE.BoxGeometry(0.45, 1.6, 0.06), 0xffb4c8, R.x + wx + sd * 1.05, 2.05, R.z - hd + 0.22, g, false);
+    }
+    // 붙박이 가구(침대·옷장·책상)는 벽에 붙여 다시 놓아요
+    bed.position.set(R.x - hw + 1.5, 0, R.z - hd + 1.6);
+    ward.position.set(R.x + hw - 1.2, 0, R.z - hd + 0.8);
+    desk.position.set(R.x + hw - 0.9, 0, R.z - hd + 5.7);
+    Object.assign(fixedCols[0], { x: bed.position.x, z: bed.position.z - 0.5 });
+    Object.assign(fixedCols[1], { x: bed.position.x, z: bed.position.z + 0.8 });
+    Object.assign(fixedCols[2], { x: ward.position.x, z: ward.position.z });
+    Object.assign(fixedCols[3], { x: desk.position.x, z: desk.position.z });
+  };
+  scene.add(roomShell);
   // 침대
-  const bed = new THREE.Group(); bed.position.set(R.x - hw + 1.5, 0, R.z - hd + 1.6); scene.add(bed);
+  const bed = new THREE.Group(); scene.add(bed);
   add(new THREE.BoxGeometry(2.2, 0.5, 3), 0xd69a6a, 0, 0.25, 0, bed);
   add(new THREE.BoxGeometry(2.1, 0.3, 2.9), 0xffffff, 0, 0.62, 0, bed);
   add(new THREE.BoxGeometry(2.12, 0.32, 1.9), 0xb8e6ff, 0, 0.66, 0.5, bed);
   add(new THREE.BoxGeometry(1.2, 0.25, 0.6), 0xffffff, 0, 0.88, -1.05, bed).rotation.x = 0.2;
   add(new THREE.BoxGeometry(2.3, 1.1, 0.15), 0xd69a6a, 0, 0.75, -1.5, bed);
-  collide(bed.position.x, bed.position.z - 0.5, 1.2); collide(bed.position.x, bed.position.z + 0.8, 1.2);
   // 옷장
-  const ward = new THREE.Group(); ward.position.set(R.x + hw - 1.2, 0, R.z - hd + 0.8); scene.add(ward);
+  const ward = new THREE.Group(); scene.add(ward);
   add(new THREE.BoxGeometry(2, 2.6, 1), 0xffd6e2, 0, 1.3, 0, ward);
   add(new THREE.BoxGeometry(0.02, 2.3, 0.02), 0xd69a9a, 0, 1.3, 0.51, ward, false);
-  for (const s of [-1, 1]) add(new THREE.SphereGeometry(0.07, 8, 6), 0xffd166, s * 0.15, 1.4, 0.53, ward, false);
-  collide(ward.position.x, ward.position.z, 1.2);
+  for (const sd of [-1, 1]) add(new THREE.SphereGeometry(0.07, 8, 6), 0xffd166, sd * 0.15, 1.4, 0.53, ward, false);
   // 책상과 카탈로그
-  const desk = new THREE.Group(); desk.position.set(R.x + hw - 0.9, 0, R.z + 1.2); scene.add(desk);
+  const desk = new THREE.Group(); scene.add(desk);
   add(new THREE.BoxGeometry(1.2, 0.1, 2), 0xe8c49a, 0, 0.9, 0, desk);
   for (const [lx, lz] of [[-0.5, -0.9], [0.5, -0.9], [-0.5, 0.9], [0.5, 0.9]]) add(new THREE.BoxGeometry(0.1, 0.9, 0.1), 0xd69a6a, lx, 0.45, lz, desk);
   const book = add(new THREE.BoxGeometry(0.6, 0.08, 0.8), 0x9fe3c8, 0, 0.99, 0, desk);
   book.rotation.y = 0.3;
-  collide(desk.position.x, desk.position.z, 1.1);
+  const fixedCols = [{ r: 1.2 }, { r: 1.2 }, { r: 1.2 }, { r: 1.1 }].map((c) => ({ x: 0, z: 0, ...c }));
+  fixedCols.forEach((c) => colliders.push(c));
+  roomShellBuild();
   // 가구 (사면 나타나요)
   const F = (id, x, z, build) => {
     const g = new THREE.Group();
@@ -2079,10 +2106,10 @@ const furnitureModels = {};
   F('xtree', -1.8, 2.6, (g) => { add(new THREE.CylinderGeometry(0.28, 0.24, 0.35, 10), 0xff6f6f, 0, 0.18, 0, g); for (const [y, r, h] of [[0.7, 0.6, 0.7], [1.15, 0.45, 0.6], [1.55, 0.3, 0.5]]) add(new THREE.ConeGeometry(r, h, 10), 0x4fae6a, 0, y, 0, g); add(new THREE.OctahedronGeometry(0.13, 0), toon({ color: 0xffd34d, emissive: 0xffc000, emissiveIntensity: 0.8 }), 0, 1.9, 0, g, false); for (let i = 0; i < 10; i++) add(new THREE.SphereGeometry(0.05, 6, 4), lanternMats[i % 5], Math.cos(i * 2.3) * (0.5 - i * 0.035), 0.5 + i * 0.11, Math.sin(i * 2.3) * (0.5 - i * 0.035), g, false); });
   glowLights.push((() => { const l = new THREE.PointLight(0xffc890, 0, 16, 1.2); l.position.set(R.x, 3, R.z); scene.add(l); return l; })());
 
-  interact({ x: bed.position.x + 1.6, z: bed.position.z + 0.8, r: 1.8, label: '침대에서 잠자기 🛏️', action: () => sleepInBed() });
-  interact({ x: ward.position.x - 0.2, z: ward.position.z + 1.4, r: 1.6, label: '옷장 열기 👗', action: () => openWardrobe() });
-  interact({ x: desk.position.x - 1.3, z: desk.position.z, r: 1.6, label: '가구 카탈로그 보기 📖', action: () => openCatalog() });
-  interact({ x: R.x, z: R.z + hd - 0.6, r: 1.6, label: '밖으로 나가기 🚪', action: () => exitHouse() });
+  interact({ get x() { return bed.position.x + 1.6; }, get z() { return bed.position.z + 0.8; }, r: 1.8, label: '침대에서 잠자기 🛏️', action: () => sleepInBed() });
+  interact({ get x() { return ward.position.x - 0.2; }, get z() { return ward.position.z + 1.4; }, r: 1.6, label: '옷장 열기 👗', action: () => openWardrobe() });
+  interact({ get x() { return desk.position.x - 1.3; }, get z() { return desk.position.z; }, r: 1.6, label: '가구 카탈로그 · 집 넓히기 📖', action: () => openCatalog() });
+  interact({ x: R.x, get z() { return R.z + ROOM.d / 2 - 0.6; }, r: 1.6, label: '밖으로 나가기 🚪', action: () => exitHouse() });
   interact({ get x() { return furnitureModels.radio.position.x; }, get z() { return furnitureModels.radio.position.z + 0.9; }, get r() { return furnitureModels.radio.visible && state === 'play' ? 1.3 : 0; }, label: '라디오 켜기 📻', action: () => { for (let i = 0; i < 8; i++) tone(pick([523, 659, 784, 880, 1047]), 0.35, 'triangle', 0.07, 0, i * 0.18); say(player, '♪ 랄랄라~ 🎶', 2); } });
 }
 const furnLayout = (id) => S.layout[id] || [...FURN_DEFAULT[id], 0];
@@ -2109,7 +2136,8 @@ function clampToRoom(p) {
 }
 function houseCamera(p, pos, target) {
   const R = curRoom;
-  pos.set(R.x + (p.x - R.x) * 0.35, 9.5, R.z + 11 + (p.z - R.z) * 0.3);
+  const big = Math.max(0, R.w - 13) * 0.55;
+  pos.set(R.x + (p.x - R.x) * 0.35, 9.5 + big, R.z + 11 + big + (p.z - R.z) * 0.3);
   target.set(R.x + (p.x - R.x) * 0.5, 0.6, R.z + (p.z - R.z) * 0.4);
 }
 function fadeThen(fn, hold = 700) {
@@ -2149,11 +2177,11 @@ function sleepInBed() {
   say(player, '잘 자~ 💤', 1.5);
   fadeThen(() => {
     const wasNight = tod > 1.5;
-    tod = todTarget = wasNight ? 0 : Math.min(2, Math.round(todTarget) + 1);
+    const next = wasNight ? (advanceClockTo(7 * 60), 0) : skipToNextPhase();
+    tod = todTarget;
     S.energy = 100;
     persist();
-    if (wasNight) setTimeout(newDay, 3400);
-    toast(wasNight ? '☀️ 좋은 아침! 새로운 하루가 밝았어요' : todTarget === 2 ? '🌙 푹 자고 일어나니 밤이 되었어요' : '🌇 한숨 자고 나니 노을이 지고 있어요', 3.2);
+    toast(wasNight ? '☀️ 좋은 아침! 새로운 하루가 밝았어요' : next === 2 ? '🌙 푹 자고 일어나니 밤이 되었어요' : '🌇 한숨 자고 나니 노을이 지고 있어요', 3.2);
     say(player, '으~ 개운하다! 🙆', 2.5);
   }, 1400);
 }
@@ -2200,6 +2228,7 @@ function openCatalog() {
           },
         };
       }),
+      { label: '🔨 집 넓히기', right: HOUSE_LEVELS[S.houseLv + 1] ? `${HOUSE_LEVELS[S.houseLv + 1].name} · 🪙${HOUSE_LEVELS[S.houseLv + 1].cost}` : '가장 넓은 집', act: () => { setTimeout(openExpand, 0); return false; } },
       { label: '🛋️ 가구 배치하기', right: '자유롭게 옮기기 (F)', act: () => { setTimeout(startDecorate, 0); return false; } },
       { label: '닫기', act: () => false },
     ],
@@ -2667,6 +2696,8 @@ function catchBug(slot) {
     toast(`📖 새로운 곤충! ${bug.emoji} ${bug.name}을(를) 도감에 기록했어요 (+3🪙)`, 3.5);
   } else sfx.ding();
   persist();
+  addXP(5 + (n === 1 ? 10 : 0), '곤충 채집');
+  daily('bug');
   say(player, `${bug.emoji} ${bug.name} 잡았다! ${n > 1 ? `(${n}마리째)` : ''}`, 2.4);
   setTimeout(() => say(player, '잘 가~ 놓아줄게 👋', 1.6), 2500);
 }
@@ -2780,20 +2811,24 @@ function openMailbox() {
     });
     return;
   }
+  if (S.questDay === S.dayCount) {
+    openMenu({ title: '📮 우체통', desc: () => '오늘 편지는 이미 받았어요.<br>내일 아침 6시에 새 편지가 와요 💌', items: () => [{ label: '알겠어요', act: () => false }] });
+    return;
+  }
   if (!pendingLetter) pendingLetter = makeLetter();
   const L = pendingLetter;
   openMenu({
     title: '📮 편지가 왔어요!',
     desc: () => `<b>${L.npc}</b>: "${L.text}"<br>보답: 🪙 ${L.reward}개`,
     items: () => [
-      { label: '부탁 들어주기 💌', act: () => { S.quest = L; pendingLetter = null; persist(); sfx.ding(); toast(`💌 ${L.npc}의 부탁을 받았어요!`); return false; } },
+      { label: '부탁 들어주기 💌', act: () => { S.quest = L; S.questDay = S.dayCount; pendingLetter = null; persist(); sfx.ding(); toast(`💌 ${L.npc}의 부탁을 받았어요!`); return false; } },
       { label: '다른 편지 보기', act: () => { pendingLetter = makeLetter(); setTimeout(openMailbox, 0); return false; } },
       { label: '다음에 할게요', act: () => false },
     ],
   });
 }
 interact({ x: MAILBOX.x - 0.4, z: MAILBOX.z + 1.6, r: 1.8, label: '우체통 열어 보기 📮', action: () => openMailbox() });
-tickers.push(() => { mailFlag.rotation.z = S.quest ? -Math.PI / 2 : Math.sin(elapsed * 3) * 0.1; });
+tickers.push(() => { mailFlag.rotation.z = S.quest || S.questDay === S.dayCount ? -Math.PI / 2 : Math.sin(elapsed * 3) * 0.1; });
 
 function completeQuest(npc) {
   const q = S.quest;
@@ -2803,6 +2838,7 @@ function completeQuest(npc) {
   S.quest = null;
   persist();
   addFriendship(npc, 12);
+  addXP(20, '부탁 완료');
   sfx.fanfare();
   const p = npc.c.root.position;
   sparkle(p.x, p.y + 2, p.z, new THREE.Color(0xff8fb1), 40);
@@ -2827,9 +2863,16 @@ function updateStatusLines() {
   const bs = Object.entries(S.bag).filter(([, n]) => n > 0).map(([k, n]) => `${info[k] ? info[k].emoji : '📦'}×${n}`).join(' ');
   const od = bikeOverdue();
   const bk = !S.bikeRented ? '' : (od >= 2 ? `🚲 반납이 늦었어요! 하루 🪙${BIKE_LATE_FEE}씩 연체료 (지금까지 🪙${S.bikeFee})` : od === 1 ? '🚲 자전거 대여 중 · ⚠️ 오늘 반납해 주세요!' : '🚲 자전거 대여 중 (내일까지 반납)') + (riding ? ' · 타는 중' : '');
-  const key = qs + '|' + bs + '|' + bk;
+  ensureDaily();
+  const dn = S.daily.tasks.filter((t) => t.prog >= dailyDef(t.id).n).length;
+  const ds = `📋 오늘의 할 일 ${dn}/3${S.daily.tasks.some((t) => t.prog >= dailyDef(t.id).n && !t.claimed) ? ' · 🎁 보상 있음' : ''}`;
+  const rs = S.rentDue === null ? '' : `🏠 월세 🪙${HOUSE_LEVELS[S.houseLv].rent} · ${rentDaysLeft() <= 0 ? '오늘 아침' : rentDaysLeft() === 1 ? '내일 아침' : `${rentDaysLeft()}일 뒤`}`;
+  const key = qs + '|' + bs + '|' + bk + '|' + ds + '|' + rs;
   if (key === lastStatus) return;
   lastStatus = key;
+  $('dailyLine').textContent = ds;
+  $('rentLine').textContent = rs;
+  $('rentLine').classList.toggle('hidden', !rs);
   $('questLine').textContent = qs;
   $('questLine').classList.toggle('hidden', !qs);
   $('bikeLine').textContent = bk;
@@ -3008,6 +3051,7 @@ function buildSnowman() {
   sfx.ok();
   if (S.snowman >= 3) {
     addToken(3);
+    addXP(8, '눈사람');
     sfx.fanfare();
     say(player, '눈사람 완성! 안녕, 눈사람아~ ⛄', 3);
     toast('⛄ 눈사람을 완성했어요! 눈꽃 결정 3개를 받았어요', 3.5);
@@ -3115,9 +3159,10 @@ function newDay() {
   S.dayCount++;
   bikeNewDay();
   S.seasonDay++;
-  if (S.seasonDay > DAYS_PER_SEASON) { setSeason(S.season + 1); return; }
+  if (S.seasonDay > DAYS_PER_SEASON) setSeason(S.season + 1);
+  else toast(`${season().emoji} ${season().name} ${S.seasonDay}일째 아침이에요`, 2.6);
+  for (const h of NEW_DAY_HOOKS) h();
   persist();
-  toast(`${season().emoji} ${season().name} ${S.seasonDay}일째 아침이에요`, 2.6);
 }
 
 function openEventBooth() {
@@ -3276,6 +3321,7 @@ function friendLevelUp(npc, lv) {
   sfx.fanfare();
   const p = npc.c.root.position;
   sparkle(p.x, p.y + 2.2, p.z, new THREE.Color(0xff6f91), 50);
+  addXP(10, '친구');
   let msg = `💗 ${name}와 더 친해졌어요! ${heartsStr(name)}`;
   if (lv === 2) {
     S.favKnown[name] = true;
@@ -3305,6 +3351,7 @@ function friendLevelUp(npc, lv) {
 // 친구다운 한마디
 function friendLine(npc) {
   const info = FRIEND_INFO[npc.name];
+  if (isBirthday(npc.name) && S.bdayGift[npc.name] !== S.dayCount) { say(npc.c, pick(['헤헤, 오늘 내 생일이야! 🎂', '오늘 무슨 날인지 알아? 바로 내 생일! 🎉']), 3.4, npc.name); return; }
   if (!info || Math.random() < 0.4) { npcChat(npc); return; }
   const tier = [0, 0, 1, 2, 2, 3][friendLv(npc.name)];
   say(npc.c, pick(info.lines[tier]), 3.6, npc.name);
@@ -3314,6 +3361,7 @@ function chatWith(npc) {
   if (S.friendDay[npc.name] !== dayKey()) {
     S.friendDay[npc.name] = dayKey();
     addFriendship(npc, 4);
+    daily('talk');
   }
 }
 function giveGiftTo(npc, key) {
@@ -3337,6 +3385,19 @@ function giveGiftTo(npc, key) {
     sfx.ding();
   }
   if (!firstToday) { pts = Math.min(pts, 3); line += ' (오늘 벌써 선물 받았는데…!)'; }
+  if (isBirthday(npc.name) && S.bdayGift[npc.name] !== S.dayCount) {
+    // 🎂 생일 선물은 두 배로 기뻐해요
+    S.bdayGift[npc.name] = S.dayCount;
+    pts = pts * 2 + 10;
+    line = `🎂 생일 선물?! ${bagName(key)}… 정말 고마워! 최고의 생일이야!! 💖`;
+    S.coins += 15;
+    setTimeout(() => toast(`🎂 ${npc.name}가 답례로 🪙15와 생일 케이크 한 조각의 마음을 줬어요`, 3.6), 1500);
+    const p = npc.c.root.position;
+    for (let i = 0; i < 3; i++) setTimeout(() => sparkle(p.x, p.y + 2.5, p.z, new THREE.Color(pick([0xff8fb1, 0xffd166, 0x9fd6ff])), 30), i * 300);
+    sfx.fanfare();
+  }
+  daily('gift');
+  addXP(4, '선물');
   S.coins += 1;
   persist();
   say(npc.c, line, 3.6, npc.name);
@@ -3436,7 +3497,7 @@ function openFriendBook() {
       ...npcs.map((n) => {
         const info = FRIEND_INFO[n.name];
         return {
-          label: `${n.name} <span style="font-size:14px;color:#9a7d6e">${info.intro}${S.favKnown[n.name] ? ` · 좋아함 ${bagName(info.fav)}` : ''}${n.follow ? ' · 🚶 산책 중' : ''}</span>`,
+          label: `${isBirthday(n.name) ? '🎂 ' : ''}${n.name} <span style="font-size:14px;color:#9a7d6e">${info.intro} · 생일 ${bdayText(n.name)}${S.favKnown[n.name] ? ` · 좋아함 ${bagName(info.fav)}` : ''}${n.follow ? ' · 🚶 산책 중' : ''}</span>`,
           right: heartsStr(n.name),
           act: () => true,
         };
@@ -3721,6 +3782,7 @@ function travelTo(I) {
     camera.position.set(a.x + Math.sin(camYaw) * 16, 13, a.z + Math.cos(camYaw) * 16);
     lookAt.set(a.x, 1.4, a.z);
     toast(`🚤 통통통~ ${I.emoji} ${I.name}에 도착했어요!`, 3);
+    if (I.id !== 'main') daily('island');
     if (follower) say(follower.c, '나도 같이 왔지롱~ 🚤', 2.4, follower.name);
   }, 900);
 }
@@ -3887,7 +3949,7 @@ function palm(x, z, s = 1) {
       S.sandStage++;
       sfx.ok();
       sparkle(sx, 1.2, sz, new THREE.Color(0xfff1c8), 18);
-      if (S.sandStage >= 4) { S.coins += 4; sfx.fanfare(); say(player, '짜잔~ 멋진 모래성 완성! 🏰', 3); toast('🏰 모래성 완성! 🪙 4개 (파도가 밤새 쓸어 가서 내일 또 쌓을 수 있어요)', 3.6); }
+      if (S.sandStage >= 4) { S.coins += 4; addXP(8, '모래성'); sfx.fanfare(); say(player, '짜잔~ 멋진 모래성 완성! 🏰', 3); toast('🏰 모래성 완성! 🪙 4개 (파도가 밤새 쓸어 가서 내일 또 쌓을 수 있어요)', 3.6); }
       else say(player, pick(['토닥토닥~', '영차영차!', '조심조심…']), 1.6);
       persist();
     },
@@ -4050,7 +4112,7 @@ function startStargaze() {
       title: '🔭 아직 낮이에요',
       desc: () => '별은 밤에만 보여요. 천문대에서 밤이 될 때까지 기다릴까요?',
       items: () => [
-        { label: '🌙 밤까지 기다리기', act: () => { setTimeout(() => fadeThen(() => { tod = todTarget = 2; toast('🌙 별이 총총한 밤이 되었어요', 2.6); setTimeout(startStargaze, 1200); }, 1000), 0); return false; } },
+        { label: '🌙 밤까지 기다리기', act: () => { setTimeout(() => fadeThen(() => { ensureNight(); tod = todTarget; toast('🌙 별이 총총한 밤이 되었어요', 2.6); setTimeout(startStargaze, 1200); }, 1000), 0); return false; } },
         { label: '그냥 둘러볼래요', act: () => false },
       ],
     });
@@ -4086,7 +4148,7 @@ modes.stargaze = {
       SG.announced = true;
       const c = SG.c;
       if (!S.stars[c.id]) {
-        S.stars[c.id] = 1; S.coins += 3; persist();
+        S.stars[c.id] = 1; S.coins += 3; persist(); addXP(10, '별자리');
         sfx.fanfare();
         toast(`✨ 새 별자리 발견! ${c.emoji} ${c.name} (+3🪙)`, 3.4);
       } else { sfx.chime(); toast(`${c.emoji} ${c.name}… 또 만났네! 반가워`, 2.6); }
@@ -4183,12 +4245,14 @@ function craftMenu(title, needs, foodKey) {
         if (!hasAll(needs)) { sfx.no(); toast(`재료가 모자라요 (${needsText(needs)})`); return true; }
         for (const [k, n] of Object.entries(needs)) bagAdd(k, -n);
         eat(foodKey, true);
+        daily('craft'); addXP(3, '요리');
         return false;
       } },
       { label: `만들어서 가방에 담기 🎒`, dim: !hasAll(needs), act: () => {
         if (!hasAll(needs)) { sfx.no(); toast(`재료가 모자라요 (${needsText(needs)})`); return true; }
         for (const [k, n] of Object.entries(needs)) bagAdd(k, -n);
         bagAdd(foodKey); sfx.ok(); toast(`${f.emoji} ${f.name}을(를) 만들어 가방에 담았어요`);
+        daily('craft'); addXP(3, '요리');
         return true;
       } },
       { label: '그만두기', act: () => false },
@@ -4228,13 +4292,15 @@ function openMarket() {
         dim: !(S.bag[k] > 0),
         act: () => {
           if (!(S.bag[k] > 0)) { sfx.no(); toast(`${EXTRA_BAG[k].name}이(가) 없어요. 배를 타고 다른 섬에 가 보세요 🚤`, 3); return true; }
-          bagAdd(k, -1); S.coins += MARKET_PRICE[k]; persist(); sfx.coin(); return true;
+          bagAdd(k, -1); S.coins += MARKET_PRICE[k]; persist(); sfx.coin(); daily('sell'); addXP(1); return true;
         },
       })),
       { label: '💰 모두 팔기', right: sellable().length ? `🪙 ${total()}` : '팔 것이 없어요', dim: !sellable().length, act: () => {
         const t = total();
         if (!t) { sfx.no(); return true; }
+        const cnt = sellable().reduce((a, k) => a + S.bag[k], 0);
         for (const k of sellable()) bagAdd(k, -S.bag[k]);
+        daily('sell', cnt); addXP(cnt, '판매');
         S.coins += t; persist(); sfx.fanfare();
         toast(`💰 섬 특산물을 모두 팔아서 🪙 ${t}개를 벌었어요!`, 3);
         return true;
@@ -4446,7 +4512,7 @@ function startWish() {
       title: '🌠 아직 낮이에요',
       desc: () => '별똥별은 밤하늘에서만 보여요. 벤치에 앉아 밤까지 기다릴까요?',
       items: () => [
-        { label: '🌙 밤까지 기다리기', act: () => { setTimeout(() => fadeThen(() => { tod = todTarget = 2; toast('🌙 별이 총총한 밤이 되었어요', 2.4); setTimeout(startWish, 1200); }, 1000), 0); return false; } },
+        { label: '🌙 밤까지 기다리기', act: () => { setTimeout(() => fadeThen(() => { ensureNight(); tod = todTarget; toast('🌙 별이 총총한 밤이 되었어요', 2.4); setTimeout(startWish, 1200); }, 1000), 0); return false; } },
         { label: '그냥 둘러볼래요', act: () => false },
       ],
     });
@@ -4478,6 +4544,7 @@ function makeWish() {
     () => { const n = pick(npcs); addFriendship(n, 5); return `💗 ${n.name}와 더 친해지는 소원이 이루어졌어요!`; },
   ];
   const msg = pick(gifts)();
+  addXP(3, '소원');
   persist();
   sfx.wish();
   sparkle(player.root.position.x, player.root.position.y + 2.5, player.root.position.z, new THREE.Color(0xfff1a8), 30);
@@ -5060,6 +5127,7 @@ modes.rocket = {
       camera.position.set(T.x, T.y + 13, T.z + 19.6);
       lookAt.set(T.x, T.y + 1.4, T.z + 3.6);
       sfx.fanfare();
+      if (T.island === SKY) daily('island');
       toast(T.island === SKY ? '☁️ 하늘섬에 도착했어요! 🛠️ 안내판(F)에서 기념품으로 꾸밀 수 있어요' : '🔭 별빛섬에 돌아왔어요!', 4);
       if (follower) { follower.c.root.position.set(T.x + 1.5, groundY(T.x, T.z + 4), T.z + 4); say(follower.c, '우와, 진짜 날았어! 🚀', 2.4, follower.name); }
     }
@@ -5226,6 +5294,567 @@ function kiteGame() {
   g.info = () => `⏱ ${Math.ceil(g.time)}초 · 🌬️ ${Math.floor(g.score)}점 · <kbd>↑</kbd> 당기기 <kbd>↓</kbd> 풀기 · <kbd>Esc</kbd> 그만하기`;
   return g;
 }
+
+// ---------- 47-clock.js ----------
+/* =========================================================
+   🕐 마을 시계 — 시간이 저절로 흘러요 (현실 1초 = 마을 1.5분)
+   아침 6시가 되면 새로운 하루가 시작돼요.
+   ========================================================= */
+const CLOCK_SPEED = 1.5;
+// 시간 → 하늘 단계 (0 낮 · 1 노을 · 2 밤)
+function todFromClock(m) {
+  const h = m / 60;
+  if (h >= 6.5 && h < 16.5) return 0;
+  if (h >= 16.5 && h < 18) return (h - 16.5) / 1.5;
+  if (h >= 18 && h < 19.5) return 1 + (h - 18) / 1.5;
+  if (h >= 4.5 && h < 6.5) return 2 - (h - 4.5);
+  return 2;
+}
+function clockText(m = S.clock) {
+  const h = Math.floor(m / 60) % 24, mm = Math.floor(m % 60);
+  return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${String(mm).padStart(2, '0')}`;
+}
+// 시간을 앞으로 돌려요. 아침 6시를 지날 때마다 새 하루
+function advanceClock(min) {
+  let t = S.clock;
+  const end = t + min;
+  let b = Math.floor((t - 360) / 1440) * 1440 + 360 + 1440;
+  if (b - 1440 > t) b -= 1440;
+  while (b <= end) { newDay(); b += 1440; }
+  S.clock = ((end % 1440) + 1440) % 1440;
+  todTarget = todFromClock(S.clock);
+}
+function advanceClockTo(min) {
+  const diff = (((min - S.clock) % 1440) + 1440) % 1440;
+  advanceClock(diff || 1440);
+}
+function ensureNight() { const h = S.clock / 60; if (!(h >= 19.5 || h < 4.5)) advanceClockTo(20 * 60); }
+// 낮잠 · 침대: 다음 단계(낮→노을→밤→아침)로
+function skipToNextPhase() {
+  const h = S.clock / 60;
+  if (h >= 6.5 && h < 16.5) { advanceClockTo(17 * 60 + 15); return 1; }
+  if (h >= 16.5 && h < 19.5) { advanceClockTo(20 * 60); return 2; }
+  advanceClockTo(7 * 60);
+  return 0;
+}
+let clockSaveT = 0;
+const CLOCK_PAUSED = new Set(['title', 'menu', 'busy', 'savecode', 'bigmap', 'loading']);
+tickers.push((dt) => {
+  if (CLOCK_PAUSED.has(state) || helpOpen) return;
+  advanceClock(dt * CLOCK_SPEED);
+  clockSaveT -= dt;
+  if (clockSaveT <= 0) { clockSaveT = 5; save.set('clock', S.clock); }
+});
+
+// ---------- 48-level.js ----------
+/* =========================================================
+   ⭐ 레벨 — 활동할 때마다 경험치(XP)가 쌓여요
+   ========================================================= */
+const xpNeed = (lv) => 30 + lv * 20; // 1→2: 50, 2→3: 70 …
+const LEVEL_UNLOCKS = {
+  2: '🍅 텃밭 토마토 씨앗',
+  3: '🔨 집 넓히기 1단계',
+  4: '🌽 텃밭 옥수수 씨앗',
+  5: '🧑‍🍳 아르바이트 하루 3번',
+  6: '🔨 집 넓히기 2단계 · 🎃 텃밭 호박 씨앗',
+};
+let xpPopT = 0;
+function addXP(n, why = '') {
+  if (!n) return;
+  S.xp += n;
+  let up = false;
+  while (S.xp >= xpNeed(S.level)) {
+    S.xp -= xpNeed(S.level);
+    S.level++;
+    up = true;
+    const lv = S.level, reward = lv * 10;
+    S.coins += reward;
+    setTimeout(() => {
+      sfx.fanfare();
+      const p = player.root.position;
+      sparkle(p.x, p.y + 2.5, p.z, new THREE.Color(0xffd34d), 50);
+      toast(`⭐ 레벨 ${lv}! 축하 보상 🪙 ${reward}${LEVEL_UNLOCKS[lv] ? ` · 새로 열림: ${LEVEL_UNLOCKS[lv]}` : ''}`, 4.5);
+      say(player, `레벨 ${lv}! 야호~ ⭐`, 2.4);
+    }, 600);
+  }
+  persist();
+  const el = $('xpGain');
+  el.textContent = `+${n} XP${why ? ' · ' + why : ''}`;
+  el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+}
+function updateLevelHUD() {
+  $('lvText').textContent = `Lv.${S.level}`;
+  $('xpBar').style.width = `${Math.min(100, (S.xp / xpNeed(S.level)) * 100)}%`;
+}
+tickers.push(() => updateLevelHUD());
+
+// ---------- 49-daily.js ----------
+/* =========================================================
+   📋 오늘의 할 일 게시판 — 매일 아침 새 할 일 3개
+   ========================================================= */
+const DAILY_POOL = [
+  { id: 'fish2', ev: 'fish', n: 2, text: '🎣 물고기 2마리 낚기' },
+  { id: 'bug1', ev: 'bug', n: 1, text: '🐞 곤충 1마리 잡기' },
+  { id: 'talk3', ev: 'talk', n: 3, text: '💬 친구 3명과 이야기하기' },
+  { id: 'eat2', ev: 'eat', n: 2, text: '🍢 음식 2번 사 먹기' },
+  { id: 'mini1', ev: 'mini', n: 1, text: '🎮 미니게임 1판 하기' },
+  { id: 'sell3', ev: 'sell', n: 3, text: '🧺 섬 특산물 3개 팔기' },
+  { id: 'water1', ev: 'water', n: 1, text: '🌱 텃밭에 물 주기' },
+  { id: 'job1', ev: 'job', n: 1, text: '🧑‍🍳 아르바이트 1번 하기' },
+  { id: 'gift1', ev: 'gift', n: 1, text: '🎁 친구에게 선물하기' },
+  { id: 'island1', ev: 'island', n: 1, text: '🚤 다른 섬에 다녀오기' },
+  { id: 'craft1', ev: 'craft', n: 1, text: '🍳 재료로 직접 만들기 1번' },
+];
+const DAILY_REWARD = { coins: 12, xp: 15 }, DAILY_BONUS = { coins: 20, xp: 25 };
+function ensureDaily() {
+  if (S.daily && S.daily.day === S.dayCount) return;
+  const pool = [...DAILY_POOL].sort(() => Math.random() - 0.5).slice(0, 3);
+  S.daily = { day: S.dayCount, tasks: pool.map((t) => ({ id: t.id, prog: 0, claimed: false })), bonus: false };
+  persist();
+}
+const dailyDef = (id) => DAILY_POOL.find((d) => d.id === id);
+function daily(ev, n = 1) {
+  ensureDaily();
+  let changed = false;
+  for (const t of S.daily.tasks) {
+    const d = dailyDef(t.id);
+    if (d.ev !== ev || t.prog >= d.n) continue;
+    t.prog = Math.min(d.n, t.prog + n);
+    changed = true;
+    if (t.prog >= d.n) setTimeout(() => { sfx.ding(); toast(`📋 할 일 완료! ${d.text} — 게시판에서 보상을 받아요`, 3.2); }, 400);
+  }
+  if (changed) persist();
+}
+NEW_DAY_HOOKS.push(() => { ensureDaily(); setTimeout(() => toast('📋 오늘의 할 일이 새로 올라왔어요 (광장 게시판)', 3), 3400); });
+// 광장 게시판
+{
+  const bx = 2.8, bz = 8.8;
+  const g = new THREE.Group(); g.position.set(bx, 0, bz); g.rotation.y = 0.2; scene.add(g);
+  for (const s of [-1, 1]) add(new THREE.CylinderGeometry(0.08, 0.08, 2.2, 6), 0xb07a56, s * 0.9, 1.1, 0, g);
+  add(new THREE.BoxGeometry(2.2, 1.3, 0.12), 0xe8c49a, 0, 1.6, 0, g);
+  add(new THREE.BoxGeometry(2.3, 0.15, 0.2), 0xff8fb1, 0, 2.3, 0, g);
+  for (let i = 0; i < 3; i++) add(new THREE.BoxGeometry(0.5, 0.6, 0.02), pick([0xffffff, 0xfff6c8, 0xffe0ea]), -0.65 + i * 0.65, 1.6, 0.07, g, false).rotation.z = rr(-0.1, 0.1);
+  collide(bx, bz, 1.1);
+  AVOID.push([bx, bz, 3]);
+  interact({ x: bx, z: bz + 1.8, r: 1.9, label: '📋 오늘의 할 일 게시판', action: () => openDaily() });
+  ZONE_LABELS.push(['📋 할 일 게시판', bx, 3.2, bz]);
+  MAP_MARKS.push(['📋', bx, bz]);
+}
+function openDaily() {
+  ensureDaily();
+  sfx.ok();
+  openMenu({
+    title: `📋 오늘의 할 일 (${S.season >= 0 ? season().name : ''} ${S.seasonDay}일째)`,
+    desc: () => `하나 끝낼 때마다 🪙${DAILY_REWARD.coins} · ⭐${DAILY_REWARD.xp}XP, 셋 다 끝내면 보너스 🪙${DAILY_BONUS.coins} · ⭐${DAILY_BONUS.xp}XP!<br>내일 아침 6시에 새 할 일이 올라와요.`,
+    items: () => [
+      ...S.daily.tasks.map((t) => {
+        const d = dailyDef(t.id), done = t.prog >= d.n;
+        return {
+          label: `${t.claimed ? '✅' : done ? '🎁' : '⬜'} ${d.text}`,
+          right: t.claimed ? '받았어요' : done ? '보상 받기!' : `${t.prog}/${d.n}`,
+          dim: !done || t.claimed,
+          act: () => {
+            if (!done || t.claimed) return true;
+            t.claimed = true; S.coins += DAILY_REWARD.coins; persist(); sfx.coin();
+            addXP(DAILY_REWARD.xp, '오늘의 할 일');
+            return true;
+          },
+        };
+      }),
+      {
+        label: S.daily.bonus ? '✅ 보너스 받았어요' : '🌟 모두 끝내기 보너스', right: S.daily.bonus ? '' : `${S.daily.tasks.filter((t) => t.claimed).length}/3`,
+        dim: S.daily.bonus || !S.daily.tasks.every((t) => t.claimed),
+        act: () => {
+          if (S.daily.bonus || !S.daily.tasks.every((t) => t.claimed)) return true;
+          S.daily.bonus = true; S.coins += DAILY_BONUS.coins; persist(); sfx.fanfare();
+          addXP(DAILY_BONUS.xp, '모두 완료!');
+          toast(`🌟 오늘 할 일을 모두 끝냈어요! 🪙${DAILY_BONUS.coins}`, 3);
+          return true;
+        },
+      },
+      { label: '닫기', act: () => false },
+    ],
+  });
+}
+
+// ---------- 50-job.js ----------
+/* =========================================================
+   🧑‍🍳 아르바이트 — 먹자골목 포장마차에서 주문 받기
+   손님이 말한 음식의 숫자 키(1~4)를 눌러 내주세요!
+   ========================================================= */
+const JOB_FOODS = ['tteok', 'fish', 'cotton', 'bingsu'];
+const jobLimit = () => (S.level >= 5 ? 3 : 2);
+const jobsLeft = () => jobLimit() - (S.jobDay === S.dayCount ? S.jobN : 0);
+{
+  const jx = 12, jz = -5.8;
+  const g = new THREE.Group(); g.position.set(jx, 0, jz); scene.add(g);
+  add(new THREE.CylinderGeometry(0.1, 0.1, 2.2, 6), 0xb07a56, 0, 1.1, 0, g);
+  const sign = signPlane('🧑‍🍳 아르바이트 구함', 3, { w: 640, h: 160, font: 70, border: '#ff8f8f' });
+  sign.position.set(0, 2.4, 0.06); g.add(sign);
+  collide(jx, jz, 0.4);
+  AVOID.push([jx, jz, 2]);
+  MAP_MARKS.push(['🧑‍🍳', jx, jz - 1]);
+  interact({
+    x: jx, z: jz + 1.7, r: 1.9,
+    get label() { return `🧑‍🍳 포장마차 아르바이트 (오늘 ${Math.max(0, jobsLeft())}번 남음)`; },
+    action: () => askJob(),
+  });
+}
+function askJob() {
+  sfx.ok();
+  openMenu({
+    title: '🧑‍🍳 포장마차 아르바이트',
+    desc: () => `손님이 원하는 음식 번호를 눌러 내주세요!<br><kbd>1</kbd> 🌶️ 떡볶이 · <kbd>2</kbd> 🐟 붕어빵 · <kbd>3</kbd> 🍭 솜사탕 · <kbd>4</kbd> 🍧 빙수<br>손님 한 명에 🪙3 + 빨리 내주면 팁! (하루 ${jobLimit()}번까지 · 오늘 ${Math.max(0, jobsLeft())}번 남음)`,
+    items: () => [
+      { label: '일 시작하기!', dim: jobsLeft() <= 0, act: () => {
+        if (jobsLeft() <= 0) { sfx.no(); toast('오늘 아르바이트는 끝났어요. 내일 또 와 주세요!'); return true; }
+        if (S.jobDay !== S.dayCount) { S.jobDay = S.dayCount; S.jobN = 0; }
+        S.jobN++; persist();
+        setTimeout(() => startMini(jobGame()), 0);
+        return false;
+      } },
+      { label: '다음에 할게요', act: () => false },
+    ],
+  });
+}
+function jobGame() {
+  const W = 640, H = 400;
+  const faces = ['🐱', '🐻', '🐰', '🐶', '🦊', '🐼', '🐹'];
+  const g = { noGeneric: true, title: '🧑‍🍳 포장마차 아르바이트', time: 40, queue: [], served: 0, tips: 0, miss: 0, result: null, msg: '어서 오세요~!', spawn: 0.5, shake: 0 };
+  const newCustomer = () => ({ face: pick(faces), want: pick(JOB_FOODS), patience: rr(7, 10), max: 0, x: W + 60 });
+  g.finish = () => {
+    const pay = g.served * 3 + g.tips;
+    g.result = {
+      title: `손님 ${g.served}명! ${g.served >= 12 ? '최고의 알바생 🏆' : g.served >= 7 ? '수고했어요~' : '내일은 더 잘할 거예요'}`,
+      text: `일당 🪙${g.served * 3} + 팁 🪙${g.tips} = 🪙${pay}`,
+      give: () => { S.coins += pay; persist(); sfx.coin(); addXP(5 + g.served * 2, '아르바이트'); daily('job'); toast(`🧑‍🍳 아르바이트 끝! 🪙${pay}를 받았어요`, 3); },
+    };
+  };
+  g.key = (code) => {
+    const m = code.match(/^(Digit|Numpad)([1-4])$/);
+    if (!m) return;
+    const c = g.queue[0];
+    if (!c || c.x > 140) return;
+    const food = JOB_FOODS[+m[2] - 1];
+    if (food === c.want) {
+      g.served++;
+      const tip = c.patience / c.max > 0.6 ? 2 : c.patience / c.max > 0.3 ? 1 : 0;
+      g.tips += tip;
+      g.msg = tip ? `${FOODS[food].emoji} 맛있게 드세요! (팁 +${tip})` : `${FOODS[food].emoji} 맛있게 드세요!`;
+      g.queue.shift();
+      sfx.ding();
+    } else {
+      c.patience -= 2; g.miss++; g.shake = 0.3;
+      g.msg = `앗, ${FOODS[food].name}이(가) 아니에요!`;
+      sfx.no();
+    }
+  };
+  g.update = (dt) => {
+    g.time -= dt;
+    if (g.time <= 0) { g.time = 0; g.finish(); return; }
+    g.shake -= dt;
+    g.spawn -= dt;
+    if (g.spawn <= 0 && g.queue.length < 4) { const c = newCustomer(); c.max = c.patience; g.queue.push(c); g.spawn = rr(1.6, 3.2) * (0.7 + (g.time / 40) * 0.3); }
+    g.queue.forEach((c, i) => {
+      const tx = 90 + i * 130;
+      c.x += (tx - c.x) * Math.min(1, dt * 4);
+      if (i === 0 && c.x < 140) c.patience -= dt;
+    });
+    if (g.queue[0] && g.queue[0].patience <= 0) { g.queue.shift(); g.msg = '손님이 화나서 가 버렸어요… 😿'; sfx.no(); }
+  };
+  g.draw = (c) => {
+    c.fillStyle = '#ffe9c9'; c.fillRect(0, 0, W, H);
+    for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#ffffff' : '#ff8f8f'; c.fillRect(i * 80, 0, 80, 44); }
+    c.fillStyle = '#d69a6a'; c.fillRect(0, 250, W, 30); c.fillStyle = '#c08f63'; c.fillRect(0, 280, W, 120);
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    g.queue.forEach((cu, i) => {
+      const sx = cu.x + (i === 0 && g.shake > 0 ? Math.sin(g.shake * 60) * 5 : 0);
+      c.font = '62px sans-serif'; c.fillText(cu.face, sx, 200);
+      // 말풍선
+      c.fillStyle = '#ffffff'; c.beginPath(); c.roundRect(sx - 34, 92, 68, 58, 16); c.fill();
+      c.beginPath(); c.moveTo(sx - 8, 150); c.lineTo(sx + 8, 150); c.lineTo(sx, 162); c.fill();
+      c.font = '34px sans-serif'; c.fillText(FOODS[cu.want].emoji, sx, 121);
+      // 인내심
+      const k = Math.max(0, cu.patience / cu.max);
+      c.fillStyle = '#eeeeee'; c.fillRect(sx - 34, 240, 68, 8);
+      c.fillStyle = k > 0.5 ? '#7fd36a' : k > 0.25 ? '#ffd166' : '#ff6f6f'; c.fillRect(sx - 34, 240, 68 * k, 8);
+    });
+    JOB_FOODS.forEach((f, i) => {
+      const x = 110 + i * 140;
+      c.fillStyle = '#fff8ec'; c.beginPath(); c.roundRect(x - 52, 300, 104, 74, 16); c.fill();
+      c.font = '34px sans-serif'; c.fillText(FOODS[f].emoji, x, 328);
+      c.fillStyle = '#6a4c3f'; c.font = '17px Jua, sans-serif'; c.fillText(`${i + 1}  ${FOODS[f].name}`, x, 360);
+    });
+    c.fillStyle = '#6a4c3f'; c.font = '22px Jua, sans-serif'; c.fillText(g.msg, W / 2, 68);
+  };
+  g.info = () => `⏱ ${Math.ceil(g.time)}초 · 손님 ${g.served}명 · 팁 🪙${g.tips} · <kbd>1</kbd>~<kbd>4</kbd> 음식 내주기 · <kbd>Esc</kbd> 그만하기`;
+  return g;
+}
+
+// ---------- 51-garden.js ----------
+/* =========================================================
+   🌱 내 텃밭 — 내 집 옆. 씨앗을 심고 매일 물을 주면 하루에 한 단계씩 자라요
+   ========================================================= */
+const CROPS = [
+  { id: 'carrot', name: '당근', emoji: '🥕', seed: 6, days: 2, sell: 20, lv: 1, color: 0xff9f43 },
+  { id: 'tomato', name: '토마토', emoji: '🍅', seed: 10, days: 3, sell: 34, lv: 2, color: 0xff4d4d },
+  { id: 'corn', name: '옥수수', emoji: '🌽', seed: 14, days: 4, sell: 50, lv: 4, color: 0xffd23f },
+  { id: 'gourd', name: '호박', emoji: '🎃', seed: 20, days: 5, sell: 78, lv: 6, color: 0xff8f2c },
+];
+for (const c of CROPS) { EXTRA_BAG[c.id] = { name: c.name, emoji: c.emoji }; MARKET_PRICE[c.id] = c.sell; }
+const GARDEN = { x: -21.5, z: 25.5 };
+AVOID.push([GARDEN.x, GARDEN.z, 5]);
+const plots = [];
+{
+  // 울타리와 팻말
+  for (let i = 0; i <= 6; i++) for (const s of [-1, 1]) add(new THREE.BoxGeometry(0.14, 0.7, 0.14), 0xfff1df, GARDEN.x - 3.4 + i * 1.13, 0.35, GARDEN.z + s * 2.6, scene, false);
+  for (const s of [-1, 1]) add(new THREE.BoxGeometry(6.9, 0.08, 0.06), 0xfff1df, GARDEN.x, 0.55, GARDEN.z + s * 2.6, scene, false);
+  const sign = signPlane('🌱 내 텃밭', 2, { font: 88, border: '#7fcf6b' });
+  add(new THREE.CylinderGeometry(0.08, 0.08, 1.8, 6), 0xb07a56, GARDEN.x + 4.2, 0.9, GARDEN.z + 2.6);
+  sign.position.set(GARDEN.x + 4.2, 2, GARDEN.z + 2.66); scene.add(sign);
+  collide(GARDEN.x + 4.2, GARDEN.z + 2.6, 0.3);
+  const can = add(new THREE.CylinderGeometry(0.25, 0.3, 0.45, 12), 0x8fd3ff, GARDEN.x + 4.1, 0.22, GARDEN.z + 1.6);
+  MAP_MARKS.push(['🌱', GARDEN.x, GARDEN.z]);
+  ZONE_LABELS.push(['🌱 내 텃밭', GARDEN.x, 3, GARDEN.z]);
+  for (let r = 0; r < 2; r++) for (let c = 0; c < 3; c++) {
+    const i = r * 3 + c;
+    const x = GARDEN.x - 2.2 + c * 2.2, z = GARDEN.z - 1.1 + r * 2.2;
+    const soil = add(new THREE.BoxGeometry(1.7, 0.22, 1.7), toon({ color: 0xa0714c }), x, 0.11, z, scene, false);
+    const sprout = new THREE.Group(); sprout.position.set(x, 0.22, z); scene.add(sprout);
+    for (let k = 0; k < 3; k++) { const l = add(new THREE.SphereGeometry(0.2, 8, 6), 0x6cbf5d, Math.cos(k * 2.1) * 0.15, 0.25, Math.sin(k * 2.1) * 0.15, sprout); l.scale.set(0.6, 1.4, 0.6); }
+    const fruit = new THREE.Group(); fruit.position.set(x, 0.22, z); scene.add(fruit);
+    const fm = toon({ color: 0xffffff });
+    for (let k = 0; k < 3; k++) add(new THREE.SphereGeometry(0.2, 10, 8), fm, Math.cos(k * 2.1 + 0.5) * 0.35, 0.65, Math.sin(k * 2.1 + 0.5) * 0.35, fruit, false);
+    plots.push({ i, x, z, soil, sprout, fruit, fm });
+    interact({ x, z: z + 1.25, get r() { return 1.05; }, get label() { return plotLabel(i); }, action: () => plotAction(i) });
+  }
+}
+const cropOf = (p) => p && CROPS.find((c) => c.id === p.crop);
+function plotLabel(i) {
+  const p = S.garden[i];
+  if (!p) return '🌱 빈 밭 — 씨앗 심기';
+  const c = cropOf(p);
+  if (p.stage >= c.days) return `${c.emoji} ${c.name} 수확하기!`;
+  if (p.water === S.dayCount) return `${c.emoji} ${c.name} 자라는 중 (오늘 물 줬어요 · ${c.days - p.stage}일 남음)`;
+  return `💧 ${c.emoji} ${c.name}에 물 주기 (${c.days - p.stage}일 남음)`;
+}
+function plotAction(i) {
+  const p = S.garden[i];
+  if (!p) return openSeedMenu(i);
+  const c = cropOf(p);
+  if (p.stage >= c.days) {
+    const n = Math.random() < 0.3 ? 2 : 1;
+    bagAdd(c.id, n);
+    S.garden[i] = null;
+    persist();
+    sfx.fanfare();
+    sparkle(plots[i].x, 1, plots[i].z, new THREE.Color(c.color), 24);
+    say(player, `${c.emoji} ${c.name} ${n}개 수확! 직접 키우니까 뿌듯해~`, 2.6);
+    addXP(8 + c.days * 2, '수확');
+    daily('harvest');
+    return;
+  }
+  if (p.water === S.dayCount) { say(player, '오늘은 벌써 물을 줬어. 내일 또 주자 💧', 2); return; }
+  p.water = S.dayCount;
+  persist();
+  sfx.splash();
+  sparkle(plots[i].x, 0.6, plots[i].z, new THREE.Color(0x9fd6ff), 16);
+  say(player, '쪼르르~ 쑥쑥 자라라! 💧', 1.8);
+  addXP(2, '물 주기');
+  daily('water');
+}
+function openSeedMenu(i) {
+  sfx.ok();
+  openMenu({
+    title: '🌱 어떤 씨앗을 심을까요?',
+    desc: () => `매일 물을 주면 하루에 한 단계씩 자라요. 다 자라면 수확해서 포근섬 특산물 가게에 팔 수 있어요.<br>내 코인 🪙 ${S.coins} · 레벨 ${S.level}`,
+    items: () => [
+      ...CROPS.map((c) => ({
+        label: `${c.emoji} ${c.name} 씨앗`,
+        right: S.level < c.lv ? `🔒 Lv.${c.lv}` : `🪙${c.seed} · ${c.days}일 · 판매 🪙${c.sell}`,
+        dim: S.level < c.lv || S.coins < c.seed,
+        act: () => {
+          if (S.level < c.lv) { sfx.no(); toast(`레벨 ${c.lv}이 되면 심을 수 있어요 ⭐`); return true; }
+          if (S.coins < c.seed) { sfx.no(); toast('코인이 모자라요 🪙'); return true; }
+          S.coins -= c.seed;
+          S.garden[i] = { crop: c.id, stage: 0, water: S.dayCount };
+          persist();
+          sfx.ok();
+          toast(`${c.emoji} ${c.name} 씨앗을 심고 물도 줬어요! 내일부터 매일 물을 주세요 💧`, 3.4);
+          daily('water');
+          return false;
+        },
+      })),
+      { label: '그만두기', act: () => false },
+    ],
+  });
+}
+// 아침마다: 어제 물을 받은 작물은 한 단계 자라요
+NEW_DAY_HOOKS.push(() => {
+  let grew = 0, thirsty = 0;
+  for (const p of S.garden) {
+    if (!p) continue;
+    const c = cropOf(p);
+    if (p.stage >= c.days) continue;
+    if (p.water === S.dayCount - 1) { p.stage++; grew++; } else thirsty++;
+  }
+  if (grew || thirsty) setTimeout(() => toast(grew ? `🌱 텃밭 작물이 쑥 자랐어요!${thirsty ? ' (물을 못 받은 작물은 그대로예요)' : ''}` : '🌱 텃밭 작물이 목말라해요. 물을 주세요 💧', 3.2), 6000);
+});
+tickers.push(() => {
+  plots.forEach((pl, i) => {
+    const p = S.garden[i];
+    const c = cropOf(p);
+    pl.soil.material.color.setHex(p && p.water === S.dayCount ? 0x7a5236 : 0xa0714c);
+    pl.sprout.visible = !!p;
+    pl.fruit.visible = !!p && p.stage >= c.days;
+    if (p) {
+      const k = Math.min(1, (p.stage + 1) / (c.days + 1));
+      pl.sprout.scale.set(0.5 + k, 0.4 + k * 1.2, 0.5 + k);
+      if (pl.fruit.visible) { pl.fm.color.setHex(c.color); pl.fruit.position.y = 0.22 + Math.abs(Math.sin(elapsed * 2 + i)) * 0.05; }
+    }
+  });
+});
+
+// ---------- 52-home.js ----------
+/* =========================================================
+   🏠 월세 & 🔨 집 넓히기
+   5일마다 아침에 월세가 나가요. 집이 넓을수록 월세도 올라요.
+   ========================================================= */
+const HOUSE_LEVELS = [
+  null,
+  { w: 13, d: 9, rent: 25, name: '아담한 방' },
+  { w: 17, d: 11, rent: 45, name: '넓은 방', cost: 250, lv: 3 },
+  { w: 21, d: 13, rent: 70, name: '커다란 방', cost: 600, lv: 6 },
+];
+const RENT_EVERY = 5;
+function applyHouseLevel() {
+  const H = HOUSE_LEVELS[S.houseLv] || HOUSE_LEVELS[1];
+  ROOM.w = H.w; ROOM.d = H.d;
+  roomShellBuild();
+  refreshFurniture();
+}
+const rentDaysLeft = () => S.rentDue - S.dayCount;
+NEW_DAY_HOOKS.push(() => {
+  if (S.rentDue === null) S.rentDue = S.dayCount + RENT_EVERY;
+  if (S.dayCount < S.rentDue) {
+    if (rentDaysLeft() === 1) setTimeout(() => toast(`🏠 내일 아침에 월세 🪙${HOUSE_LEVELS[S.houseLv].rent}이(가) 나가요`, 3.4), 7500);
+    return;
+  }
+  const rent = HOUSE_LEVELS[S.houseLv].rent;
+  S.coins -= rent;
+  S.rentDue = S.dayCount + RENT_EVERY;
+  persist();
+  setTimeout(() => {
+    sfx.bell();
+    toast(`🏠 월세 🪙${rent}이(가) 나갔어요. 다음 월세는 ${RENT_EVERY}일 뒤예요${S.coins < 0 ? ' (코인이 모자라 마이너스가 됐어요!)' : ''}`, 4.5);
+  }, 9000);
+});
+function openExpand() {
+  const next = HOUSE_LEVELS[S.houseLv + 1];
+  sfx.ok();
+  if (!next) { toast('🏠 이미 가장 넓은 집이에요!'); return; }
+  openMenu({
+    title: '🔨 집 넓히기',
+    desc: () => `지금: ${HOUSE_LEVELS[S.houseLv].name} (월세 🪙${HOUSE_LEVELS[S.houseLv].rent})<br>다음: <b>${next.name}</b> — 공사비 🪙${next.cost} · 월세 🪙${next.rent} · 레벨 ${next.lv} 필요<br>내 코인 🪙 ${S.coins} · 레벨 ${S.level}`,
+    items: () => [
+      { label: `🔨 ${next.name}으로 넓히기`, right: S.level < next.lv ? `🔒 Lv.${next.lv}` : `🪙${next.cost}`, dim: S.level < next.lv || S.coins < next.cost, act: () => {
+        if (S.level < next.lv) { sfx.no(); toast(`레벨 ${next.lv}이 되면 넓힐 수 있어요 ⭐`); return true; }
+        if (S.coins < next.cost) { sfx.no(); toast(`코인이 ${next.cost - S.coins}개 더 필요해요 🪙`); return true; }
+        S.coins -= next.cost;
+        S.houseLv++;
+        persist();
+        setTimeout(() => fadeThen(() => {
+          applyHouseLevel();
+          if (insideHouse && curRoom === ROOM) { player.root.position.set(ROOM.x, 0, ROOM.z + ROOM.d / 2 - 1.2); houseCamera(player.root.position, camera.position, lookAt); }
+          sfx.fanfare();
+          addXP(30, '집 넓히기');
+          toast(`🏠 뚝딱뚝딱~ ${next.name}이 되었어요! 가구를 넓게 배치해 보세요 (F)`, 4);
+        }, 1200), 0);
+        return false;
+      } },
+      { label: '다음에 할게요', act: () => false },
+    ],
+  });
+}
+
+// ---------- 53-birthday.js ----------
+/* =========================================================
+   🎂 친구 생일 — 생일날엔 고깔모자를 쓰고 있어요
+   생일에 선물하면 호감도가 두 배로 올라요
+   ========================================================= */
+const FRIEND_BDAY = { 모모: [0, 2], 콩이: [1, 3], 보리: [2, 1], 솜이: [3, 2], 두부: [1, 1] }; // [계절, 날]
+const bdayText = (name) => { const [s, d] = FRIEND_BDAY[name]; return `${SEASONS[s].emoji} ${SEASONS[s].name} ${d}일`; };
+const isBirthday = (name) => { const b = FRIEND_BDAY[name]; return !!b && b[0] === S.season && b[1] === S.seasonDay; };
+const partyHats = {};
+function refreshBirthdays() {
+  for (const n of npcs) {
+    if (!partyHats[n.name]) {
+      const g = new THREE.Group();
+      const hat = add(new THREE.ConeGeometry(0.32, 0.7, 14), toon({ map: stripeTexture('#ff8fb1', '#ffd166', 8) }), 0, 0.3, 0, g);
+      add(new THREE.SphereGeometry(0.1, 8, 6), 0xffffff, 0, 0.68, 0, g, false);
+      g.rotation.z = 0.15;
+      n.c.hatSlot.add(g);
+      partyHats[n.name] = g;
+    }
+    partyHats[n.name].visible = isBirthday(n.name);
+  }
+}
+NEW_DAY_HOOKS.push(() => {
+  refreshBirthdays();
+  const b = npcs.find((n) => isBirthday(n.name));
+  if (b) setTimeout(() => { sfx.fanfare(); toast(`🎂 오늘은 ${b.name}의 생일이에요! 선물을 주면 아주 기뻐할 거예요`, 4.5); }, 4800);
+});
+
+// ---------- 54-photo.js ----------
+/* =========================================================
+   📸 사진 모드 (P) — 화면 장식을 숨기고 카메라를 자유롭게 움직여 찍어요
+   ========================================================= */
+const PH = { yaw: 0, pitch: 0.55, dist: 14, flash: 0 };
+function startPhoto() {
+  state = 'photo';
+  PH.yaw = camYaw; PH.pitch = 0.55; PH.dist = 14;
+  document.body.classList.add('photo-mode');
+  $('photoHint').classList.remove('hidden');
+  sfx.select();
+}
+function endPhoto() {
+  state = 'play';
+  document.body.classList.remove('photo-mode');
+  $('photoHint').classList.add('hidden');
+}
+function takePhoto() {
+  renderer.render(scene, camera);
+  const url = renderer.domElement.toDataURL('image/png');
+  const d = new Date(), pad = (n) => String(n).padStart(2, '0');
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `포근마을-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.png`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  tone(1800, 0.05, 'square', 0.08); noise(0.12, 4000, 0.15, 'highpass');
+  $('photoFlash').classList.remove('go'); void $('photoFlash').offsetWidth; $('photoFlash').classList.add('go');
+}
+modes.photo = {
+  key(code) {
+    if (code === 'Escape' || code === 'KeyP') endPhoto();
+    else if (code === 'Space' || code === 'Enter') takePhoto();
+  },
+  update(dt) {
+    if (down('ArrowLeft', 'KeyA')) PH.yaw -= dt * 1.6;
+    if (down('ArrowRight', 'KeyD')) PH.yaw += dt * 1.6;
+    if (down('ArrowUp', 'KeyW')) PH.pitch = clamp(PH.pitch + dt * 0.9, 0.05, 1.4);
+    if (down('ArrowDown', 'KeyS')) PH.pitch = clamp(PH.pitch - dt * 0.9, 0.05, 1.4);
+    if (down('KeyQ', 'Minus', 'NumpadSubtract')) PH.dist = clamp(PH.dist + dt * 12, 3, 40);
+    if (down('KeyR', 'Equal', 'NumpadAdd')) PH.dist = clamp(PH.dist - dt * 12, 3, 40);
+    animateCreature(player, false, 0, dt, elapsed);
+  },
+  camera(p) {
+    const c = Math.cos(PH.pitch) * PH.dist, h = Math.sin(PH.pitch) * PH.dist;
+    return { pos: tmpCamPos.set(p.x + Math.sin(PH.yaw) * c, p.y + 1.2 + h, p.z + Math.cos(PH.yaw) * c), target: tmpCamTarget.set(p.x, p.y + 1.2, p.z), fov: 45, speed: 8, lookSpeed: 10 };
+  },
+};
+playKeyHooks.push((code) => { if (code === 'KeyP') { startPhoto(); return true; } return false; });
 
 // ---------- 80-nature.js ----------
 /* =========================================================
@@ -5438,12 +6067,20 @@ const S = {
   wishDay: save.get('wishDay', ''), wishN: save.get('wishN', 0), // 별똥별 소원
   skyItems: save.get('skyItems', []),   // 하늘섬 기념품
   skyLayout: save.get('skyLayout', {}), // 하늘섬 기념품 자리 { id: [x, z, 회전, 보관중] }
+  clock: save.get('clock', 8 * 60),     // 마을 시계 (자정부터 지난 분)
+  xp: save.get('xp', 0), level: save.get('level', 1),
+  daily: save.get('daily', null),       // 오늘의 할 일
+  questDay: save.get('questDay', -1),   // 우체통 편지를 받은 날
+  jobDay: save.get('jobDay', -1), jobN: save.get('jobN', 0),
+  garden: save.get('garden', [null, null, null, null, null, null]),
+  houseLv: save.get('houseLv', 1), rentDue: save.get('rentDue', null),
+  bdayGift: save.get('bdayGift', {}),   // 생일 선물을 준 날
 };
 if (S.bikeRented && S.bikeRentDay === null) S.bikeRentDay = S.dayCount;
 function persist() {
   save.set('coins', S.coins); save.set('full', Math.round(S.full)); save.set('energy', Math.round(S.energy));
   save.set('owned', S.owned); save.set('equipped', S.equipped);
-  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented', 'layout', 'season', 'seasonDay', 'tokens', 'snowman', 'friends', 'friendDay', 'giftDay', 'favKnown', 'stars', 'sandStage', 'sandDay', 'visited', 'dayCount', 'bikeRentDay', 'bikeFee', 'wishDay', 'wishN', 'skyItems', 'skyLayout']) save.set(k, S[k]);
+  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented', 'layout', 'season', 'seasonDay', 'tokens', 'snowman', 'friends', 'friendDay', 'giftDay', 'favKnown', 'stars', 'sandStage', 'sandDay', 'visited', 'dayCount', 'bikeRentDay', 'bikeFee', 'wishDay', 'wishN', 'skyItems', 'skyLayout', 'clock', 'xp', 'level', 'daily', 'questDay', 'jobDay', 'jobN', 'garden', 'houseLv', 'rentDue', 'bdayGift']) save.set(k, S[k]);
 }
 const bagAdd = (k, n = 1) => { S.bag[k] = Math.max(0, (S.bag[k] || 0) + n); if (!S.bag[k]) delete S.bag[k]; persist(); };
 const slotGroups = { hat: player.hatSlot, face: player.faceSlot, hand: player.handSlot };
@@ -5788,7 +6425,7 @@ function eat(key, free = false) {
     say(player, '코인이 모자라… 낚시나 미니게임, 섬 특산물로 벌어 오자! 🪙', 3);
     return;
   }
-  if (!free) S.coins -= f.price;
+  if (!free) { S.coins -= f.price; daily('eat'); }
   S.full = clamp(S.full + f.full, 0, 100);
   S.energy = clamp(S.energy + f.energy, 0, 100);
   persist();
@@ -5907,7 +6544,7 @@ function startFireworks() {
   state = 'fireworks';
   showTime = 0;
   nextRocket = tod > 1.6 ? 1.2 : 3.2;
-  todTarget = 2;
+  ensureNight();
   $('prompt').classList.add('hidden');
   player.root.position.set(0, 0.5, -30.9);
   player.root.rotation.set(0, Math.PI, 0);
@@ -6329,7 +6966,7 @@ function visitFriend(F, npc) {
       if (!S.visited[F.name]) {
         S.visited[F.name] = 1;
         persist();
-        setTimeout(() => { addFriendship(npc, 5); toast(`🏡 ${F.name}네 집에 처음 놀러 왔어요! 호감도가 올랐어요`, 3.2); }, 1300);
+        setTimeout(() => { addFriendship(npc, 5); addXP(5, '첫 방문'); toast(`🏡 ${F.name}네 집에 처음 놀러 왔어요! 호감도가 올랐어요`, 3.2); }, 1300);
       }
     }
     F.R.onExit = () => {
@@ -6596,9 +7233,9 @@ function updateSky(dt) {
   sun.target.position.copy(pp);
   sky.position.copy(camera.position);
   stars.position.copy(camera.position);
-  const ico = tod < 0.5 ? ['☀️', '맑은 낮'] : tod < 1.5 ? ['🌇', '노을 지는 저녁'] : ['🌙', '별이 뜬 밤'];
-  $('todIco').textContent = ico[0];
-  $('todText').textContent = `${ico[1]} · ${season().emoji} ${season().name} ${S.seasonDay}일째`;
+  const ico = tod < 0.5 ? '☀️' : tod < 1.5 ? '🌇' : '🌙';
+  const txt = `${clockText()} · ${season().emoji} ${season().name} ${S.seasonDay}일째`;
+  if ($('todText').textContent !== txt) { $('todIco').textContent = ico; $('todText').textContent = txt; }
 }
 
 let modeFov = 45;
@@ -6717,9 +7354,8 @@ function frame() {
     player.body.scale.set(1, 1, 1 + Math.sin(elapsed * 1.6) * 0.03);
     if (napTime > 5 && !napAdvanced) {
       napAdvanced = true;
-      todTarget = todTarget >= 2 ? 0 : todTarget + 1;
-      if (todTarget === 0) setTimeout(newDay, 3200);
-      toast(todTarget === 0 ? '🌅 상쾌한 아침이 밝았어요' : todTarget === 1 ? '🌇 어느새 노을이 지고 있어요' : '🌙 별이 반짝이는 밤이 되었어요', 3);
+      const next = skipToNextPhase();
+      toast(next === 0 ? '🌅 상쾌한 아침이 밝았어요' : next === 1 ? '🌇 어느새 노을이 지고 있어요' : '🌙 별이 반짝이는 밤이 되었어요', 3);
     }
     zTimer -= dt;
     if (zTimer <= 0) {
@@ -6809,14 +7445,18 @@ addEventListener('resize', () => {
   fwMat.uniforms.uScale.value = innerHeight * 0.5;
 });
 
-refreshFurniture();
+if (S.rentDue === null) S.rentDue = S.dayCount + RENT_EVERY;
+applyHouseLevel();
 refreshSky();
 applySeason();
+ensureDaily();
+refreshBirthdays();
+tod = todTarget = todFromClock(S.clock);
 $('loading').remove();
 state = 'title';
 window.__game = {
   S, get state() { return state; }, player, startFireworks, startNap, openShopMenu, openFoodMenu,
-  setTod: (t) => (tod = todTarget = t), warp: (x, z) => player.root.position.set(x, groundY(x, z), z),
+  setTod: (t) => { S.clock = [9 * 60, 17 * 60 + 20, 21 * 60][t]; tod = todTarget = todFromClock(S.clock); }, warp: (x, z) => player.root.position.set(x, groundY(x, z), z),
   act: () => currentInteract && currentInteract.action(), get prompt() { return currentInteract && currentInteract.label; },
   peek: (expr) => eval(expr), // 개발용: 콘솔에서 내부 상태 보기
   startRain: () => startRain(), setSeason: (i) => setSeason(i), newDay: () => newDay(), stopRain: () => stopRain(), spawnBugNear: (id) => spawnBugNear(id), enterHouse: () => enterHouse(),

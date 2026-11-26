@@ -380,6 +380,7 @@ modes.rocket = {
       camera.position.set(T.x, T.y + 13, T.z + 19.6);
       lookAt.set(T.x, T.y + 1.4, T.z + 3.6);
       sfx.fanfare();
+      if (T.island === SKY) daily('island');
       toast(T.island === SKY ? '☁️ 하늘섬에 도착했어요! 🛠️ 안내판(F)에서 기념품으로 꾸밀 수 있어요' : '🔭 별빛섬에 돌아왔어요!', 4);
       if (follower) { follower.c.root.position.set(T.x + 1.5, groundY(T.x, T.z + 4), T.z + 4); say(follower.c, '우와, 진짜 날았어! 🚀', 2.4, follower.name); }
     }

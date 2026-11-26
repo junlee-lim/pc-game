@@ -71,6 +71,7 @@ function friendLevelUp(npc, lv) {
   sfx.fanfare();
   const p = npc.c.root.position;
   sparkle(p.x, p.y + 2.2, p.z, new THREE.Color(0xff6f91), 50);
+  addXP(10, '친구');
   let msg = `💗 ${name}와 더 친해졌어요! ${heartsStr(name)}`;
   if (lv === 2) {
     S.favKnown[name] = true;
@@ -100,6 +101,7 @@ function friendLevelUp(npc, lv) {
 // 친구다운 한마디
 function friendLine(npc) {
   const info = FRIEND_INFO[npc.name];
+  if (isBirthday(npc.name) && S.bdayGift[npc.name] !== S.dayCount) { say(npc.c, pick(['헤헤, 오늘 내 생일이야! 🎂', '오늘 무슨 날인지 알아? 바로 내 생일! 🎉']), 3.4, npc.name); return; }
   if (!info || Math.random() < 0.4) { npcChat(npc); return; }
   const tier = [0, 0, 1, 2, 2, 3][friendLv(npc.name)];
   say(npc.c, pick(info.lines[tier]), 3.6, npc.name);
@@ -109,6 +111,7 @@ function chatWith(npc) {
   if (S.friendDay[npc.name] !== dayKey()) {
     S.friendDay[npc.name] = dayKey();
     addFriendship(npc, 4);
+    daily('talk');
   }
 }
 function giveGiftTo(npc, key) {
@@ -132,6 +135,19 @@ function giveGiftTo(npc, key) {
     sfx.ding();
   }
   if (!firstToday) { pts = Math.min(pts, 3); line += ' (오늘 벌써 선물 받았는데…!)'; }
+  if (isBirthday(npc.name) && S.bdayGift[npc.name] !== S.dayCount) {
+    // 🎂 생일 선물은 두 배로 기뻐해요
+    S.bdayGift[npc.name] = S.dayCount;
+    pts = pts * 2 + 10;
+    line = `🎂 생일 선물?! ${bagName(key)}… 정말 고마워! 최고의 생일이야!! 💖`;
+    S.coins += 15;
+    setTimeout(() => toast(`🎂 ${npc.name}가 답례로 🪙15와 생일 케이크 한 조각의 마음을 줬어요`, 3.6), 1500);
+    const p = npc.c.root.position;
+    for (let i = 0; i < 3; i++) setTimeout(() => sparkle(p.x, p.y + 2.5, p.z, new THREE.Color(pick([0xff8fb1, 0xffd166, 0x9fd6ff])), 30), i * 300);
+    sfx.fanfare();
+  }
+  daily('gift');
+  addXP(4, '선물');
   S.coins += 1;
   persist();
   say(npc.c, line, 3.6, npc.name);
@@ -231,7 +247,7 @@ function openFriendBook() {
       ...npcs.map((n) => {
         const info = FRIEND_INFO[n.name];
         return {
-          label: `${n.name} <span style="font-size:14px;color:#9a7d6e">${info.intro}${S.favKnown[n.name] ? ` · 좋아함 ${bagName(info.fav)}` : ''}${n.follow ? ' · 🚶 산책 중' : ''}</span>`,
+          label: `${isBirthday(n.name) ? '🎂 ' : ''}${n.name} <span style="font-size:14px;color:#9a7d6e">${info.intro} · 생일 ${bdayText(n.name)}${S.favKnown[n.name] ? ` · 좋아함 ${bagName(info.fav)}` : ''}${n.follow ? ' · 🚶 산책 중' : ''}</span>`,
           right: heartsStr(n.name),
           act: () => true,
         };

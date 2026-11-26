@@ -18,11 +18,14 @@
 
   <div id="hud" class="hidden">
     <div class="card stats">
+      <div class="row lv-row"><span class="ico">⭐</span><b id="lvText">Lv.1</b><div class="bar xp"><i id="xpBar"></i></div><span id="xpGain"></span></div>
       <div class="row"><span class="ico">🪙</span><b id="coins">0</b><span class="tok-name">코인</span>
         <span class="ico tok-gap" id="tokenIco">🐚</span><b id="tokenCount">0</b><span class="tok-name" id="tokenName">조개껍데기</span></div>
       <div class="row"><span class="ico">🍙</span><div class="bar"><i id="fullBar"></i></div></div>
       <div class="row"><span class="ico">⚡</span><div class="bar"><i id="energyBar"></i></div></div>
       <div class="row"><span class="ico" id="todIco">☀️</span><span id="todText">맑은 낮</span></div>
+      <div class="row small" id="dailyLine"></div>
+      <div class="row small hidden" id="rentLine"></div>
       <div class="row small hidden" id="bikeLine"></div>
       <div class="row small hidden" id="questLine"></div>
       <div class="row small hidden" id="bagLine"></div>
@@ -33,7 +36,7 @@
       <div class="keys-body">
       <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / 방향키 이동 &nbsp; <kbd>Shift</kbd> 달리기<br />
       <kbd>Q</kbd><kbd>R</kbd> 카메라 회전 &nbsp; <kbd>C</kbd> 시점 초기화<br />
-      <kbd>E</kbd> 상호작용 &nbsp; <kbd>Space</kbd> 점프 &nbsp; <kbd>B</kbd> 자전거 &nbsp; <kbd>G</kbd> 도감 &nbsp; <kbd>K</kbd> 친구 &nbsp; <kbd>N</kbd> 지도<br />
+      <kbd>E</kbd> 상호작용 &nbsp; <kbd>Space</kbd> 점프 &nbsp; <kbd>B</kbd> 자전거 &nbsp; <kbd>G</kbd> 도감 &nbsp; <kbd>K</kbd> 친구 &nbsp; <kbd>N</kbd> 지도 &nbsp; <kbd>P</kbd> 사진<br />
       <kbd>Esc</kbd> 메뉴·저장 &nbsp; <kbd>H</kbd> 도움말 &nbsp; <kbd>M</kbd> 소리
       </div>
     </div>
@@ -67,6 +70,8 @@
     </div>
     <div class="foot"><kbd>←</kbd><kbd>→</kbd> 다른 섬 지도 · <kbd>N</kbd> / <kbd>Esc</kbd> / 클릭 닫기</div>
   </div>
+  <div id="photoHint" class="hidden">📸 사진 모드 · <kbd>←</kbd><kbd>→</kbd> 돌리기 · <kbd>↑</kbd><kbd>↓</kbd> 높이 · <kbd>Q</kbd>/<kbd>R</kbd> 멀리·가까이 · <kbd>Space</kbd> 찰칵! · <kbd>Esc</kbd> 나가기</div>
+  <div id="photoFlash"></div>
   <div id="fade"></div>
 
   <div id="help" class="card hidden">
@@ -79,7 +84,7 @@
     <div><kbd>Esc</kbd> — 닫기 · 그만두기 · (걷는 중엔) 메뉴 열기</div>
     <div><kbd>B</kbd> — 자전거 타기/내리기 (대여소에서 빌린 뒤) &nbsp; <kbd>G</kbd> — 곤충·물고기 도감</div>
     <div><kbd>F</kbd> — 내 집 안에서 가구 배치하기 &nbsp; <kbd>K</kbd> — 친구 수첩</div>
-    <div><kbd>N</kbd> 또는 오른쪽 위 지도 클릭 — 큰 지도 보기</div>
+    <div><kbd>N</kbd> 또는 오른쪽 위 지도 클릭 — 큰 지도 보기 &nbsp; <kbd>P</kbd> — 사진 모드</div>
     <div><kbd>M</kbd> — 소리 켜기/끄기 &nbsp; <kbd>H</kbd> — 이 창 열기/닫기</div>
     <div class="tip">
       🎆 북쪽 호숫가에서 밤하늘 불꽃축제를, 🍢 동쪽 먹자골목에서 길거리 음식을,<br />
@@ -93,7 +98,8 @@
       💗 친구들과 이야기하고 좋아하는 걸 선물하면 하트가 쌓여요. 하트 3개면 같이 산책할 수 있어요!<br />
       💾 다른 기기에서 이어 하려면 <kbd>Esc</kbd> 메뉴의 "저장 코드 만들기"로 코드를 복사해 옮기세요.<br />
       🗓️ 하루가 3번 지나면 계절이 바뀌어요. 광장 옆 계절 축제 부스에서 한정 상품을 받아 보세요!<br />
-      🪙 코인은 낚시, 미니게임, 우체통 부탁, 섬 특산물 판매로 벌 수 있어요!
+      🪙 코인은 아르바이트, 낚시, 미니게임, 우체통 부탁(하루 1통), 오늘의 할 일, 텃밭 수확, 섬 특산물 판매로 벌어요. 5일마다 월세가 나가요!<br />
+      ⭐ 활동할 때마다 경험치가 쌓여 레벨이 오르고, 레벨이 오르면 집 넓히기·새 씨앗이 열려요.
     </div>
   </div>
 

@@ -40,8 +40,11 @@ const FURNITURE = [
 const FURN_DEFAULT = {};
 const furnColliders = {};
 const furnitureModels = {};
+const roomShell = new THREE.Group();
+let roomShellBuild = null;
 {
-  const R = ROOM, hw = R.w / 2, hd = R.d / 2;
+  const R = ROOM;
+  let hw = R.w / 2, hd = R.d / 2;
   const lawn = add(new THREE.CircleGeometry(30, 40), 0x9fdc7c, R.x, -0.02, R.z, scene, false);
   lawn.rotation.x = -Math.PI / 2;
   const woodTex = (() => {
@@ -50,42 +53,57 @@ const furnitureModels = {};
     for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#e8c49a' : '#dfb98d'; g.fillRect(0, i * 16, 128, 16); g.fillStyle = 'rgba(106,76,63,0.25)'; g.fillRect(0, i * 16 + 15, 128, 1); }
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 2); return t;
   })();
-  add(new THREE.BoxGeometry(R.w, 0.2, R.d), toon({ map: woodTex }), R.x, -0.1, R.z, scene, false);
-  const wall = 0xfff1e6, wallH = 3.4;
-  add(new THREE.BoxGeometry(R.w, wallH, 0.3), wall, R.x, wallH / 2, R.z - hd);
-  add(new THREE.BoxGeometry(0.3, wallH, R.d), wall, R.x - hw, wallH / 2, R.z);
-  add(new THREE.BoxGeometry(0.3, wallH, R.d), wall, R.x + hw, wallH / 2, R.z);
-  // 앞쪽 낮은 벽 (가운데는 문)
-  for (const s of [-1, 1]) add(new THREE.BoxGeometry(hw - 1, 0.7, 0.3), wall, R.x + s * (hw / 2 + 0.5), 0.35, R.z + hd);
-  add(new THREE.BoxGeometry(R.w + 0.3, 0.25, 0.4), 0xff8fb1, R.x, wallH, R.z - hd);
-  // 벽지 줄무늬 · 창문
-  for (let i = 0; i < 13; i++) add(new THREE.BoxGeometry(0.12, wallH - 0.4, 0.02), 0xffe0ea, R.x - hw + 0.5 + i, wallH / 2, R.z - hd + 0.16, scene, false);
-  for (const wx of [-3.5, 3.5]) {
-    add(new THREE.BoxGeometry(1.8, 1.4, 0.05), windowMat, R.x + wx, 2.1, R.z - hd + 0.18, scene, false);
-    add(new THREE.BoxGeometry(2.0, 0.12, 0.2), 0xffffff, R.x + wx, 1.35, R.z - hd + 0.22, scene, false);
-    for (const s of [-1, 1]) add(new THREE.BoxGeometry(0.45, 1.6, 0.06), 0xffb4c8, R.x + wx + s * 1.05, 2.05, R.z - hd + 0.22, scene, false);
-  }
+  // 방 껍데기(바닥·벽)는 집 크기에 따라 다시 지어요 → rebuildRoomShell()
+  roomShellBuild = () => {
+    while (roomShell.children.length) roomShell.remove(roomShell.children[0]);
+    const hw = ROOM.w / 2, hd = ROOM.d / 2, wall = 0xfff1e6, wallH = 3.4, g = roomShell;
+    const tex = woodTex.clone(); tex.needsUpdate = true; tex.repeat.set(ROOM.w / 4.3, ROOM.d / 4.5);
+    add(new THREE.BoxGeometry(ROOM.w, 0.2, ROOM.d), toon({ map: tex }), R.x, -0.1, R.z, g, false);
+    add(new THREE.BoxGeometry(ROOM.w, wallH, 0.3), wall, R.x, wallH / 2, R.z - hd, g);
+    add(new THREE.BoxGeometry(0.3, wallH, ROOM.d), wall, R.x - hw, wallH / 2, R.z, g);
+    add(new THREE.BoxGeometry(0.3, wallH, ROOM.d), wall, R.x + hw, wallH / 2, R.z, g);
+    // 앞쪽 낮은 벽 (가운데는 문)
+    for (const sd of [-1, 1]) add(new THREE.BoxGeometry(hw - 1, 0.7, 0.3), wall, R.x + sd * (hw / 2 + 0.5), 0.35, R.z + hd, g);
+    add(new THREE.BoxGeometry(ROOM.w + 0.3, 0.25, 0.4), 0xff8fb1, R.x, wallH, R.z - hd, g);
+    // 벽지 줄무늬 · 창문
+    for (let i = 0; i < ROOM.w - 0.5; i++) add(new THREE.BoxGeometry(0.12, wallH - 0.4, 0.02), 0xffe0ea, R.x - hw + 0.5 + i, wallH / 2, R.z - hd + 0.16, g, false);
+    const wins = ROOM.w > 15 ? [-6, 0, 6] : [-3.5, 3.5];
+    for (const wx of wins) {
+      add(new THREE.BoxGeometry(1.8, 1.4, 0.05), windowMat, R.x + wx, 2.1, R.z - hd + 0.18, g, false);
+      add(new THREE.BoxGeometry(2.0, 0.12, 0.2), 0xffffff, R.x + wx, 1.35, R.z - hd + 0.22, g, false);
+      for (const sd of [-1, 1]) add(new THREE.BoxGeometry(0.45, 1.6, 0.06), 0xffb4c8, R.x + wx + sd * 1.05, 2.05, R.z - hd + 0.22, g, false);
+    }
+    // 붙박이 가구(침대·옷장·책상)는 벽에 붙여 다시 놓아요
+    bed.position.set(R.x - hw + 1.5, 0, R.z - hd + 1.6);
+    ward.position.set(R.x + hw - 1.2, 0, R.z - hd + 0.8);
+    desk.position.set(R.x + hw - 0.9, 0, R.z - hd + 5.7);
+    Object.assign(fixedCols[0], { x: bed.position.x, z: bed.position.z - 0.5 });
+    Object.assign(fixedCols[1], { x: bed.position.x, z: bed.position.z + 0.8 });
+    Object.assign(fixedCols[2], { x: ward.position.x, z: ward.position.z });
+    Object.assign(fixedCols[3], { x: desk.position.x, z: desk.position.z });
+  };
+  scene.add(roomShell);
   // 침대
-  const bed = new THREE.Group(); bed.position.set(R.x - hw + 1.5, 0, R.z - hd + 1.6); scene.add(bed);
+  const bed = new THREE.Group(); scene.add(bed);
   add(new THREE.BoxGeometry(2.2, 0.5, 3), 0xd69a6a, 0, 0.25, 0, bed);
   add(new THREE.BoxGeometry(2.1, 0.3, 2.9), 0xffffff, 0, 0.62, 0, bed);
   add(new THREE.BoxGeometry(2.12, 0.32, 1.9), 0xb8e6ff, 0, 0.66, 0.5, bed);
   add(new THREE.BoxGeometry(1.2, 0.25, 0.6), 0xffffff, 0, 0.88, -1.05, bed).rotation.x = 0.2;
   add(new THREE.BoxGeometry(2.3, 1.1, 0.15), 0xd69a6a, 0, 0.75, -1.5, bed);
-  collide(bed.position.x, bed.position.z - 0.5, 1.2); collide(bed.position.x, bed.position.z + 0.8, 1.2);
   // 옷장
-  const ward = new THREE.Group(); ward.position.set(R.x + hw - 1.2, 0, R.z - hd + 0.8); scene.add(ward);
+  const ward = new THREE.Group(); scene.add(ward);
   add(new THREE.BoxGeometry(2, 2.6, 1), 0xffd6e2, 0, 1.3, 0, ward);
   add(new THREE.BoxGeometry(0.02, 2.3, 0.02), 0xd69a9a, 0, 1.3, 0.51, ward, false);
-  for (const s of [-1, 1]) add(new THREE.SphereGeometry(0.07, 8, 6), 0xffd166, s * 0.15, 1.4, 0.53, ward, false);
-  collide(ward.position.x, ward.position.z, 1.2);
+  for (const sd of [-1, 1]) add(new THREE.SphereGeometry(0.07, 8, 6), 0xffd166, sd * 0.15, 1.4, 0.53, ward, false);
   // 책상과 카탈로그
-  const desk = new THREE.Group(); desk.position.set(R.x + hw - 0.9, 0, R.z + 1.2); scene.add(desk);
+  const desk = new THREE.Group(); scene.add(desk);
   add(new THREE.BoxGeometry(1.2, 0.1, 2), 0xe8c49a, 0, 0.9, 0, desk);
   for (const [lx, lz] of [[-0.5, -0.9], [0.5, -0.9], [-0.5, 0.9], [0.5, 0.9]]) add(new THREE.BoxGeometry(0.1, 0.9, 0.1), 0xd69a6a, lx, 0.45, lz, desk);
   const book = add(new THREE.BoxGeometry(0.6, 0.08, 0.8), 0x9fe3c8, 0, 0.99, 0, desk);
   book.rotation.y = 0.3;
-  collide(desk.position.x, desk.position.z, 1.1);
+  const fixedCols = [{ r: 1.2 }, { r: 1.2 }, { r: 1.2 }, { r: 1.1 }].map((c) => ({ x: 0, z: 0, ...c }));
+  fixedCols.forEach((c) => colliders.push(c));
+  roomShellBuild();
   // 가구 (사면 나타나요)
   const F = (id, x, z, build) => {
     const g = new THREE.Group();
@@ -110,10 +128,10 @@ const furnitureModels = {};
   F('xtree', -1.8, 2.6, (g) => { add(new THREE.CylinderGeometry(0.28, 0.24, 0.35, 10), 0xff6f6f, 0, 0.18, 0, g); for (const [y, r, h] of [[0.7, 0.6, 0.7], [1.15, 0.45, 0.6], [1.55, 0.3, 0.5]]) add(new THREE.ConeGeometry(r, h, 10), 0x4fae6a, 0, y, 0, g); add(new THREE.OctahedronGeometry(0.13, 0), toon({ color: 0xffd34d, emissive: 0xffc000, emissiveIntensity: 0.8 }), 0, 1.9, 0, g, false); for (let i = 0; i < 10; i++) add(new THREE.SphereGeometry(0.05, 6, 4), lanternMats[i % 5], Math.cos(i * 2.3) * (0.5 - i * 0.035), 0.5 + i * 0.11, Math.sin(i * 2.3) * (0.5 - i * 0.035), g, false); });
   glowLights.push((() => { const l = new THREE.PointLight(0xffc890, 0, 16, 1.2); l.position.set(R.x, 3, R.z); scene.add(l); return l; })());
 
-  interact({ x: bed.position.x + 1.6, z: bed.position.z + 0.8, r: 1.8, label: '침대에서 잠자기 🛏️', action: () => sleepInBed() });
-  interact({ x: ward.position.x - 0.2, z: ward.position.z + 1.4, r: 1.6, label: '옷장 열기 👗', action: () => openWardrobe() });
-  interact({ x: desk.position.x - 1.3, z: desk.position.z, r: 1.6, label: '가구 카탈로그 보기 📖', action: () => openCatalog() });
-  interact({ x: R.x, z: R.z + hd - 0.6, r: 1.6, label: '밖으로 나가기 🚪', action: () => exitHouse() });
+  interact({ get x() { return bed.position.x + 1.6; }, get z() { return bed.position.z + 0.8; }, r: 1.8, label: '침대에서 잠자기 🛏️', action: () => sleepInBed() });
+  interact({ get x() { return ward.position.x - 0.2; }, get z() { return ward.position.z + 1.4; }, r: 1.6, label: '옷장 열기 👗', action: () => openWardrobe() });
+  interact({ get x() { return desk.position.x - 1.3; }, get z() { return desk.position.z; }, r: 1.6, label: '가구 카탈로그 · 집 넓히기 📖', action: () => openCatalog() });
+  interact({ x: R.x, get z() { return R.z + ROOM.d / 2 - 0.6; }, r: 1.6, label: '밖으로 나가기 🚪', action: () => exitHouse() });
   interact({ get x() { return furnitureModels.radio.position.x; }, get z() { return furnitureModels.radio.position.z + 0.9; }, get r() { return furnitureModels.radio.visible && state === 'play' ? 1.3 : 0; }, label: '라디오 켜기 📻', action: () => { for (let i = 0; i < 8; i++) tone(pick([523, 659, 784, 880, 1047]), 0.35, 'triangle', 0.07, 0, i * 0.18); say(player, '♪ 랄랄라~ 🎶', 2); } });
 }
 const furnLayout = (id) => S.layout[id] || [...FURN_DEFAULT[id], 0];
@@ -140,7 +158,8 @@ function clampToRoom(p) {
 }
 function houseCamera(p, pos, target) {
   const R = curRoom;
-  pos.set(R.x + (p.x - R.x) * 0.35, 9.5, R.z + 11 + (p.z - R.z) * 0.3);
+  const big = Math.max(0, R.w - 13) * 0.55;
+  pos.set(R.x + (p.x - R.x) * 0.35, 9.5 + big, R.z + 11 + big + (p.z - R.z) * 0.3);
   target.set(R.x + (p.x - R.x) * 0.5, 0.6, R.z + (p.z - R.z) * 0.4);
 }
 function fadeThen(fn, hold = 700) {
@@ -180,11 +199,11 @@ function sleepInBed() {
   say(player, '잘 자~ 💤', 1.5);
   fadeThen(() => {
     const wasNight = tod > 1.5;
-    tod = todTarget = wasNight ? 0 : Math.min(2, Math.round(todTarget) + 1);
+    const next = wasNight ? (advanceClockTo(7 * 60), 0) : skipToNextPhase();
+    tod = todTarget;
     S.energy = 100;
     persist();
-    if (wasNight) setTimeout(newDay, 3400);
-    toast(wasNight ? '☀️ 좋은 아침! 새로운 하루가 밝았어요' : todTarget === 2 ? '🌙 푹 자고 일어나니 밤이 되었어요' : '🌇 한숨 자고 나니 노을이 지고 있어요', 3.2);
+    toast(wasNight ? '☀️ 좋은 아침! 새로운 하루가 밝았어요' : next === 2 ? '🌙 푹 자고 일어나니 밤이 되었어요' : '🌇 한숨 자고 나니 노을이 지고 있어요', 3.2);
     say(player, '으~ 개운하다! 🙆', 2.5);
   }, 1400);
 }
@@ -231,6 +250,7 @@ function openCatalog() {
           },
         };
       }),
+      { label: '🔨 집 넓히기', right: HOUSE_LEVELS[S.houseLv + 1] ? `${HOUSE_LEVELS[S.houseLv + 1].name} · 🪙${HOUSE_LEVELS[S.houseLv + 1].cost}` : '가장 넓은 집', act: () => { setTimeout(openExpand, 0); return false; } },
       { label: '🛋️ 가구 배치하기', right: '자유롭게 옮기기 (F)', act: () => { setTimeout(startDecorate, 0); return false; } },
       { label: '닫기', act: () => false },
     ],

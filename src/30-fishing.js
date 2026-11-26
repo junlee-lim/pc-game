@@ -159,6 +159,8 @@ modes.fishing = {
         fish.coins ? sfx.fanfare() : sfx.no();
         say(player, fish.id === 'boot' ? '👢 …낡은 장화잖아! 하하' : `${fish.emoji} ${fish.name}을(를) 낚았다! (+${fish.coins + (first ? 2 : 0)}🪙)`, 3);
         if (first) toast(`📖 새로운 물고기! ${fish.emoji} ${fish.name} 도감에 기록했어요 (G)`, 3.2);
+        addXP(6 + (first ? 10 : 0), '낚시');
+        if (fish.id !== 'boot') daily('fish');
         sparkle(bobber.position.x, -1.2, bobber.position.z, waterColor, 30);
       } else {
         sfx.no();
