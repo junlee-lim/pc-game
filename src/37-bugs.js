@@ -152,9 +152,10 @@ function openDex() {
   const bugN = BUGS.filter((b) => S.bugDex[b.id]).length, fishN = FISH.filter((f) => S.fishDex[f.id]).length;
   openMenu({
     title: '📖 포근마을 도감',
-    desc: () => `곤충 ${bugN}/${BUGS.length} · 물고기 ${fishN}/${FISH.length} — 새로 찾을 때마다 코인을 받아요!`,
+    desc: () => `곤충 ${bugN}/${BUGS.length} · 별자리 ${CONSTELLATIONS.filter((c) => S.stars[c.id]).length}/${CONSTELLATIONS.length} · 물고기 ${fishN}/${FISH.length} — 새로 찾을 때마다 코인을 받아요!`,
     items: () => [
       ...BUGS.map((b) => ({ label: S.bugDex[b.id] ? `${b.emoji} ${b.name}` : '❔ ???', right: S.bugDex[b.id] ? `×${S.bugDex[b.id]}` : `힌트: ${b.hint}`, dim: !S.bugDex[b.id], act: () => true })),
+      ...CONSTELLATIONS.map((c) => ({ label: S.stars[c.id] ? `${c.emoji} ${c.name}` : '❔ ???', right: S.stars[c.id] ? '✨ 찾았어요' : '힌트: 🔭 별빛섬 천문대 (밤)', dim: !S.stars[c.id], act: () => true })),
       ...FISH.map((f) => ({ label: S.fishDex[f.id] ? `${f.emoji} ${f.name}` : '❔ ???', right: S.fishDex[f.id] ? `×${S.fishDex[f.id]}` : `힌트: ${f.hint || '선착장 낚시'}`, dim: !S.fishDex[f.id], act: () => true })),
       { label: '닫기', act: () => false },
     ],

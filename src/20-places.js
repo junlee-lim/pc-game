@@ -90,6 +90,10 @@ const FOODS = {
   mochi: { name: '딸기 찹쌀떡', emoji: '🍓', price: 3, full: 20, energy: 15, desc: '봄 딸기가 쏙 들어간 말랑 찹쌀떡', line: '말랑말랑 새콤달콤~ 봄 맛이야! 🌸', seasonal: true },
   hwachae: { name: '수박 화채', emoji: '🍉', price: 3, full: 22, energy: 15, desc: '동글동글 수박이 동동 뜬 시원한 화채', line: '시원하고 달콤해~ 여름 최고! 🌻', seasonal: true },
   goguma: { name: '군고구마', emoji: '🍠', price: 3, full: 30, energy: 10, desc: '드럼통에서 노릇노릇 구운 군고구마', line: '앗 뜨거! 호호~ 달달하다 🍂', seasonal: true },
+  // 다른 섬에서만 파는 음식
+  coconut: { name: '코코넛 주스', emoji: '🥥', price: 2, full: 15, energy: 20, desc: '야자수섬 명물! 빨대 꽂은 코코넛', line: '쪼옥~ 달콤하고 시원해! 🌴', island: true },
+  soup: { name: '숲 버섯 수프', emoji: '🍲', price: 3, full: 35, energy: 10, desc: '부엉 할머니의 따끈한 버섯 수프', line: '후~ 후~ 숲 향기가 나! 🍄', island: true },
+  berrymilk: { name: '딸기 우유', emoji: '🍼', price: 2, full: 18, energy: 15, desc: '갓 딴 딸기로 만든 분홍 우유', line: '달콤해~ 콧수염이 생겼어! 🍓', island: true },
   cocoa: { name: '마시멜로 코코아', emoji: '☕', price: 3, full: 15, energy: 25, desc: '마시멜로를 동동 띄운 따끈한 코코아', line: '몸이 사르르 녹는다~ ⛄', seasonal: true },
 };
 function foodModel(key) {
@@ -125,6 +129,19 @@ function foodModel(key) {
     const b = add(new THREE.CapsuleGeometry(0.16, 0.35, 6, 10), 0x8a3f5c, 0, 0.2, 0, g);
     b.rotation.z = Math.PI / 2;
     add(new THREE.SphereGeometry(0.15, 10, 8), 0xffc23d, 0.25, 0.24, 0, g, false).scale.set(0.5, 1, 1);
+  } else if (key === 'coconut') {
+    add(new THREE.SphereGeometry(0.32, 14, 10), 0x8a5a3c, 0, 0.3, 0, g);
+    add(new THREE.CylinderGeometry(0.2, 0.2, 0.03, 12), 0xfff6ea, 0, 0.58, 0, g, false);
+    rod(new THREE.Vector3(0.05, 0.5, 0), new THREE.Vector3(0.2, 0.95, 0.05), 0.025, 0xff8fb1, g);
+    add(new THREE.SphereGeometry(0.1, 8, 6), 0xffd166, -0.18, 0.6, 0, g, false);
+  } else if (key === 'soup') {
+    add(new THREE.CylinderGeometry(0.4, 0.28, 0.3, 16), 0xe58e6b, 0, 0.15, 0, g);
+    add(new THREE.CylinderGeometry(0.37, 0.37, 0.03, 16), 0xf3c98b, 0, 0.29, 0, g, false);
+    for (let i = 0; i < 3; i++) { const m = add(new THREE.SphereGeometry(0.09, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2), 0xff6f6f, Math.cos(i * 2) * 0.18, 0.3, Math.sin(i * 2) * 0.18, g, false); }
+  } else if (key === 'berrymilk') {
+    add(new THREE.CylinderGeometry(0.2, 0.2, 0.55, 14), 0xffd6e4, 0, 0.28, 0, g);
+    add(new THREE.ConeGeometry(0.2, 0.2, 4), 0xff8fb1, 0, 0.65, 0, g).rotation.y = Math.PI / 4;
+    add(new THREE.SphereGeometry(0.08, 8, 6), 0xff4d6d, 0, 0.3, 0.2, g, false);
   } else if (key === 'cocoa') {
     add(new THREE.CylinderGeometry(0.25, 0.22, 0.45, 16), 0xff8fb1, 0, 0.23, 0, g);
     add(new THREE.CylinderGeometry(0.22, 0.22, 0.02, 16), 0x8a5a3c, 0, 0.44, 0, g, false);

@@ -189,12 +189,22 @@ function rampY(x, z) {
 }
 function groundY(x, z) {
   if (onPier(x, z)) return PIER.h;
+  if (Math.abs(x) + Math.abs(z) > 110) {
+    // 다른 섬의 언덕
+    for (const I of ISLANDS) {
+      if (!I.hill) continue;
+      const hd = Math.hypot(x - I.hill.x, z - I.hill.z);
+      if (hd < I.hill.r) { const c = Math.cos((hd / I.hill.r) * Math.PI * 0.5); return I.hill.h * c * c; }
+    }
+    return 0;
+  }
   const d = Math.hypot(x - HILL.x, z - HILL.z);
   if (d >= HILL.r) return rampY(x, z);
   const c = Math.cos((d / HILL.r) * Math.PI * 0.5);
   return HILL.h * c * c;
 }
 const colliders = [];
+ISLANDS.push({ id: 'main', name: '포근섬', emoji: '🌼', x: 0, z: 0, r: ISLAND_R });
 const collide = (x, z, r) => colliders.push({ x, z, r });
 
 // 섬

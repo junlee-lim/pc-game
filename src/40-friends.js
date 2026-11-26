@@ -114,7 +114,7 @@ function chatWith(npc) {
 function giveGiftTo(npc, key) {
   const info = FRIEND_INFO[npc.name];
   bagAdd(key, -1);
-  const seasonal = FOODS[key] && FOODS[key].seasonal;
+  const seasonal = (FOODS[key] && (FOODS[key].seasonal || FOODS[key].island)) || !!EXTRA_BAG[key];
   const firstToday = S.giftDay[npc.name] !== dayKey();
   S.giftDay[npc.name] = dayKey();
   let pts, line;
@@ -128,7 +128,7 @@ function giveGiftTo(npc, key) {
     sfx.select();
   } else {
     pts = seasonal ? 11 : 8;
-    line = seasonal ? `${bagName(key)}! 이 계절에만 먹을 수 있는 거잖아! 고마워 ✨` : `${bagName(key)}? 나 주는 거야? 고마워~ 💕`;
+    line = seasonal ? (EXTRA_BAG[key] ? `${bagName(key)}! 다른 섬에서 가져온 거야? 신기하다~ 고마워 ✨` : `${bagName(key)}! 여기선 쉽게 못 먹는 거잖아! 고마워 ✨`) : `${bagName(key)}? 나 주는 거야? 고마워~ 💕`;
     sfx.ding();
   }
   if (!firstToday) { pts = Math.min(pts, 3); line += ' (오늘 벌써 선물 받았는데…!)'; }

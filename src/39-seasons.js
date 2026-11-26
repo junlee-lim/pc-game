@@ -225,6 +225,7 @@ function applySeason() {
   const se = season();
   const summer = SEASONS[1];
   SEASONAL.ground.material.color.setHex(se.ground);
+  for (const I of ISLANDS) if (I.groundMesh) I.groundMesh.material.color.setHex(se.id === 'winter' ? 0xe4ecf7 : I.ground);
   SEASONAL.hill.material.color.setHex(se.hill);
   SEASONAL.bushes.material = mat(se.bush);
   SEASONAL.petals.material = mat(se.petals);

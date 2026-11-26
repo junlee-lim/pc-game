@@ -321,14 +321,38 @@ mmBg.width = mmBg.height = 340;
   g.fillStyle = '#d9a878'; g.fillRect(...P(PIER.x - PIER.w / 2, ISLAND_R), PIER.w * s, (PIER.z1 - ISLAND_R) * s);
   for (const [e, x, z] of [['🎆', 0, -36], ['🍢', 32, -4], ['😴', -38, 3.5], ['🛍️', 22, -26], ['⛲', 0, 0], ...MAP_MARKS]) g.fillText(e, ...P(x, z));
 }
+// 다른 섬의 미니맵 배경
+const islandMapCache = {};
+function islandMapBg(I) {
+  if (islandMapCache[I.id]) return islandMapCache[I.id];
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 340;
+  const g = cv.getContext('2d');
+  const s = 340 / (I.r * 2 + 10), c = 170;
+  g.fillStyle = '#9fd6ff'; g.fillRect(0, 0, 340, 340);
+  g.fillStyle = '#f6e3b4'; g.beginPath(); g.arc(c, c, (I.r + 0.6) * s, 0, 7); g.fill();
+  g.fillStyle = I.mapColor || '#a7e086'; g.beginPath(); g.arc(c, c, I.r * s, 0, 7); g.fill();
+  if (I.hill) { g.fillStyle = 'rgba(255,255,255,0.35)'; g.beginPath(); g.arc(c + (I.hill.x - I.x) * s, c + (I.hill.z - I.z) * s, I.hill.r * s, 0, 7); g.fill(); }
+  g.font = '30px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const [e, x, z] of I.marks || []) g.fillText(e, c + (x - I.x) * s, c + (z - I.z) * s);
+  g.font = '26px Jua, sans-serif'; g.fillStyle = '#6a4c3f';
+  g.fillText(`${I.emoji} ${I.name}`, c, 300);
+  islandMapCache[I.id] = cv;
+  return cv;
+}
 function drawMinimap() {
-  const s = 340 / (ISLAND_R * 2 + 10), c = 170;
-  mm.drawImage(mmBg, 0, 0);
-  mm.fillStyle = '#ffd166';
-  for (const co of coins) if (co.m.visible) { mm.beginPath(); mm.arc(c + co.m.position.x * s, c + co.m.position.z * s, 4, 0, 7); mm.fill(); }
+  const pw = insideHouse ? curRoom.exit : player.root.position;
+  const I = islandAt(pw);
+  const R = I.id === 'main' ? ISLAND_R : I.r;
+  const s = 340 / (R * 2 + 10), c = 170;
+  mm.drawImage(I.id === 'main' ? mmBg : islandMapBg(I), 0, 0);
+  if (I.id === 'main') {
+    mm.fillStyle = '#ffd166';
+    for (const co of coins) if (co.m.visible) { mm.beginPath(); mm.arc(c + co.m.position.x * s, c + co.m.position.z * s, 4, 0, 7); mm.fill(); }
+  }
   mm.fillStyle = '#ffffff';
-  for (const n of npcs) { mm.beginPath(); mm.arc(c + n.c.root.position.x * s, c + n.c.root.position.z * s, 5, 0, 7); mm.fill(); }
-  const p = insideHouse ? { x: MYHOUSE.x, z: MYHOUSE.z } : player.root.position, r = player.root.rotation.y;
+  for (const n of npcs) { if (n.visiting || islandAt(n.c.root.position) !== I) continue; mm.beginPath(); mm.arc(c + (n.c.root.position.x - I.x) * s, c + (n.c.root.position.z - I.z) * s, 5, 0, 7); mm.fill(); }
+  const p = { x: pw.x - I.x, z: pw.z - I.z }, r = player.root.rotation.y;
   // 카메라가 보는 방향 (부채꼴)
   const fa = Math.atan2(-Math.cos(camYaw), -Math.sin(camYaw));
   mm.fillStyle = 'rgba(255, 255, 255, 0.45)';

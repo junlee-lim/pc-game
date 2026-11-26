@@ -21,12 +21,13 @@ const mailFlag = new THREE.Group();
 }
 ZONE_LABELS.push(['📮 우체통', MAILBOX.x, 3.3, MAILBOX.z]);
 
-const BAG_INFO = () => ({ melon: { name: '수박', emoji: '🍉' }, ...Object.fromEntries(Object.entries(FOODS).map(([k, f]) => [k, { name: f.name, emoji: f.emoji }])) });
+const BAG_INFO = () => ({ melon: { name: '수박', emoji: '🍉' }, ...EXTRA_BAG, ...Object.fromEntries(Object.entries(FOODS).map(([k, f]) => [k, { name: f.name, emoji: f.emoji }])) });
 let pendingLetter = null;
 function makeLetter() {
   const npc = pick(npcs).name;
   const kinds = [
-    () => { const k = pick(Object.keys(FOODS).filter((x) => !FOODS[x].seasonal)); const f = FOODS[k]; return { type: 'food', key: k, text: `먹자골목 ${f.name}이(가) 너무 먹고 싶어… 하나만 포장해서 가져다줄래? ${f.emoji}`, short: `${f.emoji} ${f.name} 포장해서 전해주기` }; },
+    () => { const k = pick(Object.keys(FOODS).filter((x) => !FOODS[x].seasonal && !FOODS[x].island)); const f = FOODS[k]; return { type: 'food', key: k, text: `먹자골목 ${f.name}이(가) 너무 먹고 싶어… 하나만 포장해서 가져다줄래? ${f.emoji}`, short: `${f.emoji} ${f.name} 포장해서 전해주기` }; },
+    () => { const k = pick(['coco', 'mushroom', 'berry']); const it = EXTRA_BAG[k]; const where = { coco: '🌴 야자수섬', mushroom: '🍄 버섯숲섬', berry: '🍓 딸기섬' }[k]; return { type: 'food', key: k, text: `${where}에서 나는 ${it.emoji} ${it.name}이(가) 궁금해! 하나 가져다줄래? (선착장에서 배를 타면 갈 수 있어)`, short: `${it.emoji} ${it.name} 가져다주기` }; },
     () => ({ type: 'melon', key: 'melon', text: '해바라기 미로 어딘가에 수박이 숨어 있대! 하나 가져다줄 수 있어? 🍉', short: '🍉 수박 전해주기' }),
     () => { const f = pick(FISH.filter((x) => !['boot', 'rainbow', 'jelly'].includes(x.id))); return { type: 'fish', key: f.id, base: S.fishDex[f.id] || 0, text: `선착장에서 ${f.emoji} ${f.name}을(를) 낚으면 나한테 보여줘! 꼭 보고 싶어~`, short: `${f.emoji} ${f.name} 낚아서 보여주기` }; },
     () => { const avail = BUGS.filter((b) => inSeason(b)); if (!avail.length) return { type: 'melon', key: 'melon', text: '추운 날엔 시원한 수박이 오히려 생각나… 해바라기 미로에 있대! 🍉', short: '🍉 수박 전해주기' }; const b = pick(avail); return { type: 'bug', key: b.id, base: S.bugDex[b.id] || 0, text: `${b.emoji} ${b.name}을(를) 잡아서 보여줄래? (${b.hint}에서 볼 수 있대)`, short: `${b.emoji} ${b.name} 잡아서 보여주기` }; },
