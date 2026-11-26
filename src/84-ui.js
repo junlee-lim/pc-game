@@ -279,7 +279,7 @@ addEventListener('keydown', (e) => {
     camYawTarget = Math.round(camYawTarget / (Math.PI * 2)) * Math.PI * 2;
     return;
   }
-  if (state === 'play' && (code === 'KeyE' || code === 'Space' || code === 'Enter') && currentInteract) {
+  if (state === 'play' && (code === 'KeyE' || code === 'Enter') && currentInteract) {
     currentInteract.action();
   }
 });

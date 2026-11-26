@@ -249,6 +249,7 @@ const sfx = {
   crackle() { for (let i = 0; i < 8; i++) setTimeout(() => noise(0.05, 4000, 0.08, 'highpass'), i * 60 + Math.random() * 60); },
   yawn() { tone(500, 1.2, 'sine', 0.08, 0.5); },
   jump() { tone(300, 0.25, 'square', 0.05, 2.2); },
+  hop() { tone(420, 0.16, 'sine', 0.09, 1.9); },
   land() { noise(0.15, 500, 0.25); tone(120, 0.15, 'sine', 0.15, 0.6); },
   splash() { noise(0.5, 2500, 0.18, 'bandpass', 600); },
   bite() { tone(1200, 0.08, 'square', 0.07); tone(1500, 0.12, 'square', 0.07, 0, 0.1); },
