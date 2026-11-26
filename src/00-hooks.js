@@ -10,6 +10,9 @@ const TREES = [];        // 나무 위치 (곤충이 사는 곳)
 const talkHooks = [];    // (npc) → true 를 돌려주면 기본 대화 대신 처리
 // 계절이 바꾸는 것들 (각 파일이 채워 넣어요)
 const SEASONAL = { ground: null, hill: null, pondWater: null, bushes: null, flowers: [], petals: null, leaves: [] };
-const CREATURES = [];     // 겨울 목도리를 두를 동물 친구들
+const CREATURES = [];
+const ISLANDS = [];        // { id, name, emoji, x, z, r, hill? } — 0번은 포근섬(본섬)
+const EXTRA_BAG = {};      // 음식이 아닌 가방 아이템 { key: { name, emoji } }
+const HOUSE_GROUPS = [];   // 마을 집들 { g, x, z, rot }     // 겨울 목도리를 두를 동물 친구들
 const SHOW_HUD_STATES = new Set(['play', 'menu']);
 const playKeyHooks = []; // play 상태에서 눌린 키 (code) → true 면 처리됨

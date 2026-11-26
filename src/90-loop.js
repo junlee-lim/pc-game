@@ -14,6 +14,12 @@ function resolve(p, r, isPlayer = false) {
     if (d < m && d > 1e-5) { p.x = c.x + (dx / d) * m; p.z = c.z + (dz / d) * m; }
   }
   if (isPlayer && insideHouse) { clampToRoom(p); return; }
+  const I = islandAt(p);
+  if (I.id !== 'main') {
+    const d = Math.hypot(p.x - I.x, p.z - I.z), lim = I.r - 1.8;
+    if (d > lim) { p.x = I.x + ((p.x - I.x) * lim) / d; p.z = I.z + ((p.z - I.z) * lim) / d; }
+    return;
+  }
   // 선착장 위는 섬 밖이어도 걸을 수 있어요
   if (Math.abs(p.x - PIER.x) < PIER.w / 2 && p.z > ISLAND_R - 3) {
     p.x = clamp(p.x, PIER.x - PIER.w / 2 + 0.5, PIER.x + PIER.w / 2 - 0.5);
@@ -25,6 +31,12 @@ function resolve(p, r, isPlayer = false) {
 }
 
 let pvy = 0, airborne = false, airTime = 0;
+// 지금 서 있는(가장 가까운) 섬
+function islandAt(p) {
+  let best = ISLANDS[0], bd = Infinity;
+  for (const I of ISLANDS) { const d = Math.hypot(p.x - I.x, p.z - I.z) - I.r; if (d < bd) { bd = d; best = I; } }
+  return best;
+}
 
 function updatePlayer(dt) {
   let dx = 0, dz = 0;
@@ -41,7 +53,9 @@ function updatePlayer(dt) {
     const l = Math.hypot(dx, dz);
     dx /= l; dz /= l;
     // 카메라가 바라보는 방향 기준으로 이동
-    const cy = Math.cos(camYaw), sy = Math.sin(camYaw);
+    // 집 안에서는 카메라가 정면으로 고정되니 회전 각도(camYaw)를 쓰지 않아요
+    const yaw = insideHouse ? 0 : camYaw;
+    const cy = Math.cos(yaw), sy = Math.sin(yaw);
     [dx, dz] = [dx * cy + dz * sy, -dx * sy + dz * cy];
     playerVel.set(dx * speed, 0, dz * speed);
     p.x += playerVel.x * dt;
@@ -115,6 +129,12 @@ function updateNPCs(dt) {
   for (const n of npcs) {
     const r = n.c.root;
     let moving = false;
+    if (n.visiting) {
+      // 자기 집에 놀러 온 나를 맞이하는 중
+      r.rotation.y = lerpAngle(r.rotation.y, Math.atan2(pp.x - r.position.x, pp.z - r.position.z), damp(5, dt));
+      animateCreature(n.c, false, 0, dt, elapsed);
+      continue;
+    }
     if (n.follow) {
       const f = updateFollower(n, dt);
       r.position.y = groundY(r.position.x, r.position.z);
@@ -247,6 +267,10 @@ function updateCamera(dt) {
 
 function updateHUD(dt) {
   $('coins').textContent = S.coins;
+  // 지금 계절 축제에서 쓰는 토큰 (예: 가을이면 🍁 단풍잎)
+  const se = season();
+  if ($('tokenIco').textContent !== se.token.emoji) { $('tokenIco').textContent = se.token.emoji; $('tokenName').textContent = se.token.name; }
+  $('tokenCount').textContent = tokenCount();
   $('fullBar').style.width = S.full + '%';
   $('energyBar').style.width = S.energy + '%';
   // 상호작용 안내

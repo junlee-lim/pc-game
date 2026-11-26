@@ -31,6 +31,7 @@ function house(x, z, rotY, wall, roof) {
   g.position.set(x, 0, z);
   g.rotation.y = rotY;
   scene.add(g);
+  HOUSE_GROUPS.push({ g, x, z, rot: rotY });
   add(new THREE.BoxGeometry(4.2, 3, 4), wall, 0, 1.5, 0, g);
   const r = add(new THREE.ConeGeometry(3.7, 2.4, 4), roof, 0, 4.2, 0, g);
   r.rotation.y = Math.PI / 4;

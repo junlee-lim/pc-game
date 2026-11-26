@@ -4,6 +4,9 @@
 const MYHOUSE = { x: -14, z: 22 };
 const ROOM = { x: 300, z: 300, w: 13, d: 9 }; // 집 안은 바다 멀리 따로 지어 두었어요
 let insideHouse = false;
+// 지금 들어가 있는 방 (내 집 또는 친구 집). exit: 나왔을 때 설 자리
+let curRoom = ROOM;
+ROOM.exit = { x: MYHOUSE.x, z: MYHOUSE.z + 3.4, rot: 0 };
 AVOID.push([MYHOUSE.x, MYHOUSE.z, 6]);
 {
   const g = house(MYHOUSE.x, MYHOUSE.z, 0, 0xfff6ea, 0xff8fb1);
@@ -131,12 +134,14 @@ tickers.push(() => {
   if (t.visible) t.children.filter((c) => c.name === 'fish').forEach((f, i) => { f.position.z = Math.sin(elapsed * 0.8 + i * 2) * 0.5; f.position.y = 1.1 + i * 0.12 + Math.sin(elapsed * 1.7 + i) * 0.05; });
 });
 function clampToRoom(p) {
-  p.x = clamp(p.x, ROOM.x - ROOM.w / 2 + 0.7, ROOM.x + ROOM.w / 2 - 0.7);
-  p.z = clamp(p.z, ROOM.z - ROOM.d / 2 + 0.7, ROOM.z + ROOM.d / 2 - 0.5);
+  const R = curRoom;
+  p.x = clamp(p.x, R.x - R.w / 2 + 0.7, R.x + R.w / 2 - 0.7);
+  p.z = clamp(p.z, R.z - R.d / 2 + 0.7, R.z + R.d / 2 - 0.5);
 }
 function houseCamera(p, pos, target) {
-  pos.set(ROOM.x + (p.x - ROOM.x) * 0.35, 9.5, ROOM.z + 11 + (p.z - ROOM.z) * 0.3);
-  target.set(ROOM.x + (p.x - ROOM.x) * 0.5, 0.6, ROOM.z + (p.z - ROOM.z) * 0.4);
+  const R = curRoom;
+  pos.set(R.x + (p.x - R.x) * 0.35, 9.5, R.z + 11 + (p.z - R.z) * 0.3);
+  target.set(R.x + (p.x - R.x) * 0.5, 0.6, R.z + (p.z - R.z) * 0.4);
 }
 function fadeThen(fn, hold = 700) {
   $('fade').classList.add('on');
@@ -150,6 +155,7 @@ function enterHouse() {
   sfx.ok();
   fadeThen(() => {
     insideHouse = true;
+    curRoom = ROOM;
     player.root.position.set(ROOM.x, 0, ROOM.z + ROOM.d / 2 - 1.2);
     player.root.rotation.set(0, Math.PI, 0);
     houseCamera(player.root.position, camera.position, lookAt);
@@ -159,11 +165,14 @@ function enterHouse() {
 function exitHouse() {
   sfx.ok();
   fadeThen(() => {
+    const ex = curRoom.exit;
+    if (curRoom.onExit) curRoom.onExit();
     insideHouse = false;
-    player.root.position.set(MYHOUSE.x, 0, MYHOUSE.z + 3.4);
-    player.root.rotation.set(0, 0, 0);
-    camera.position.set(MYHOUSE.x + Math.sin(camYaw) * 16, 13, MYHOUSE.z + 3.4 + Math.cos(camYaw) * 16);
-    lookAt.set(MYHOUSE.x, 1.4, MYHOUSE.z + 3.4);
+    curRoom = ROOM;
+    player.root.position.set(ex.x, 0, ex.z);
+    player.root.rotation.set(0, ex.rot || 0, 0);
+    camera.position.set(ex.x + Math.sin(camYaw) * 16, 13, ex.z + Math.cos(camYaw) * 16);
+    lookAt.set(ex.x, 1.4, ex.z);
   }, 300);
 }
 function sleepInBed() {
@@ -307,7 +316,7 @@ modes.decorate = {
   },
 };
 playKeyHooks.push((code) => {
-  if (code !== 'KeyF' || !insideHouse) return false;
+  if (code !== 'KeyF' || !insideHouse || curRoom !== ROOM) return false;
   startDecorate();
   return true;
 });

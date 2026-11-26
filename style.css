@@ -406,3 +406,8 @@ kbd {
 #savebox .foot { margin-top: 10px; text-align: right; color: var(--ink-soft); font-size: 14px; line-height: 1.8; }
 #savebox .foot .ok { color: #3aa77a; }
 #savebox .foot .err { color: #e0566e; }
+
+.stats .tok-name { font-size: 14px; color: var(--ink-soft); }
+.stats .tok-gap { margin-left: 10px; }
+#menu li .lbl { white-space: nowrap; }
+#menu li .right { margin-left: 12px; text-align: right; }

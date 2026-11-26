@@ -18,7 +18,8 @@
 
   <div id="hud" class="hidden">
     <div class="card stats">
-      <div class="row"><span class="ico">🪙</span><b id="coins">0</b></div>
+      <div class="row"><span class="ico">🪙</span><b id="coins">0</b><span class="tok-name">코인</span>
+        <span class="ico tok-gap" id="tokenIco">🐚</span><b id="tokenCount">0</b><span class="tok-name" id="tokenName">조개껍데기</span></div>
       <div class="row"><span class="ico">🍙</span><div class="bar"><i id="fullBar"></i></div></div>
       <div class="row"><span class="ico">⚡</span><div class="bar"><i id="energyBar"></i></div></div>
       <div class="row"><span class="ico" id="todIco">☀️</span><span id="todText">맑은 낮</span></div>
@@ -71,6 +72,8 @@
       😴 서쪽 언덕 해먹에서 낮잠을, 🛍️ 북동쪽 잡화점에서 쇼핑을 즐겨 보세요.<br />
       🎣 남쪽 선착장 낚시, 🌻 해바라기 미로, ♨️ 온천, 🎠 축제 놀이터, 🏠 내 집, 🚲 자전거, 📮 우체통도 있어요.<br />
       🐞 곤충은 살금살금 다가가야 잡혀요 — 달리면 도망가요!<br />
+      🚤 남쪽 선착장에서 배를 타면 🌴 야자수섬 · 🍄 버섯숲섬 · 🔭 별빛섬 · 🍓 딸기섬에 갈 수 있어요.<br />
+      🏡 친구와 하트 1개 이상 친해지면 친구 집에 놀러 갈 수 있어요.<br />
       💗 친구들과 이야기하고 좋아하는 걸 선물하면 하트가 쌓여요. 하트 3개면 같이 산책할 수 있어요!<br />
       💾 다른 기기에서 이어 하려면 <kbd>Esc</kbd> 메뉴의 "저장 코드 만들기"로 코드를 복사해 옮기세요.<br />
       🗓️ 하루가 3번 지나면 계절이 바뀌어요. 광장 옆 계절 축제 부스에서 한정 상품을 받아 보세요!<br />
@@ -102,7 +105,10 @@ const TREES = [];        // 나무 위치 (곤충이 사는 곳)
 const talkHooks = [];    // (npc) → true 를 돌려주면 기본 대화 대신 처리
 // 계절이 바꾸는 것들 (각 파일이 채워 넣어요)
 const SEASONAL = { ground: null, hill: null, pondWater: null, bushes: null, flowers: [], petals: null, leaves: [] };
-const CREATURES = [];     // 겨울 목도리를 두를 동물 친구들
+const CREATURES = [];
+const ISLANDS = [];        // { id, name, emoji, x, z, r, hill? } — 0번은 포근섬(본섬)
+const EXTRA_BAG = {};      // 음식이 아닌 가방 아이템 { key: { name, emoji } }
+const HOUSE_GROUPS = [];   // 마을 집들 { g, x, z, rot }     // 겨울 목도리를 두를 동물 친구들
 const SHOW_HUD_STATES = new Set(['play', 'menu']);
 const playKeyHooks = []; // play 상태에서 눌린 키 (code) → true 면 처리됨
 
@@ -298,12 +304,22 @@ function rampY(x, z) {
 }
 function groundY(x, z) {
   if (onPier(x, z)) return PIER.h;
+  if (Math.abs(x) + Math.abs(z) > 110) {
+    // 다른 섬의 언덕
+    for (const I of ISLANDS) {
+      if (!I.hill) continue;
+      const hd = Math.hypot(x - I.hill.x, z - I.hill.z);
+      if (hd < I.hill.r) { const c = Math.cos((hd / I.hill.r) * Math.PI * 0.5); return I.hill.h * c * c; }
+    }
+    return 0;
+  }
   const d = Math.hypot(x - HILL.x, z - HILL.z);
   if (d >= HILL.r) return rampY(x, z);
   const c = Math.cos((d / HILL.r) * Math.PI * 0.5);
   return HILL.h * c * c;
 }
 const colliders = [];
+ISLANDS.push({ id: 'main', name: '포근섬', emoji: '🌼', x: 0, z: 0, r: ISLAND_R });
 const collide = (x, z, r) => colliders.push({ x, z, r });
 
 // 섬
@@ -401,6 +417,7 @@ function house(x, z, rotY, wall, roof) {
   g.position.set(x, 0, z);
   g.rotation.y = rotY;
   scene.add(g);
+  HOUSE_GROUPS.push({ g, x, z, rot: rotY });
   add(new THREE.BoxGeometry(4.2, 3, 4), wall, 0, 1.5, 0, g);
   const r = add(new THREE.ConeGeometry(3.7, 2.4, 4), roof, 0, 4.2, 0, g);
   r.rotation.y = Math.PI / 4;
@@ -635,6 +652,10 @@ const FOODS = {
   mochi: { name: '딸기 찹쌀떡', emoji: '🍓', price: 3, full: 20, energy: 15, desc: '봄 딸기가 쏙 들어간 말랑 찹쌀떡', line: '말랑말랑 새콤달콤~ 봄 맛이야! 🌸', seasonal: true },
   hwachae: { name: '수박 화채', emoji: '🍉', price: 3, full: 22, energy: 15, desc: '동글동글 수박이 동동 뜬 시원한 화채', line: '시원하고 달콤해~ 여름 최고! 🌻', seasonal: true },
   goguma: { name: '군고구마', emoji: '🍠', price: 3, full: 30, energy: 10, desc: '드럼통에서 노릇노릇 구운 군고구마', line: '앗 뜨거! 호호~ 달달하다 🍂', seasonal: true },
+  // 다른 섬에서만 파는 음식
+  coconut: { name: '코코넛 주스', emoji: '🥥', price: 2, full: 15, energy: 20, desc: '야자수섬 명물! 빨대 꽂은 코코넛', line: '쪼옥~ 달콤하고 시원해! 🌴', island: true },
+  soup: { name: '숲 버섯 수프', emoji: '🍲', price: 3, full: 35, energy: 10, desc: '부엉 할머니의 따끈한 버섯 수프', line: '후~ 후~ 숲 향기가 나! 🍄', island: true },
+  berrymilk: { name: '딸기 우유', emoji: '🍼', price: 2, full: 18, energy: 15, desc: '갓 딴 딸기로 만든 분홍 우유', line: '달콤해~ 콧수염이 생겼어! 🍓', island: true },
   cocoa: { name: '마시멜로 코코아', emoji: '☕', price: 3, full: 15, energy: 25, desc: '마시멜로를 동동 띄운 따끈한 코코아', line: '몸이 사르르 녹는다~ ⛄', seasonal: true },
 };
 function foodModel(key) {
@@ -670,6 +691,19 @@ function foodModel(key) {
     const b = add(new THREE.CapsuleGeometry(0.16, 0.35, 6, 10), 0x8a3f5c, 0, 0.2, 0, g);
     b.rotation.z = Math.PI / 2;
     add(new THREE.SphereGeometry(0.15, 10, 8), 0xffc23d, 0.25, 0.24, 0, g, false).scale.set(0.5, 1, 1);
+  } else if (key === 'coconut') {
+    add(new THREE.SphereGeometry(0.32, 14, 10), 0x8a5a3c, 0, 0.3, 0, g);
+    add(new THREE.CylinderGeometry(0.2, 0.2, 0.03, 12), 0xfff6ea, 0, 0.58, 0, g, false);
+    rod(new THREE.Vector3(0.05, 0.5, 0), new THREE.Vector3(0.2, 0.95, 0.05), 0.025, 0xff8fb1, g);
+    add(new THREE.SphereGeometry(0.1, 8, 6), 0xffd166, -0.18, 0.6, 0, g, false);
+  } else if (key === 'soup') {
+    add(new THREE.CylinderGeometry(0.4, 0.28, 0.3, 16), 0xe58e6b, 0, 0.15, 0, g);
+    add(new THREE.CylinderGeometry(0.37, 0.37, 0.03, 16), 0xf3c98b, 0, 0.29, 0, g, false);
+    for (let i = 0; i < 3; i++) { const m = add(new THREE.SphereGeometry(0.09, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2), 0xff6f6f, Math.cos(i * 2) * 0.18, 0.3, Math.sin(i * 2) * 0.18, g, false); }
+  } else if (key === 'berrymilk') {
+    add(new THREE.CylinderGeometry(0.2, 0.2, 0.55, 14), 0xffd6e4, 0, 0.28, 0, g);
+    add(new THREE.ConeGeometry(0.2, 0.2, 4), 0xff8fb1, 0, 0.65, 0, g).rotation.y = Math.PI / 4;
+    add(new THREE.SphereGeometry(0.08, 8, 6), 0xff4d6d, 0, 0.3, 0.2, g, false);
   } else if (key === 'cocoa') {
     add(new THREE.CylinderGeometry(0.25, 0.22, 0.45, 16), 0xff8fb1, 0, 0.23, 0, g);
     add(new THREE.CylinderGeometry(0.22, 0.22, 0.02, 16), 0x8a5a3c, 0, 0.44, 0, g, false);
@@ -1898,6 +1932,9 @@ function shootingGame() {
 const MYHOUSE = { x: -14, z: 22 };
 const ROOM = { x: 300, z: 300, w: 13, d: 9 }; // 집 안은 바다 멀리 따로 지어 두었어요
 let insideHouse = false;
+// 지금 들어가 있는 방 (내 집 또는 친구 집). exit: 나왔을 때 설 자리
+let curRoom = ROOM;
+ROOM.exit = { x: MYHOUSE.x, z: MYHOUSE.z + 3.4, rot: 0 };
 AVOID.push([MYHOUSE.x, MYHOUSE.z, 6]);
 {
   const g = house(MYHOUSE.x, MYHOUSE.z, 0, 0xfff6ea, 0xff8fb1);
@@ -2025,12 +2062,14 @@ tickers.push(() => {
   if (t.visible) t.children.filter((c) => c.name === 'fish').forEach((f, i) => { f.position.z = Math.sin(elapsed * 0.8 + i * 2) * 0.5; f.position.y = 1.1 + i * 0.12 + Math.sin(elapsed * 1.7 + i) * 0.05; });
 });
 function clampToRoom(p) {
-  p.x = clamp(p.x, ROOM.x - ROOM.w / 2 + 0.7, ROOM.x + ROOM.w / 2 - 0.7);
-  p.z = clamp(p.z, ROOM.z - ROOM.d / 2 + 0.7, ROOM.z + ROOM.d / 2 - 0.5);
+  const R = curRoom;
+  p.x = clamp(p.x, R.x - R.w / 2 + 0.7, R.x + R.w / 2 - 0.7);
+  p.z = clamp(p.z, R.z - R.d / 2 + 0.7, R.z + R.d / 2 - 0.5);
 }
 function houseCamera(p, pos, target) {
-  pos.set(ROOM.x + (p.x - ROOM.x) * 0.35, 9.5, ROOM.z + 11 + (p.z - ROOM.z) * 0.3);
-  target.set(ROOM.x + (p.x - ROOM.x) * 0.5, 0.6, ROOM.z + (p.z - ROOM.z) * 0.4);
+  const R = curRoom;
+  pos.set(R.x + (p.x - R.x) * 0.35, 9.5, R.z + 11 + (p.z - R.z) * 0.3);
+  target.set(R.x + (p.x - R.x) * 0.5, 0.6, R.z + (p.z - R.z) * 0.4);
 }
 function fadeThen(fn, hold = 700) {
   $('fade').classList.add('on');
@@ -2044,6 +2083,7 @@ function enterHouse() {
   sfx.ok();
   fadeThen(() => {
     insideHouse = true;
+    curRoom = ROOM;
     player.root.position.set(ROOM.x, 0, ROOM.z + ROOM.d / 2 - 1.2);
     player.root.rotation.set(0, Math.PI, 0);
     houseCamera(player.root.position, camera.position, lookAt);
@@ -2053,11 +2093,14 @@ function enterHouse() {
 function exitHouse() {
   sfx.ok();
   fadeThen(() => {
+    const ex = curRoom.exit;
+    if (curRoom.onExit) curRoom.onExit();
     insideHouse = false;
-    player.root.position.set(MYHOUSE.x, 0, MYHOUSE.z + 3.4);
-    player.root.rotation.set(0, 0, 0);
-    camera.position.set(MYHOUSE.x + Math.sin(camYaw) * 16, 13, MYHOUSE.z + 3.4 + Math.cos(camYaw) * 16);
-    lookAt.set(MYHOUSE.x, 1.4, MYHOUSE.z + 3.4);
+    curRoom = ROOM;
+    player.root.position.set(ex.x, 0, ex.z);
+    player.root.rotation.set(0, ex.rot || 0, 0);
+    camera.position.set(ex.x + Math.sin(camYaw) * 16, 13, ex.z + Math.cos(camYaw) * 16);
+    lookAt.set(ex.x, 1.4, ex.z);
   }, 300);
 }
 function sleepInBed() {
@@ -2201,7 +2244,7 @@ modes.decorate = {
   },
 };
 playKeyHooks.push((code) => {
-  if (code !== 'KeyF' || !insideHouse) return false;
+  if (code !== 'KeyF' || !insideHouse || curRoom !== ROOM) return false;
   startDecorate();
   return true;
 });
@@ -2602,9 +2645,10 @@ function openDex() {
   const bugN = BUGS.filter((b) => S.bugDex[b.id]).length, fishN = FISH.filter((f) => S.fishDex[f.id]).length;
   openMenu({
     title: '📖 포근마을 도감',
-    desc: () => `곤충 ${bugN}/${BUGS.length} · 물고기 ${fishN}/${FISH.length} — 새로 찾을 때마다 코인을 받아요!`,
+    desc: () => `곤충 ${bugN}/${BUGS.length} · 별자리 ${CONSTELLATIONS.filter((c) => S.stars[c.id]).length}/${CONSTELLATIONS.length} · 물고기 ${fishN}/${FISH.length} — 새로 찾을 때마다 코인을 받아요!`,
     items: () => [
       ...BUGS.map((b) => ({ label: S.bugDex[b.id] ? `${b.emoji} ${b.name}` : '❔ ???', right: S.bugDex[b.id] ? `×${S.bugDex[b.id]}` : `힌트: ${b.hint}`, dim: !S.bugDex[b.id], act: () => true })),
+      ...CONSTELLATIONS.map((c) => ({ label: S.stars[c.id] ? `${c.emoji} ${c.name}` : '❔ ???', right: S.stars[c.id] ? '✨ 찾았어요' : '힌트: 🔭 별빛섬 천문대 (밤)', dim: !S.stars[c.id], act: () => true })),
       ...FISH.map((f) => ({ label: S.fishDex[f.id] ? `${f.emoji} ${f.name}` : '❔ ???', right: S.fishDex[f.id] ? `×${S.fishDex[f.id]}` : `힌트: ${f.hint || '선착장 낚시'}`, dim: !S.fishDex[f.id], act: () => true })),
       { label: '닫기', act: () => false },
     ],
@@ -2636,12 +2680,13 @@ const mailFlag = new THREE.Group();
 }
 ZONE_LABELS.push(['📮 우체통', MAILBOX.x, 3.3, MAILBOX.z]);
 
-const BAG_INFO = () => ({ melon: { name: '수박', emoji: '🍉' }, ...Object.fromEntries(Object.entries(FOODS).map(([k, f]) => [k, { name: f.name, emoji: f.emoji }])) });
+const BAG_INFO = () => ({ melon: { name: '수박', emoji: '🍉' }, ...EXTRA_BAG, ...Object.fromEntries(Object.entries(FOODS).map(([k, f]) => [k, { name: f.name, emoji: f.emoji }])) });
 let pendingLetter = null;
 function makeLetter() {
   const npc = pick(npcs).name;
   const kinds = [
-    () => { const k = pick(Object.keys(FOODS).filter((x) => !FOODS[x].seasonal)); const f = FOODS[k]; return { type: 'food', key: k, text: `먹자골목 ${f.name}이(가) 너무 먹고 싶어… 하나만 포장해서 가져다줄래? ${f.emoji}`, short: `${f.emoji} ${f.name} 포장해서 전해주기` }; },
+    () => { const k = pick(Object.keys(FOODS).filter((x) => !FOODS[x].seasonal && !FOODS[x].island)); const f = FOODS[k]; return { type: 'food', key: k, text: `먹자골목 ${f.name}이(가) 너무 먹고 싶어… 하나만 포장해서 가져다줄래? ${f.emoji}`, short: `${f.emoji} ${f.name} 포장해서 전해주기` }; },
+    () => { const k = pick(['coco', 'mushroom', 'berry']); const it = EXTRA_BAG[k]; const where = { coco: '🌴 야자수섬', mushroom: '🍄 버섯숲섬', berry: '🍓 딸기섬' }[k]; return { type: 'food', key: k, text: `${where}에서 나는 ${it.emoji} ${it.name}이(가) 궁금해! 하나 가져다줄래? (선착장에서 배를 타면 갈 수 있어)`, short: `${it.emoji} ${it.name} 가져다주기` }; },
     () => ({ type: 'melon', key: 'melon', text: '해바라기 미로 어딘가에 수박이 숨어 있대! 하나 가져다줄 수 있어? 🍉', short: '🍉 수박 전해주기' }),
     () => { const f = pick(FISH.filter((x) => !['boot', 'rainbow', 'jelly'].includes(x.id))); return { type: 'fish', key: f.id, base: S.fishDex[f.id] || 0, text: `선착장에서 ${f.emoji} ${f.name}을(를) 낚으면 나한테 보여줘! 꼭 보고 싶어~`, short: `${f.emoji} ${f.name} 낚아서 보여주기` }; },
     () => { const avail = BUGS.filter((b) => inSeason(b)); if (!avail.length) return { type: 'melon', key: 'melon', text: '추운 날엔 시원한 수박이 오히려 생각나… 해바라기 미로에 있대! 🍉', short: '🍉 수박 전해주기' }; const b = pick(avail); return { type: 'bug', key: b.id, base: S.bugDex[b.id] || 0, text: `${b.emoji} ${b.name}을(를) 잡아서 보여줄래? (${b.hint}에서 볼 수 있대)`, short: `${b.emoji} ${b.name} 잡아서 보여주기` }; },
@@ -2951,6 +2996,7 @@ function applySeason() {
   const se = season();
   const summer = SEASONS[1];
   SEASONAL.ground.material.color.setHex(se.ground);
+  for (const I of ISLANDS) if (I.groundMesh) I.groundMesh.material.color.setHex(se.id === 'winter' ? 0xe4ecf7 : I.ground);
   SEASONAL.hill.material.color.setHex(se.hill);
   SEASONAL.bushes.material = mat(se.bush);
   SEASONAL.petals.material = mat(se.petals);
@@ -3200,7 +3246,7 @@ function chatWith(npc) {
 function giveGiftTo(npc, key) {
   const info = FRIEND_INFO[npc.name];
   bagAdd(key, -1);
-  const seasonal = FOODS[key] && FOODS[key].seasonal;
+  const seasonal = (FOODS[key] && (FOODS[key].seasonal || FOODS[key].island)) || !!EXTRA_BAG[key];
   const firstToday = S.giftDay[npc.name] !== dayKey();
   S.giftDay[npc.name] = dayKey();
   let pts, line;
@@ -3214,7 +3260,7 @@ function giveGiftTo(npc, key) {
     sfx.select();
   } else {
     pts = seasonal ? 11 : 8;
-    line = seasonal ? `${bagName(key)}! 이 계절에만 먹을 수 있는 거잖아! 고마워 ✨` : `${bagName(key)}? 나 주는 거야? 고마워~ 💕`;
+    line = seasonal ? (EXTRA_BAG[key] ? `${bagName(key)}! 다른 섬에서 가져온 거야? 신기하다~ 고마워 ✨` : `${bagName(key)}! 여기선 쉽게 못 먹는 거잖아! 고마워 ✨`) : `${bagName(key)}? 나 주는 거야? 고마워~ 💕`;
     sfx.ding();
   }
   if (!firstToday) { pts = Math.min(pts, 3); line += ' (오늘 벌써 선물 받았는데…!)'; }
@@ -3505,6 +3551,535 @@ function confirmReset() {
 }
 playKeyHooks.push((code) => { if (code === 'Escape') { openPauseMenu(); return true; } return false; });
 
+// ---------- 42-islands.js ----------
+/* =========================================================
+   🚤 다른 섬들 — 선착장에서 배를 타고 가요
+   🌴 야자수섬 · 🍄 버섯숲섬 · 🔭 별빛섬 · 🍓 딸기섬
+   ========================================================= */
+Object.assign(EXTRA_BAG, {
+  coco: { name: '코코넛', emoji: '🥥' },
+  mushroom: { name: '숲 버섯', emoji: '🍄' },
+  berry: { name: '딸기', emoji: '🍓' },
+  jam: { name: '딸기 잼', emoji: '🫙' },
+});
+const ISL = {
+  palm: { id: 'palm', name: '야자수섬', emoji: '🌴', desc: '야자수 그늘, 모래성, 코코넛 주스', x: 150, z: 140, r: 34, ground: 0xf2dca0, side: 0xd9a878, mapColor: '#f2dca0' },
+  mush: { id: 'mush', name: '버섯숲섬', emoji: '🍄', desc: '거대한 버섯 숲과 부엉 할머니 (밤엔 버섯이 반짝)', x: -160, z: 120, r: 36, ground: 0x86c46e, side: 0x9a7a5a, mapColor: '#86c46e' },
+  star: { id: 'star', name: '별빛섬', emoji: '🔭', desc: '언덕 위 천문대에서 별자리 찾기', x: -150, z: -150, r: 32, ground: 0xb5dfa0, side: 0xc9b08a, mapColor: '#b5dfa0' },
+  berry: { id: 'berry', name: '딸기섬', emoji: '🍓', desc: '딸기 농장, 풍차, 딸기 우유', x: 160, z: -140, r: 34, ground: 0x9fd87a, side: 0xd9a878, mapColor: '#9fd87a' },
+};
+ISL.star.hill = { x: ISL.star.x, z: ISL.star.z - 4, r: 20, h: 5 };
+const islPos = (I, lx, lz) => [I.x + lx, I.z + lz];
+const boats = [];
+
+/* ---------- 섬 땅 ---------- */
+for (const I of Object.values(ISL)) {
+  I.groundMesh = add(new THREE.CylinderGeometry(I.r, I.r, 1, 56), toon({ color: I.ground }), I.x, -0.5, I.z, scene, false);
+  add(new THREE.CylinderGeometry(I.r + 0.3, I.r - 5, 6, 56), I.side, I.x, -4, I.z, scene, false);
+  add(new THREE.CylinderGeometry(I.r + 0.6, I.r + 0.6, 0.5, 56), 0xf6e3b4, I.x, -0.65, I.z, scene, false);
+  I.marks = [];
+  ISLANDS.push(I);
+  ZONE_LABELS.push([`${I.emoji} ${I.name}`, I.x, 12, I.z]);
+  // 배가 닿는 곳 (본섬 쪽을 바라보는 해변)
+  const a = Math.atan2(-I.z, -I.x), dx = Math.cos(a), dz = Math.sin(a);
+  I.arrive = { x: I.x + dx * (I.r - 4), z: I.z + dz * (I.r - 4), rot: Math.atan2(-dx, -dz) };
+  const dock = add(new THREE.BoxGeometry(2.4, 0.25, 6), 0xd9a878, I.x + dx * (I.r + 1), 0.15, I.z + dz * (I.r + 1));
+  dock.rotation.y = Math.atan2(dx, dz);
+  const boatI = makeBoat(0x9fd6ff);
+  boatI.position.set(I.x + dx * (I.r + 3.2) + dz * 2.2, -1.55, I.z + dz * (I.r + 3.2) - dx * 2.2);
+  boatI.rotation.y = Math.atan2(dx, dz);
+  I.marks.push(['🚤', I.x + dx * (I.r - 3), I.z + dz * (I.r - 3)]);
+  interact({ x: I.arrive.x + dx * 1.2, z: I.arrive.z + dz * 1.2, r: 2.2, label: '🚤 배 타기 (다른 섬 · 포근섬으로)', action: () => openFerry(I.id) });
+}
+if (ISL.star.hill) {
+  const H = ISL.star.hill, s = H.r * 2 + 2;
+  const geo = new THREE.PlaneGeometry(s, s, 48, 48);
+  geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i) + H.x, z = pos.getZ(i) + H.z;
+    pos.setY(i, Math.hypot(x - H.x, z - H.z) < H.r ? groundY(x, z) + 0.01 : -0.1);
+  }
+  geo.computeVertexNormals();
+  ISL.star.hillMesh = add(geo, toon({ color: 0xc6e8b0 }), H.x, 0, H.z, scene, false);
+}
+
+/* ---------- 배 ---------- */
+function makeBoat(color) {
+  const g = new THREE.Group();
+  const hull = add(new THREE.SphereGeometry(1, 20, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), toon({ color, side: THREE.DoubleSide }), 0, 0.5, 0, g);
+  hull.scale.set(1.4, 0.8, 3);
+  add(new THREE.BoxGeometry(2.3, 0.12, 4.6), 0xfff1df, 0, 0.45, 0, g);
+  add(new THREE.BoxGeometry(1.6, 1.1, 1.4), 0xffffff, 0, 1.05, -0.6, g);
+  add(new THREE.BoxGeometry(1.8, 0.15, 1.6), 0xff8fb1, 0, 1.65, -0.6, g);
+  add(new THREE.CylinderGeometry(0.15, 0.15, 0.6, 10), 0xff6f6f, 0, 1.95, -0.6, g);
+  for (const s of [-1, 1]) add(new THREE.TorusGeometry(0.22, 0.07, 6, 14), 0xff6f6f, s * 1.38, 0.6, 0.6, g, false).rotation.y = Math.PI / 2;
+  scene.add(g);
+  boats.push(g);
+  return g;
+}
+// 본섬 선착장 옆 여객선
+{
+  const b = makeBoat(0xffd166);
+  b.position.set(PIER.x - PIER.w / 2 - 1.9, -1.55, 63);
+  interact({ x: PIER.x - 0.6, z: 63, r: 1.7, label: '🚤 배 타고 다른 섬 가기', action: () => openFerry('main') });
+  MAP_MARKS.push(['🚤', -4, 58]);
+}
+tickers.push(() => boats.forEach((b, i) => { b.position.y = -1.55 + Math.sin(elapsed * 1.3 + i) * 0.07; b.rotation.z = Math.sin(elapsed * 0.9 + i) * 0.04; }));
+
+function openFerry(fromId) {
+  sfx.ok();
+  const dests = [ISLANDS[0], ...Object.values(ISL)].filter((I) => I.id !== fromId);
+  openMenu({
+    title: '🚤 통통배 선착장',
+    desc: () => '어느 섬으로 갈까요? 배는 공짜예요!',
+    items: () => [
+      ...dests.map((I) => ({ label: `${I.emoji} ${I.name}`, right: I.id === 'main' ? '집이 있는 섬' : I.desc, act: () => { setTimeout(() => travelTo(I), 0); return false; } })),
+      { label: '그만두기', act: () => false },
+    ],
+  });
+}
+function travelTo(I) {
+  tone(220, 0.5, 'triangle', 0.12); tone(220, 0.6, 'triangle', 0.12, 0, 0.6);
+  fadeThen(() => {
+    const a = I.id === 'main' ? { x: PIER.x, z: 61, rot: Math.PI } : I.arrive;
+    player.root.position.set(a.x, groundY(a.x, a.z), a.z);
+    player.root.rotation.set(0, a.rot, 0);
+    camera.position.set(a.x + Math.sin(camYaw) * 16, 13, a.z + Math.cos(camYaw) * 16);
+    lookAt.set(a.x, 1.4, a.z);
+    toast(`🚤 통통통~ ${I.emoji} ${I.name}에 도착했어요!`, 3);
+    if (follower) say(follower.c, '나도 같이 왔지롱~ 🚤', 2.4, follower.name);
+  }, 900);
+}
+
+/* ---------- 섬 주민 ---------- */
+function resident(I, lx, lz, rot, opts, name, lines, menuFn, hat) {
+  const [x, z] = islPos(I, lx, lz);
+  const c = makeCreature(opts);
+  c.root.position.set(x, groundY(x, z), z);
+  c.root.rotation.y = rot;
+  scene.add(c.root);
+  if (hat) (hat === 'glasses' ? c.faceSlot : c.hatSlot).add(itemModel(hat));
+  stallKeepers.push(c);
+  collide(x, z, 0.8);
+  interact({ x: x + Math.sin(rot) * 1.6, z: z + Math.cos(rot) * 1.6, r: 2.0, label: `${name}에게 말 걸기`, action: () => { sfx.talk(); say(c, pick(lines), 3.2, name); if (menuFn) setTimeout(menuFn, 700); } });
+  return c;
+}
+function sellMenu(title, desc, extra) {
+  openMenu({ title, desc: () => `${desc}<br>내 코인 🪙 ${S.coins} · 가방 ${Object.entries(S.bag).filter(([k, n]) => EXTRA_BAG[k] && n).map(([k, n]) => `${EXTRA_BAG[k].emoji}×${n}`).join(' ') || '비어 있음'}`, items: () => [...extra(), { label: '그만두기', act: () => false }] });
+}
+const foodItem = (key) => ({ label: `${FOODS[key].emoji} ${FOODS[key].name} 사 먹기`, right: `🪙 ${FOODS[key].price}`, dim: S.coins < FOODS[key].price, act: () => { eat(key); return false; } });
+const packItem = (key) => ({ label: `${FOODS[key].emoji} 포장해서 가방에 넣기 🎒`, right: `🪙 ${FOODS[key].price}`, dim: S.coins < FOODS[key].price, act: () => { if (S.coins < FOODS[key].price) { sfx.no(); return true; } S.coins -= FOODS[key].price; bagAdd(key); sfx.ok(); toast(`${FOODS[key].emoji} ${FOODS[key].name}을(를) 포장했어요`); return true; } });
+const sellItem = (key, price) => ({ label: `${EXTRA_BAG[key].emoji} ${EXTRA_BAG[key].name} 팔기`, right: `개당 🪙 ${price}`, dim: !(S.bag[key] > 0), act: () => { if (!(S.bag[key] > 0)) { sfx.no(); toast(`가방에 ${EXTRA_BAG[key].name}이(가) 없어요`); return true; } bagAdd(key, -1); S.coins += price; persist(); sfx.coin(); return true; } });
+
+/* ---------- 줍기 (코코넛 · 버섯 · 딸기) ---------- */
+function pickSpot(x, z, model, key, label, respawn = 40, amount = () => 1) {
+  const g = model;
+  g.position.set(x, groundY(x, z), z);
+  scene.add(g);
+  const spot = { g, t: 0 };
+  interact({
+    x, z, get r() { return g.visible ? 1.6 : 0; }, label,
+    action: () => {
+      const n = amount();
+      g.visible = false; spot.t = respawn;
+      bagAdd(key, n);
+      sfx.ding();
+      sparkle(x, groundY(x, z) + 0.6, z, new THREE.Color(0xfff1a8), 14);
+      say(player, `${EXTRA_BAG[key].emoji} ${EXTRA_BAG[key].name} ${n}개 획득!`, 1.8);
+    },
+  });
+  tickers.push((dt) => { if (!g.visible) { spot.t -= dt; if (spot.t <= 0) g.visible = true; } });
+  return spot;
+}
+
+/* ---------- 섬마다 작은 코인 ---------- */
+const islCoinGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.12, 22).rotateX(Math.PI / 2);
+const islCoinMat = toon({ color: 0xffcf3a, emissive: 0xffa000, emissiveIntensity: 0.35 });
+const islCoins = [];
+for (const I of Object.values(ISL)) for (let i = 0; i < 4; i++) {
+  const m = new THREE.Mesh(islCoinGeo, islCoinMat);
+  m.castShadow = true;
+  scene.add(m);
+  islCoins.push({ m, I, t: 0, base: 0 });
+}
+function placeIslCoin(c) {
+  for (let k = 0; k < 40; k++) {
+    const a = Math.random() * 6.3, d = Math.sqrt(Math.random()) * (c.I.r - 5);
+    const x = c.I.x + Math.cos(a) * d, z = c.I.z + Math.sin(a) * d;
+    if (colliders.some((o) => !o.off && Math.hypot(o.x - x, o.z - z) < o.r + 1)) continue;
+    c.base = groundY(x, z) + 0.8; c.m.position.set(x, c.base, z); c.m.visible = true; return;
+  }
+}
+tickers.push((dt) => {
+  const pp = player.root.position;
+  for (const c of islCoins) {
+    if (!c.m.visible) { c.t -= dt; if (c.t <= 0) placeIslCoin(c); continue; }
+    c.m.rotation.y += dt * 2.5;
+    c.m.position.y = c.base + Math.sin(elapsed * 3 + c.m.position.x) * 0.15;
+    if (state === 'play' && Math.hypot(c.m.position.x - pp.x, c.m.position.z - pp.z) < 1.3) {
+      c.m.visible = false; c.t = rr(25, 40);
+      S.coins++; persist(); sfx.coin();
+      sparkle(c.m.position.x, c.m.position.y, c.m.position.z);
+    }
+  }
+});
+
+/* =========================================================
+   🌴 야자수섬
+   ========================================================= */
+function palm(x, z, s = 1) {
+  const y = groundY(x, z);
+  const g = new THREE.Group();
+  g.position.set(x, y, z);
+  g.rotation.y = rr(0, 6.3);
+  scene.add(g);
+  let px = 0;
+  for (let i = 0; i < 6; i++) {
+    add(new THREE.CylinderGeometry((0.2 - i * 0.015) * s, (0.24 - i * 0.015) * s, 0.75 * s, 8), i % 2 ? 0xb07a56 : 0xc08f63, px, (0.35 + i * 0.7) * s, 0, g);
+    px += i * 0.04 * s;
+  }
+  const top = new THREE.Group();
+  top.position.set(px, 4.3 * s, 0);
+  g.add(top);
+  for (let k = 0; k < 7; k++) {
+    const arm = new THREE.Group();
+    arm.rotation.set(0, (k / 7) * Math.PI * 2, 0);
+    top.add(arm);
+    const leaf = add(new THREE.SphereGeometry(1, 10, 6), k % 2 ? 0x5fbf4a : 0x7fd36a, 0, -0.3 * s, 1.2 * s, arm);
+    leaf.scale.set(0.38 * s, 0.07 * s, 1.35 * s);
+    leaf.rotation.x = 0.35;
+  }
+  for (let k = 0; k < 3; k++) add(new THREE.SphereGeometry(0.2 * s, 10, 8), 0x8a5a3c, Math.cos(k * 2.1) * 0.25 * s, -0.25 * s, Math.sin(k * 2.1) * 0.25 * s, top);
+  collide(x, z, 0.5 * s);
+  return { x, z };
+}
+{
+  const I = ISL.palm;
+  const grass = add(new THREE.CylinderGeometry(15, 15, 0.06, 40), 0xa8e08a, I.x, 0.03, I.z + 2, scene, false);
+  I.grass = grass;
+  const palms = [];
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2 + rr(-0.2, 0.2), d = rr(12, I.r - 6);
+    const [x, z] = islPos(I, Math.cos(a) * d, Math.sin(a) * d);
+    if (Math.hypot(x - I.arrive.x, z - I.arrive.z) < 6) continue;
+    palms.push(palm(x, z, rr(0.9, 1.25)));
+  }
+  // 떨어진 코코넛 줍기
+  palms.slice(0, 6).forEach((p, i) => {
+    const m = new THREE.Group();
+    add(new THREE.SphereGeometry(0.28, 12, 10), 0x8a5a3c, 0, 0.25, 0, m);
+    pickSpot(p.x + 1.3, p.z + 0.6, m, 'coco', '🥥 코코넛 줍기', 45);
+  });
+  // 파라솔 · 비치 타월 · 비치볼
+  for (const [lx, lz, c] of [[-9, 10, '#ff8fb1'], [9, 12, '#8fd3ff'], [-2, 18, '#ffd166']]) {
+    const [x, z] = islPos(I, lx, lz);
+    add(new THREE.CylinderGeometry(0.05, 0.05, 2.6, 6), 0xffffff, x, 1.3, z);
+    add(new THREE.ConeGeometry(1.7, 0.6, 12), toon({ map: stripeTexture(c, '#ffffff', 12) }), x, 2.7, z);
+    const towel = add(new THREE.BoxGeometry(1.2, 0.04, 2.2), toon({ map: stripeTexture(c, '#ffffff', 6) }), x + 1.2, 0.03, z + 0.4, scene, false);
+    towel.rotation.y = 0.3;
+    collide(x, z, 0.4);
+  }
+  // 모래성 쌓기
+  const [sx, sz] = islPos(I, 6, 4);
+  const castle = new THREE.Group();
+  castle.position.set(sx, 0, sz);
+  scene.add(castle);
+  const sand = 0xe8c98a;
+  const st = [new THREE.Group(), new THREE.Group(), new THREE.Group(), new THREE.Group()];
+  st.forEach((g) => castle.add(g));
+  add(new THREE.CylinderGeometry(1.6, 1.8, 0.6, 20), sand, 0, 0.3, 0, st[0]);
+  add(new THREE.CylinderGeometry(1.1, 1.2, 0.6, 16), sand, 0, 0.9, 0, st[1]);
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+    add(new THREE.CylinderGeometry(0.3, 0.35, 1.0, 10), sand, Math.cos(a) * 1.3, 1.0, Math.sin(a) * 1.3, st[2]);
+    add(new THREE.ConeGeometry(0.38, 0.5, 10), sand, Math.cos(a) * 1.3, 1.75, Math.sin(a) * 1.3, st[2]);
+  }
+  add(new THREE.CylinderGeometry(0.03, 0.03, 1.2, 5), 0xffffff, 0, 1.8, 0, st[3]);
+  add(new THREE.BoxGeometry(0.02, 0.35, 0.55), 0xff6f91, 0, 2.2, 0.27, st[3]);
+  for (let i = 0; i < 5; i++) add(new THREE.SphereGeometry(0.1, 8, 6), pick([0xffffff, 0xffc4d8, 0xffe0a0]), Math.cos(i) * 1.7, 0.6, Math.sin(i * 1.3) * 1.7, st[3], false);
+  const pail = add(new THREE.CylinderGeometry(0.3, 0.24, 0.45, 12), 0xff8fb1, -2.2, 0.22, 0.8, castle);
+  collide(sx, sz, 1.9);
+  const today = () => `${S.season}-${S.seasonDay}`;
+  const sandStage = () => (S.sandDay === today() ? S.sandStage || 0 : 0);
+  const refreshCastle = () => st.forEach((g, i) => (g.visible = sandStage() > i));
+  tickers.push(() => refreshCastle());
+  interact({
+    x: sx, z: sz + 2.8, get r() { return sandStage() < 4 ? 2.2 : 0; },
+    get label() { return ['🏰 모래성 기초 다지기', '🏰 2층 쌓기', '🏰 탑 세우기', '🏰 깃발 꽂고 조개로 꾸미기'][sandStage()] || ''; },
+    action: () => {
+      if (S.sandDay !== today()) { S.sandDay = today(); S.sandStage = 0; }
+      S.sandStage++;
+      sfx.ok();
+      sparkle(sx, 1.2, sz, new THREE.Color(0xfff1c8), 18);
+      if (S.sandStage >= 4) { S.coins += 4; sfx.fanfare(); say(player, '짜잔~ 멋진 모래성 완성! 🏰', 3); toast('🏰 모래성 완성! 🪙 4개 (파도가 밤새 쓸어 가서 내일 또 쌓을 수 있어요)', 3.6); }
+      else say(player, pick(['토닥토닥~', '영차영차!', '조심조심…']), 1.6);
+      persist();
+    },
+  });
+  ZONE_LABELS.push(['🏰 모래성', sx, 4, sz]);
+  // 코코넛 주스 가게
+  const [kx, kz] = islPos(I, -6, -2);
+  const kiosk = new THREE.Group(); kiosk.position.set(kx, 0, kz); scene.add(kiosk);
+  add(new THREE.BoxGeometry(3, 1, 1.3), 0xe8c49a, 0, 0.5, 0, kiosk);
+  for (const px of [-1.4, 1.4]) add(new THREE.CylinderGeometry(0.08, 0.08, 2.6, 6), 0xb07a56, px, 1.3, -0.5, kiosk);
+  const thatch = add(new THREE.ConeGeometry(2.6, 1.2, 8), 0xd9b870, 0, 3.0, -0.2, kiosk);
+  const ksign = signPlane('🥥 코코넛 주스', 2.2, { font: 76, border: '#ffd166' }); ksign.position.set(0, 1.9, 0.68); kiosk.add(ksign);
+  collide(kx, kz, 1.8);
+  resident(I, -6, -3.6, 0, { color: 0xffe0b8, ears: 'bunny', accent: 0xff9f8f }, '코코',
+    ['어서 와~ 여긴 일 년 내내 여름이야! 🌴', '야자수 아래 떨어진 코코넛은 마음껏 주워 가!', '모래성은 파도가 밤마다 쓸어 가. 매일 새로 쌓아 봐!'],
+    () => sellMenu('🥥 코코의 주스 가게', '갓 딴 코코넛으로 만든 주스예요!', () => [foodItem('coconut'), packItem('coconut'), sellItem('coco', 2)]), 'flower');
+  I.marks.push(['🏰', sx, sz], ['🥥', kx, kz]);
+  ZONE_LABELS.push(['🥥 코코넛 주스', kx, 4.6, kz]);
+}
+
+/* =========================================================
+   🍄 버섯숲섬
+   ========================================================= */
+const shroomMats = [];
+function bigShroom(x, z, h, r, cap) {
+  const y = groundY(x, z);
+  const g = new THREE.Group(); g.position.set(x, y, z); scene.add(g);
+  add(new THREE.CylinderGeometry(r * 0.25, r * 0.33, h, 12), 0xfff1df, 0, h / 2, 0, g);
+  const m = toon({ color: cap, emissive: cap, emissiveIntensity: 0 });
+  shroomMats.push(m);
+  const c = add(new THREE.SphereGeometry(r, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2), m, 0, h - 0.15, 0, g);
+  c.scale.y = 0.62;
+  add(new THREE.CylinderGeometry(r * 0.98, r * 0.98, 0.08, 22), 0xfff6ea, 0, h - 0.15, 0, g, false);
+  for (let i = 0; i < 7; i++) {
+    const th = rr(0, 6.3), ph = rr(0.25, 1.2);
+    add(new THREE.SphereGeometry(r * 0.13, 8, 6), 0xffffff, Math.sin(ph) * Math.cos(th) * r, h - 0.15 + Math.cos(ph) * r * 0.62, Math.sin(ph) * Math.sin(th) * r, g, false).scale.y = 0.5;
+  }
+  collide(x, z, r * 0.4);
+  return g;
+}
+{
+  const I = ISL.mush;
+  const capCols = [0xff6f6f, 0xc3a6ff, 0x8fb8ff, 0xffb36b, 0xff8fb1];
+  const spots = [];
+  for (let i = 0; i < 14; i++) {
+    const a = rr(0, 6.3), d = rr(6, I.r - 5);
+    const [x, z] = islPos(I, Math.cos(a) * d, Math.sin(a) * d);
+    if (Math.hypot(x - I.arrive.x, z - I.arrive.z) < 7 || Math.hypot(x - I.x, z - I.z - 3) < 7) continue;
+    if (spots.some(([sx, sz]) => Math.hypot(sx - x, sz - z) < 5)) continue;
+    spots.push([x, z]);
+    bigShroom(x, z, rr(2.2, 4.8), rr(1.4, 2.6), pick(capCols));
+  }
+  for (let i = 0; i < 8; i++) { const a = rr(0, 6.3), d = rr(8, I.r - 4); const [x, z] = islPos(I, Math.cos(a) * d, Math.sin(a) * d); if (!colliders.some((o) => Math.hypot(o.x - x, o.z - z) < o.r + 2.5)) tree(x, z, rr(0.9, 1.2), 'round'); }
+  // 작은 버섯 따기
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2, d = rr(8, I.r - 6);
+    const [x, z] = islPos(I, Math.cos(a) * d, Math.sin(a) * d);
+    if (colliders.some((o) => Math.hypot(o.x - x, o.z - z) < o.r + 0.8)) continue;
+    const m = new THREE.Group();
+    for (let k = 0; k < 3; k++) {
+      add(new THREE.CylinderGeometry(0.06, 0.08, 0.3, 6), 0xfff1df, (k - 1) * 0.22, 0.15, (k % 2) * 0.15, m, false);
+      add(new THREE.SphereGeometry(0.18, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), pick([0xff6f6f, 0xffb36b]), (k - 1) * 0.22, 0.28, (k % 2) * 0.15, m, false);
+    }
+    pickSpot(x, z, m, 'mushroom', '🍄 버섯 따기', 45, () => (Math.random() < 0.3 ? 2 : 1));
+  }
+  // 부엉 할머니의 버섯 오두막
+  const [hx, hz] = islPos(I, 0, 0);
+  const hut = new THREE.Group(); hut.position.set(hx, 0, hz); scene.add(hut);
+  add(new THREE.CylinderGeometry(2.4, 2.6, 3, 20), 0xfff1df, 0, 1.5, 0, hut);
+  const roofM = toon({ color: 0xff6f6f, emissive: 0xff6f6f, emissiveIntensity: 0 }); shroomMats.push(roofM);
+  const roof = add(new THREE.SphereGeometry(3.6, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), roofM, 0, 2.9, 0, hut); roof.scale.y = 0.7;
+  for (let i = 0; i < 8; i++) { const th = i * 0.8, ph = 0.4 + (i % 3) * 0.3; add(new THREE.SphereGeometry(0.4, 8, 6), 0xffffff, Math.sin(ph) * Math.cos(th) * 3.6, 2.9 + Math.cos(ph) * 2.5, Math.sin(ph) * Math.sin(th) * 3.6, hut, false).scale.y = 0.5; }
+  add(new THREE.BoxGeometry(1.1, 1.8, 0.1), 0x9c6a4c, 0, 0.9, 2.5, hut);
+  add(new THREE.CylinderGeometry(0.4, 0.4, 0.1, 16), windowMat, 1.4, 1.9, 2.05, hut).rotation.x = Math.PI / 2;
+  add(new THREE.CylinderGeometry(0.4, 0.4, 0.1, 16), windowMat, -1.4, 1.9, 2.05, hut).rotation.x = Math.PI / 2;
+  collide(hx, hz, 2.9);
+  glowLight(hx, 3, hz + 4, 0xffc070, 14);
+  resident(I, 2.2, 4.2, 0.3, { color: 0xc69a6b, ears: 'bear', accent: 0xffd6b0 }, '부엉 할머니',
+    ['호호, 버섯숲에 온 걸 환영한단다 🍄', '밤이 되면 버섯들이 반짝반짝 빛나지~', '작은 버섯을 따 오면 내가 사 주마. 수프도 끓여 줄게!'],
+    () => sellMenu('🍲 부엉 할머니의 오두막', '"따끈한 수프 한 그릇 하고 가렴~"', () => [foodItem('soup'), packItem('soup'), sellItem('mushroom', 2)]), 'glasses');
+  I.marks.push(['🏠', hx, hz]);
+  ZONE_LABELS.push(['🍲 부엉 할머니네', hx, 6.5, hz]);
+  tickers.push(() => { const glow = clamp((tod - 0.6) / 1.2, 0, 1); shroomMats.forEach((m) => (m.emissiveIntensity = glow * 0.55)); });
+}
+
+/* =========================================================
+   🔭 별빛섬 — 천문대에서 별자리 찾기
+   ========================================================= */
+const CONSTELLATIONS = [
+  { id: 'cat', name: '고양이자리', emoji: '🐱', lines: [[[-0.6, -0.4], [-0.6, 0.3], [-0.45, 0.8], [-0.15, 0.4], [0.15, 0.4], [0.45, 0.8], [0.6, 0.3], [0.6, -0.4], [-0.6, -0.4]]] },
+  { id: 'fish', name: '붕어빵자리', emoji: '🐟', lines: [[[-0.9, 0], [-0.4, 0.4], [0.3, 0.35], [0.7, 0], [0.3, -0.35], [-0.4, -0.4], [-0.9, 0]], [[0.7, 0], [1.0, 0.35], [1.0, -0.35], [0.7, 0]]] },
+  { id: 'heart', name: '하트자리', emoji: '💗', lines: [Array.from({ length: 13 }, (_, i) => { const t = (i / 12) * Math.PI * 2; return [(16 * Math.sin(t) ** 3) / 18, (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 18]; })] },
+  { id: 'crown', name: '왕관자리', emoji: '👑', lines: [[[-0.8, -0.4], [-0.8, 0.4], [-0.4, 0], [0, 0.65], [0.4, 0], [0.8, 0.4], [0.8, -0.4], [-0.8, -0.4]]] },
+  { id: 'bunny', name: '토끼자리', emoji: '🐰', lines: [[[-0.35, -0.6], [-0.45, 0.05], [-0.4, 0.9], [-0.15, 0.15], [0.15, 0.15], [0.4, 0.9], [0.45, 0.05], [0.35, -0.6], [-0.35, -0.6]]] },
+  { id: 'umbrella', name: '우산자리', emoji: '☂️', lines: [[[-0.8, 0.1], [-0.55, 0.5], [0, 0.7], [0.55, 0.5], [0.8, 0.1], [-0.8, 0.1]], [[0, 0.1], [0, -0.6], [0.2, -0.75]]] },
+  { id: 'melon', name: '수박자리', emoji: '🍉', lines: [[[-0.8, 0.3], [0.8, 0.3], [0, -0.7], [-0.8, 0.3]], [[-0.25, 0.05], [0.25, 0.05]]] },
+  { id: 'hammock', name: '해먹자리', emoji: '😴', lines: [[[-0.9, -0.6], [-0.9, 0.5]], [[-0.9, 0.4], [-0.4, 0.05], [0.4, 0.05], [0.9, 0.4]], [[0.9, 0.5], [0.9, -0.6]]] },
+];
+let obsTop = new THREE.Vector3();
+{
+  const I = ISL.star, H = I.hill;
+  const top = groundY(H.x, H.z);
+  const obs = new THREE.Group(); obs.position.set(H.x, top - 0.1, H.z); scene.add(obs);
+  add(new THREE.CylinderGeometry(3, 3.2, 3.2, 24), 0xfaf6ff, 0, 1.6, 0, obs);
+  const dome = add(new THREE.SphereGeometry(3.05, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), 0xc9d4ff, 0, 3.2, 0, obs);
+  add(new THREE.BoxGeometry(0.9, 2.8, 0.2), 0x6a7ab0, 0, 4.4, 1.9, obs).rotation.x = -0.6;
+  const tube = add(new THREE.CylinderGeometry(0.32, 0.4, 3.2, 14), 0xffd166, 0, 5.0, 1.4, obs);
+  tube.rotation.x = -0.7;
+  add(new THREE.BoxGeometry(1.2, 2, 0.15), 0x8a6a9c, 0, 1, 3.1, obs);
+  add(new THREE.SphereGeometry(0.08, 6, 6), 0xffd166, 0.35, 1, 3.2, obs, false);
+  collide(H.x, H.z, 3.5);
+  obsTop.set(H.x, top + 6.2, H.z + 1.5);
+  const sign = signPlane('🔭 별빛 천문대', 3, { w: 640, h: 160, font: 76, border: '#c3a6ff' });
+  sign.position.set(H.x + 3.6, top + 2.2, H.z + 3.8); sign.rotation.y = -0.4; scene.add(sign);
+  add(new THREE.CylinderGeometry(0.1, 0.1, 2.2, 6), 0xb07a56, H.x + 3.6, groundY(H.x + 3.6, H.z + 3.7) + 1.1, H.z + 3.7);
+  // 언덕 길 가로등
+  for (let i = 0; i < 4; i++) {
+    const a = I.arrive, t = (i + 1) / 5;
+    const x = lerp(a.x, H.x, t) + 1.8, z = lerp(a.z, H.z + 4, t);
+    const y = groundY(x, z);
+    add(new THREE.CylinderGeometry(0.08, 0.1, 2.4, 6), 0x6a7ab0, x, y + 1.2, z);
+    add(new THREE.SphereGeometry(0.28, 10, 8), lanternMats[2], x, y + 2.5, z, scene, false);
+    collide(x, z, 0.3);
+  }
+  for (let i = 0; i < 10; i++) { const a = rr(0, 6.3), d = rr(H.r + 2, I.r - 4); const [x, z] = islPos(I, Math.cos(a) * d, Math.sin(a) * d); if (Math.hypot(x - I.arrive.x, z - I.arrive.z) > 7 && !colliders.some((o) => Math.hypot(o.x - x, o.z - z) < o.r + 2.5)) tree(x, z, rr(0.8, 1.1), i % 3 ? 'green' : 'pink'); }
+  resident(I, 3.2, 5.6, 0.4, { color: 0xd8d8e8, ears: 'cat', accent: 0xc3a6ff }, '별님 박사',
+    ['밤하늘엔 우리 마을을 닮은 별자리가 숨어 있단다 ✨', '천문대 망원경은 밤에만 별이 보여요. 낮이면 기다려 볼까?', '별자리를 모두 찾으면… 하늘이 친구가 된 기분일 거야.'], null, 'glasses');
+  interact({ x: H.x, z: H.z + 4.6, r: 2.0, label: '🔭 망원경으로 별자리 찾기', action: () => startStargaze() });
+  I.marks.push(['🔭', H.x, H.z]);
+  ZONE_LABELS.push(['🔭 별빛 천문대', H.x, top + 8, H.z]);
+}
+const SG = { group: null, c: null, t: 0, announced: false };
+const sgDir = new THREE.Vector3(0.55, 0.62, -0.56).normalize(); // 달을 피해 동쪽 하늘
+function buildConstellation(c) {
+  if (SG.group) scene.remove(SG.group);
+  const g = new THREE.Group();
+  const Rv = new THREE.Vector3().crossVectors(sgDir, UP).normalize();
+  const Uv = new THREE.Vector3().crossVectors(Rv, sgDir).normalize();
+  const P = ([x, y]) => sgDir.clone().multiplyScalar(240).addScaledVector(Rv, x * 78).addScaledVector(Uv, y * 78);
+  const lineMat = new THREE.LineBasicMaterial({ color: 0xfff1a8, transparent: true, opacity: 0, fog: false, depthWrite: false });
+  const starPts = [];
+  for (const pl of c.lines) {
+    const pts = pl.map(P);
+    starPts.push(...pts);
+    g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat));
+  }
+  const sp = new THREE.Points(new THREE.BufferGeometry().setFromPoints(starPts), new THREE.PointsMaterial({ color: 0xffffff, size: 7, sizeAttenuation: false, transparent: true, opacity: 0, fog: false, depthWrite: false }));
+  g.add(sp);
+  g.userData = { lineMat, starMat: sp.material };
+  scene.add(g);
+  SG.group = g; SG.c = c; SG.t = 0; SG.announced = false;
+}
+function nextConstellation() {
+  const todo = CONSTELLATIONS.filter((c) => !S.stars[c.id] && c !== SG.c);
+  buildConstellation(pick(todo.length ? todo : CONSTELLATIONS.filter((c) => c !== SG.c)));
+}
+function startStargaze() {
+  if (tod < 1.5) {
+    openMenu({
+      title: '🔭 아직 낮이에요',
+      desc: () => '별은 밤에만 보여요. 천문대에서 밤이 될 때까지 기다릴까요?',
+      items: () => [
+        { label: '🌙 밤까지 기다리기', act: () => { setTimeout(() => fadeThen(() => { tod = todTarget = 2; toast('🌙 별이 총총한 밤이 되었어요', 2.6); setTimeout(startStargaze, 1200); }, 1000), 0); return false; } },
+        { label: '그냥 둘러볼래요', act: () => false },
+      ],
+    });
+    return;
+  }
+  state = 'stargaze';
+  $('prompt').classList.add('hidden');
+  nextConstellation();
+  sfx.ok();
+  sceneMsg('🔭 반짝이는 별을 이어 보는 중… · <kbd>Space</kbd> 다른 별자리 찾기 · <kbd>Esc</kbd> 그만 보기');
+}
+function endStargaze() {
+  state = 'play';
+  if (SG.group) { scene.remove(SG.group); SG.group = null; }
+  sceneMsg(null);
+  const n = CONSTELLATIONS.filter((c) => S.stars[c.id]).length;
+  toast(`✨ 지금까지 찾은 별자리 ${n}/${CONSTELLATIONS.length}개 (도감 G에서 볼 수 있어요)`, 3);
+}
+modes.stargaze = {
+  key(code) {
+    if (code === 'Escape' || code === 'KeyE') endStargaze();
+    else if ((code === 'Space' || code === 'Enter') && SG.announced) { sfx.select(); nextConstellation(); }
+  },
+  update(dt) {
+    animateCreature(player, false, 0, dt, elapsed);
+    SG.t += dt;
+    if (SG.group) {
+      SG.group.position.copy(camera.position);
+      SG.group.userData.starMat.opacity = clamp(SG.t / 0.8, 0, 1);
+      SG.group.userData.lineMat.opacity = clamp((SG.t - 0.8) / 1.5, 0, 0.9);
+    }
+    if (!SG.announced && SG.t > 2.4) {
+      SG.announced = true;
+      const c = SG.c;
+      if (!S.stars[c.id]) {
+        S.stars[c.id] = 1; S.coins += 3; persist();
+        sfx.fanfare();
+        toast(`✨ 새 별자리 발견! ${c.emoji} ${c.name} (+3🪙)`, 3.4);
+      } else { sfx.chime(); toast(`${c.emoji} ${c.name}… 또 만났네! 반가워`, 2.6); }
+    }
+  },
+  camera() {
+    return { pos: tmpCamPos.copy(obsTop), target: tmpCamTarget.copy(obsTop).addScaledVector(sgDir, 50), fov: 62, speed: 2, lookSpeed: 3 };
+  },
+};
+
+/* =========================================================
+   🍓 딸기섬
+   ========================================================= */
+{
+  const I = ISL.berry;
+  // 밭
+  const [fx, fz] = islPos(I, -2, 4);
+  const field = add(new THREE.BoxGeometry(14, 0.06, 7), 0xb88a5c, fx, 0.03, fz, scene, false);
+  const plants = [];
+  for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++) {
+    const x = fx - 5.6 + c * 2.8, z = fz - 1.7 + r * 3.4;
+    const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+    for (let k = 0; k < 4; k++) add(new THREE.SphereGeometry(0.42, 10, 8), 0x5fbf4a, Math.cos(k * 1.6) * 0.35, 0.3, Math.sin(k * 1.6) * 0.35, g).scale.y = 0.55;
+    const berries = new THREE.Group(); g.add(berries);
+    for (let k = 0; k < 5; k++) { const b = add(new THREE.SphereGeometry(0.13, 8, 6), 0xff3d5a, Math.cos(k * 1.3) * 0.5, 0.42, Math.sin(k * 1.3) * 0.5, berries, false); b.scale.y = 1.25; }
+    const flowers = new THREE.Group(); g.add(flowers);
+    for (let k = 0; k < 3; k++) add(new THREE.SphereGeometry(0.08, 6, 4), 0xffffff, Math.cos(k * 2.1) * 0.3, 0.55, Math.sin(k * 2.1) * 0.3, flowers, false);
+    const p = { berries, flowers, t: 0 };
+    plants.push(p);
+    interact({
+      x, z, get r() { return p.t <= 0 ? 1.3 : 0; }, label: '🍓 딸기 따기',
+      action: () => { const n = Math.random() < 0.35 ? 2 : 1; bagAdd('berry', n); p.t = 35; sfx.ding(); sparkle(x, 0.8, z, new THREE.Color(0xff8fb1), 14); say(player, `🍓 딸기 ${n}개 땄다! 새콤달콤~`, 1.8); },
+    });
+  }
+  tickers.push((dt) => plants.forEach((p) => { if (p.t > 0) p.t -= dt; p.berries.visible = p.t <= 0; p.flowers.visible = p.t > 0; }));
+  // 울타리
+  for (let i = 0; i <= 8; i++) for (const s of [-1, 1]) {
+    add(new THREE.BoxGeometry(0.15, 0.8, 0.15), 0xffffff, fx - 7.6 + i * 1.9, 0.4, fz + s * 4, scene, false);
+  }
+  for (const s of [-1, 1]) add(new THREE.BoxGeometry(15.4, 0.1, 0.08), 0xffffff, fx, 0.6, fz + s * 4, scene, false);
+  // 빨간 헛간
+  const [bx, bz] = islPos(I, -8, -9);
+  const barn = new THREE.Group(); barn.position.set(bx, 0, bz); barn.rotation.y = 0.3; scene.add(barn);
+  add(new THREE.BoxGeometry(6, 4, 5), 0xe85d5d, 0, 2, 0, barn);
+  const br = add(new THREE.CylinderGeometry(0.01, 3.6, 2.6, 4), 0x8a4a3c, 0, 5.3, 0, barn); br.rotation.y = Math.PI / 4; br.scale.set(1.25, 1, 1);
+  add(new THREE.BoxGeometry(2.4, 2.8, 0.1), 0xffffff, 0, 1.4, 2.52, barn);
+  for (const s of [-1, 1]) add(new THREE.BoxGeometry(0.15, 3.4, 0.05), 0xe85d5d, 0, 1.4, 2.58, barn).rotation.z = s * 0.7;
+  collide(bx, bz, 3.6);
+  // 풍차
+  const [wx, wz] = islPos(I, 9, -9);
+  add(new THREE.CylinderGeometry(1.1, 1.8, 6, 12), 0xfff1df, wx, 3, wz);
+  add(new THREE.ConeGeometry(1.5, 1.6, 12), 0xff8fb1, wx, 6.8, wz);
+  const blades = new THREE.Group(); blades.position.set(wx, 5.4, wz + 1.4); scene.add(blades);
+  for (let i = 0; i < 4; i++) { const b = add(new THREE.BoxGeometry(0.6, 3.6, 0.08), i % 2 ? 0xffffff : 0xffd6e2, 0, 1.9, 0, new THREE.Group(), true); const arm = new THREE.Group(); arm.rotation.z = (i * Math.PI) / 2; arm.add(b); blades.add(arm); }
+  add(new THREE.SphereGeometry(0.3, 10, 8), 0xffd166, 0, 0, 0.1, blades, false);
+  collide(wx, wz, 1.9);
+  tickers.push((dt) => (blades.rotation.z += dt * 0.8));
+  resident(I, 6, 0, -0.5, { color: 0xffe0b8, ears: 'bear', accent: 0xff8fb1 }, '딸기 아저씨',
+    ['허허, 딸기섬에 잘 왔구나! 🍓', '밭에서 빨갛게 익은 딸기는 마음대로 따 가렴. 금방 또 열려!', '딸기 3개를 가져오면 달콤한 잼을 만들어 주마~'],
+    () => sellMenu('🍓 딸기 아저씨의 농장 가게', '"딸기는 사랑이란다~"', () => [
+      foodItem('berrymilk'), packItem('berrymilk'),
+      { label: '🫙 딸기 잼 만들기', right: '🍓 3개', dim: !((S.bag.berry || 0) >= 3), act: () => { if ((S.bag.berry || 0) < 3) { sfx.no(); toast('딸기가 3개 필요해요 🍓'); return true; } bagAdd('berry', -3); bagAdd('jam'); sfx.fanfare(); toast('🫙 딸기 잼 완성! 친구에게 선물하면 좋아할 거예요'); return true; } },
+      sellItem('berry', 2), sellItem('jam', 9),
+    ]), 'straw');
+  I.marks.push(['🍓', fx, fz], ['🏚️', bx, bz], ['🌬️', wx, wz]);
+  ZONE_LABELS.push(['🍓 딸기밭', fx, 3.5, fz]);
+}
+
 // ---------- 80-nature.js ----------
 /* =========================================================
    집 · 나무 · 꽃 · 구름
@@ -3704,11 +4279,14 @@ const S = {
   friendDay: save.get('friendDay', {}), // 오늘 이미 이야기했는지
   giftDay: save.get('giftDay', {}),     // 오늘 이미 선물했는지
   favKnown: save.get('favKnown', {}),   // 좋아하는 것을 알아냈는지
+  stars: save.get('stars', {}),         // 찾은 별자리
+  sandStage: save.get('sandStage', 0), sandDay: save.get('sandDay', ''), // 야자수섬 모래성
+  visited: save.get('visited', {}),     // 놀러 간 친구 집 · 차 마신 날
 };
 function persist() {
   save.set('coins', S.coins); save.set('full', Math.round(S.full)); save.set('energy', Math.round(S.energy));
   save.set('owned', S.owned); save.set('equipped', S.equipped);
-  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented', 'layout', 'season', 'seasonDay', 'tokens', 'snowman', 'friends', 'friendDay', 'giftDay', 'favKnown']) save.set(k, S[k]);
+  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented', 'layout', 'season', 'seasonDay', 'tokens', 'snowman', 'friends', 'friendDay', 'giftDay', 'favKnown', 'stars', 'sandStage', 'sandDay', 'visited']) save.set(k, S[k]);
 }
 const bagAdd = (k, n = 1) => { S.bag[k] = Math.max(0, (S.bag[k] || 0) + n); if (!S.bag[k]) delete S.bag[k]; persist(); };
 const slotGroups = { hat: player.hatSlot, face: player.faceSlot, hand: player.handSlot };
@@ -4273,14 +4851,38 @@ mmBg.width = mmBg.height = 340;
   g.fillStyle = '#d9a878'; g.fillRect(...P(PIER.x - PIER.w / 2, ISLAND_R), PIER.w * s, (PIER.z1 - ISLAND_R) * s);
   for (const [e, x, z] of [['🎆', 0, -36], ['🍢', 32, -4], ['😴', -38, 3.5], ['🛍️', 22, -26], ['⛲', 0, 0], ...MAP_MARKS]) g.fillText(e, ...P(x, z));
 }
+// 다른 섬의 미니맵 배경
+const islandMapCache = {};
+function islandMapBg(I) {
+  if (islandMapCache[I.id]) return islandMapCache[I.id];
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 340;
+  const g = cv.getContext('2d');
+  const s = 340 / (I.r * 2 + 10), c = 170;
+  g.fillStyle = '#9fd6ff'; g.fillRect(0, 0, 340, 340);
+  g.fillStyle = '#f6e3b4'; g.beginPath(); g.arc(c, c, (I.r + 0.6) * s, 0, 7); g.fill();
+  g.fillStyle = I.mapColor || '#a7e086'; g.beginPath(); g.arc(c, c, I.r * s, 0, 7); g.fill();
+  if (I.hill) { g.fillStyle = 'rgba(255,255,255,0.35)'; g.beginPath(); g.arc(c + (I.hill.x - I.x) * s, c + (I.hill.z - I.z) * s, I.hill.r * s, 0, 7); g.fill(); }
+  g.font = '30px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const [e, x, z] of I.marks || []) g.fillText(e, c + (x - I.x) * s, c + (z - I.z) * s);
+  g.font = '26px Jua, sans-serif'; g.fillStyle = '#6a4c3f';
+  g.fillText(`${I.emoji} ${I.name}`, c, 300);
+  islandMapCache[I.id] = cv;
+  return cv;
+}
 function drawMinimap() {
-  const s = 340 / (ISLAND_R * 2 + 10), c = 170;
-  mm.drawImage(mmBg, 0, 0);
-  mm.fillStyle = '#ffd166';
-  for (const co of coins) if (co.m.visible) { mm.beginPath(); mm.arc(c + co.m.position.x * s, c + co.m.position.z * s, 4, 0, 7); mm.fill(); }
+  const pw = insideHouse ? curRoom.exit : player.root.position;
+  const I = islandAt(pw);
+  const R = I.id === 'main' ? ISLAND_R : I.r;
+  const s = 340 / (R * 2 + 10), c = 170;
+  mm.drawImage(I.id === 'main' ? mmBg : islandMapBg(I), 0, 0);
+  if (I.id === 'main') {
+    mm.fillStyle = '#ffd166';
+    for (const co of coins) if (co.m.visible) { mm.beginPath(); mm.arc(c + co.m.position.x * s, c + co.m.position.z * s, 4, 0, 7); mm.fill(); }
+  }
   mm.fillStyle = '#ffffff';
-  for (const n of npcs) { mm.beginPath(); mm.arc(c + n.c.root.position.x * s, c + n.c.root.position.z * s, 5, 0, 7); mm.fill(); }
-  const p = insideHouse ? { x: MYHOUSE.x, z: MYHOUSE.z } : player.root.position, r = player.root.rotation.y;
+  for (const n of npcs) { if (n.visiting || islandAt(n.c.root.position) !== I) continue; mm.beginPath(); mm.arc(c + (n.c.root.position.x - I.x) * s, c + (n.c.root.position.z - I.z) * s, 5, 0, 7); mm.fill(); }
+  const p = { x: pw.x - I.x, z: pw.z - I.z }, r = player.root.rotation.y;
   // 카메라가 보는 방향 (부채꼴)
   const fa = Math.atan2(-Math.cos(camYaw), -Math.sin(camYaw));
   mm.fillStyle = 'rgba(255, 255, 255, 0.45)';
@@ -4292,6 +4894,231 @@ function drawMinimap() {
   mm.beginPath(); mm.moveTo(0, 13); mm.lineTo(9, -8); mm.lineTo(0, -3); mm.lineTo(-9, -8); mm.closePath();
   mm.fill(); mm.stroke();
   mm.restore();
+}
+
+// ---------- 85-friendhouse.js ----------
+/* =========================================================
+   🏡 친구 집에 놀러 가기
+   하트 1개 이상 친해지면 친구가 집에 초대해 줘요.
+   집 안은 내 집처럼 바다 멀리 따로 지어 두었어요.
+   ========================================================= */
+const FRIEND_HOMES = [
+  { name: '모모', emoji: '🐱', house: [-8, 44], room: [380, 300], wall: 0xffe6ee, floor: 0xf2c8d4, accent: 0xff8fb1, accentCss: '#ff8fb1' },
+  { name: '콩이', emoji: '🌶️', house: [38, -21], room: [460, 300], wall: 0xfff1d6, floor: 0xe0b98d, accent: 0xff7a5c, accentCss: '#ff7a5c' },
+  { name: '보리', emoji: '🐰', house: [-12, -26], room: [300, 380], wall: 0xeaf6ff, floor: 0xd8c4a8, accent: 0x8fb8ff, accentCss: '#8fb8ff' },
+  { name: '솜이', emoji: '🐈', house: [11, 30], room: [380, 380], wall: 0xe8f0ff, floor: 0xc9d4ec, accent: 0x9fb8ff, accentCss: '#9fb8ff' },
+  { name: '두부', emoji: '🍉', house: [-24, 42], room: [460, 380], wall: 0xf0ffe6, floor: 0xd6c08f, accent: 0x7fcf6b, accentCss: '#7fcf6b' },
+];
+
+function friendRoomShell(F) {
+  const R = { x: F.room[0], z: F.room[1], w: 12, d: 8.5 };
+  const hw = R.w / 2, hd = R.d / 2, wallH = 3.2;
+  const lawn = add(new THREE.CircleGeometry(30, 40), 0x9fdc7c, R.x, -0.02, R.z, scene, false);
+  lawn.rotation.x = -Math.PI / 2;
+  add(new THREE.BoxGeometry(R.w, 0.2, R.d), F.floor, R.x, -0.1, R.z, scene, false);
+  add(new THREE.BoxGeometry(R.w, wallH, 0.3), F.wall, R.x, wallH / 2, R.z - hd);
+  add(new THREE.BoxGeometry(0.3, wallH, R.d), F.wall, R.x - hw, wallH / 2, R.z);
+  add(new THREE.BoxGeometry(0.3, wallH, R.d), F.wall, R.x + hw, wallH / 2, R.z);
+  for (const s of [-1, 1]) add(new THREE.BoxGeometry(hw - 1, 0.7, 0.3), F.wall, R.x + s * (hw / 2 + 0.5), 0.35, R.z + hd);
+  add(new THREE.BoxGeometry(R.w + 0.3, 0.25, 0.4), F.accent, R.x, wallH, R.z - hd);
+  for (const wx of [-3.2, 3.2]) {
+    add(new THREE.BoxGeometry(1.6, 1.2, 0.05), windowMat, R.x + wx, 2.0, R.z - hd + 0.18, scene, false);
+    for (const s of [-1, 1]) add(new THREE.BoxGeometry(0.4, 1.4, 0.06), F.accent, R.x + wx + s * 0.95, 1.95, R.z - hd + 0.22, scene, false);
+  }
+  // 함께 차 마시는 테이블
+  const t = new THREE.Group(); t.position.set(R.x - 0.5, 0, R.z + 1.4); scene.add(t);
+  add(new THREE.CylinderGeometry(0.9, 0.9, 0.08, 20), 0xffffff, 0, 0.55, 0, t);
+  add(new THREE.CylinderGeometry(0.1, 0.15, 0.55, 8), 0xd69a6a, 0, 0.27, 0, t);
+  add(new THREE.SphereGeometry(0.2, 12, 10), F.accent, 0, 0.75, 0, t).scale.y = 0.8;
+  add(new THREE.CylinderGeometry(0.03, 0.03, 0.2, 5), F.accent, 0.22, 0.75, 0, t, false).rotation.z = -1;
+  for (const s of [-1, 1]) {
+    add(new THREE.CylinderGeometry(0.09, 0.07, 0.12, 10), 0xffffff, s * 0.45, 0.65, 0.25, t, false);
+    add(new THREE.CylinderGeometry(0.4, 0.4, 0.2, 14), F.accent, s * 1.3, 0.1, 0, t);
+  }
+  collide(t.position.x, t.position.z, 1.0);
+  glowLights.push((() => { const l = new THREE.PointLight(0xffc890, 0, 16, 1.2); l.position.set(R.x, 3, R.z); scene.add(l); return l; })());
+  R.tea = t.position;
+  return R;
+}
+const room = (R, build) => { const g = new THREE.Group(); g.position.set(R.x, 0, R.z); scene.add(g); build(g); return g; };
+const rc = (R, lx, lz, r) => collide(R.x + lx, R.z + lz, r);
+const FRIEND_DECOR = {
+  모모(R) {
+    room(R, (g) => {
+      // 캣타워
+      for (const [x, z] of [[-4.6, -3], [-3.6, -3]]) add(new THREE.CylinderGeometry(0.12, 0.12, 2.6, 8), 0xe8c49a, x, 1.3, z, g);
+      for (const [y, r] of [[0.8, 0.8], [1.7, 0.7], [2.6, 0.6]]) add(new THREE.CylinderGeometry(r, r, 0.15, 16), 0xffd6e2, -4.1, y, -3, g);
+      add(new THREE.SphereGeometry(0.45, 12, 10), 0xffffff, -4.1, 2.85, -3, g).scale.y = 0.5;
+      // 털실 공
+      for (const [x, z, c] of [[-2.6, -1.6, 0xff8fb1], [-2.1, -1.2, 0x9fd6ff], [-2.9, -0.8, 0xffd166]]) {
+        add(new THREE.SphereGeometry(0.22, 12, 10), c, x, 0.22, z, g);
+        add(new THREE.TorusGeometry(0.22, 0.025, 6, 16), 0xffffff, x, 0.22, z, g, false).rotation.y = rr(0, 3);
+      }
+      // 생선 모양 러그
+      const rug = add(new THREE.CylinderGeometry(1.6, 1.6, 0.04, 24), 0xbfe3ff, 1.5, 0.02, -1.2, g, false); rug.scale.z = 0.55;
+      const tail = add(new THREE.ConeGeometry(0.7, 0.9, 3), 0xbfe3ff, 3.4, 0.02, -1.2, g, false); tail.rotation.set(Math.PI / 2, 0, Math.PI / 2); tail.scale.z = 0.05;
+      // 고양이 침대
+      add(new THREE.TorusGeometry(0.6, 0.22, 10, 20), 0xff8fb1, 4.4, 0.22, -2.8, g).rotation.x = Math.PI / 2;
+      add(new THREE.CylinderGeometry(0.55, 0.55, 0.15, 16), 0xffffff, 4.4, 0.1, -2.8, g);
+      // 생선 그림 액자
+      add(new THREE.BoxGeometry(1.4, 0.9, 0.05), 0xffffff, 0, 2.1, -4.05, g, false);
+      const f = add(new THREE.SphereGeometry(0.28, 10, 8), 0x8fb8ff, 0, 2.1, -4.0, g, false); f.scale.set(1.5, 0.8, 0.2);
+    });
+    rc(R, -4.1, -3, 0.9); rc(R, 4.4, -2.8, 0.8);
+  },
+  콩이(R) {
+    room(R, (g) => {
+      add(new THREE.BoxGeometry(4.2, 1.0, 1.0), 0xfff6ea, 2.8, 0.5, -3.6, g);
+      add(new THREE.BoxGeometry(4.3, 0.1, 1.1), 0xd69a6a, 2.8, 1.05, -3.6, g);
+      add(new THREE.CylinderGeometry(0.4, 0.35, 0.45, 16), 0x6a6a7a, 2.0, 1.3, -3.6, g);
+      add(new THREE.CylinderGeometry(0.36, 0.36, 0.03, 16), 0xe8452c, 2.0, 1.52, -3.6, g, false);
+      add(new THREE.BoxGeometry(1.1, 2.4, 0.9), 0xffffff, 5.2, 1.2, -3.5, g);
+      add(new THREE.BoxGeometry(0.06, 0.6, 0.05), 0x9fb8ff, 4.8, 1.6, -3.03, g, false);
+      // 식탁과 떡볶이
+      add(new THREE.BoxGeometry(2.2, 0.1, 1.3), 0xe8c49a, -3, 0.8, -2.2, g);
+      for (const [x, z] of [[-3.9, -2.7], [-2.1, -2.7], [-3.9, -1.7], [-2.1, -1.7]]) add(new THREE.BoxGeometry(0.1, 0.8, 0.1), 0xd69a6a, x, 0.4, z, g);
+      const plate = foodModel('tteok'); plate.position.set(-3, 0.85, -2.2); g.add(plate);
+      const fish = foodModel('fish'); fish.position.set(-2.4, 0.85, -2.0); g.add(fish);
+      // 고추 줄
+      for (let i = 0; i < 9; i++) { const c = add(new THREE.ConeGeometry(0.08, 0.35, 6), 0xe8452c, -4.5 + i * 0.35, 2.5 - Math.sin((i / 8) * Math.PI) * 0.3, -4.05, g, false); c.rotation.z = Math.PI; }
+    });
+    rc(R, 2.8, -3.6, 1.2); rc(R, 0.9, -3.6, 0.6); rc(R, 5.2, -3.5, 0.7); rc(R, -3, -2.2, 1.2);
+  },
+  보리(R) {
+    room(R, (g) => {
+      for (const x of [-4, -1.6]) {
+        add(new THREE.BoxGeometry(2.2, 2.4, 0.6), 0xe8c49a, x, 1.2, -3.8, g);
+        for (let r = 0; r < 3; r++) for (let i = 0; i < 6; i++) add(new THREE.BoxGeometry(0.22, 0.5, 0.45), pick([0x8fb8ff, 0xffffff, 0xc3a6ff, 0xffd6e2]), x - 0.85 + i * 0.32, 0.5 + r * 0.72, -3.7, g, false);
+      }
+      // 구름 러그
+      for (const [x, z, r] of [[2, -1, 1.2], [3, -0.7, 1.0], [1.1, -0.6, 0.9], [2.6, -1.7, 0.9]]) add(new THREE.CylinderGeometry(r, r, 0.04, 20), 0xffffff, x, 0.02, z, g, false);
+      // 당근 쿠션
+      for (const [x, z] of [[1.4, 0.1], [3.4, 0.2]]) {
+        const c = add(new THREE.ConeGeometry(0.4, 1.0, 12), 0xff9f43, x, 0.25, z, g); c.rotation.z = Math.PI / 2;
+        add(new THREE.ConeGeometry(0.15, 0.4, 6), 0x5fbf4a, x - 0.6, 0.3, z, g, false).rotation.z = Math.PI / 2;
+      }
+      // 책상과 스탠드
+      add(new THREE.BoxGeometry(1.6, 0.1, 0.9), 0xffffff, 4.6, 0.9, -3.4, g);
+      for (const [x, z] of [[3.9, -3.7], [5.3, -3.7], [3.9, -3.1], [5.3, -3.1]]) add(new THREE.BoxGeometry(0.08, 0.9, 0.08), 0xd69a6a, x, 0.45, z, g);
+      add(new THREE.SphereGeometry(0.25, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), toon({ color: 0xc3a6ff, emissive: 0xffc070, emissiveIntensity: 0.4 }), 5, 1.35, -3.5, g);
+      for (const [x, z] of [[-5.3, 3.2], [5.3, 3.3]]) { add(new THREE.CylinderGeometry(0.3, 0.25, 0.5, 10), 0xe58e6b, x, 0.25, z, g); add(new THREE.SphereGeometry(0.45, 10, 8), 0x7fcf6b, x, 0.85, z, g); }
+    });
+    rc(R, -4, -3.8, 1.1); rc(R, -1.6, -3.8, 1.1); rc(R, 4.6, -3.4, 0.9);
+  },
+  솜이(R) {
+    room(R, (g) => {
+      // 동그란 소파
+      add(new THREE.CylinderGeometry(1.3, 1.3, 0.45, 24), 0x9fb8ff, -3.4, 0.25, -2.4, g);
+      const back = add(new THREE.TorusGeometry(1.25, 0.25, 10, 24, Math.PI), 0x8fa8f0, -3.4, 0.55, -2.4, g); back.rotation.x = -Math.PI / 2; back.rotation.z = Math.PI;
+      for (const x of [-3.8, -3.0]) add(new THREE.SphereGeometry(0.25, 10, 8), 0xffffff, x, 0.65, -2.2, g).scale.y = 0.7;
+      // 화장대와 거울
+      add(new THREE.BoxGeometry(1.8, 0.9, 0.7), 0xffffff, 4, 0.45, -3.6, g);
+      const mirror = add(new THREE.CylinderGeometry(0.6, 0.6, 0.05, 24), toon({ color: 0xdff4ff, emissive: 0xbfe3ff, emissiveIntensity: 0.4 }), 4, 1.7, -3.9, g, false); mirror.rotation.x = Math.PI / 2;
+      add(new THREE.TorusGeometry(0.62, 0.06, 8, 24), 0xffd166, 4, 1.7, -3.88, g, false);
+      // 빙수 냉장고
+      add(new THREE.BoxGeometry(0.9, 1.4, 0.7), 0xe8f6ff, 5.3, 0.7, -1.5, g);
+      const bs = foodModel('bingsu'); bs.position.set(5.3, 1.42, -1.5); g.add(bs);
+      // 스탠드 조명
+      add(new THREE.CylinderGeometry(0.05, 0.08, 2.2, 8), 0xffd166, -5.3, 1.1, 2.8, g);
+      add(new THREE.ConeGeometry(0.4, 0.5, 14, 1, true), toon({ color: 0xffffff, emissive: 0xffe0a0, emissiveIntensity: 0.5, side: THREE.DoubleSide }), -5.3, 2.3, 2.8, g);
+      const rug = add(new THREE.CylinderGeometry(1.8, 1.8, 0.04, 28), 0xd8e4ff, 1.6, 0.02, -1.4, g, false);
+    });
+    rc(R, -3.4, -2.4, 1.4); rc(R, 4, -3.6, 1.0); rc(R, 5.3, -1.5, 0.6); rc(R, -5.3, 2.8, 0.4);
+  },
+  두부(R) {
+    room(R, (g) => {
+      add(new THREE.BoxGeometry(2.6, 0.5, 3.2), 0xd69a6a, -3.8, 0.25, -2.4, g);
+      add(new THREE.BoxGeometry(2.5, 0.35, 3.1), 0xfff6ea, -3.8, 0.65, -2.4, g);
+      add(new THREE.BoxGeometry(2.52, 0.37, 2.0), 0x9fe3c8, -3.8, 0.7, -1.8, g);
+      for (let i = 0; i < 5; i++) add(new THREE.SphereGeometry(0.35, 10, 8), pick([0xffffff, 0xffd6e2, 0xfff1c8, 0xd8f5e8]), -4.7 + i * 0.45, 1.0, -3.6 + (i % 2) * 0.2, g).scale.set(1, 0.6, 0.7);
+      // 수박 빈백
+      const bean = add(new THREE.SphereGeometry(1, 20, 14), toon({ map: melonTex }), 2.4, 0.5, -1.6, g); bean.scale.set(1.1, 0.55, 1.1);
+      add(new THREE.CylinderGeometry(1.05, 1.05, 0.06, 20), 0xff5a6e, 2.4, 0.78, -1.6, g, false);
+      // 벽시계
+      add(new THREE.CylinderGeometry(0.5, 0.5, 0.06, 20), 0xffffff, 1, 2.3, -4.05, g, false).rotation.x = Math.PI / 2;
+      add(new THREE.BoxGeometry(0.04, 0.35, 0.02), 0x3b2a25, 1, 2.4, -4.0, g, false);
+      add(new THREE.BoxGeometry(0.25, 0.04, 0.02), 0x3b2a25, 1.1, 2.3, -4.0, g, false);
+      for (const [x, z] of [[5.2, -3.5], [5.2, 3.2], [-5.3, 3.2]]) { add(new THREE.CylinderGeometry(0.3, 0.25, 0.5, 10), 0xe58e6b, x, 0.25, z, g); add(new THREE.SphereGeometry(0.5, 10, 8), 0x6cbf5d, x, 0.9, z, g); }
+    });
+    rc(R, -3.8, -2.4, 1.6); rc(R, 2.4, -1.6, 1.0);
+  },
+};
+
+for (const F of FRIEND_HOMES) {
+  const hg = HOUSE_GROUPS.find((h) => h.x === F.house[0] && h.z === F.house[1]);
+  if (!hg) continue;
+  const R = friendRoomShell(F);
+  FRIEND_DECOR[F.name](R);
+  F.R = R;
+  const rot = hg.rot;
+  R.exit = { x: hg.x + Math.sin(rot) * 3.4, z: hg.z + Math.cos(rot) * 3.4, rot };
+  const sign = signPlane(`${F.emoji} ${F.name}네 집`, 1.9, { font: 80, border: F.accentCss });
+  sign.position.set(0, 2.72, 2.1);
+  hg.g.add(sign);
+  const npcOf = () => npcs.find((n) => n.name === F.name);
+  interact({
+    x: hg.x + Math.sin(rot) * 2.9, z: hg.z + Math.cos(rot) * 2.9, r: 1.9,
+    get label() { return friendLv(F.name) >= 1 ? `${F.name}네 집 놀러 가기 🏡` : `🔒 ${F.name}네 집 (❤️1개면 초대받아요)`; },
+    action: () => visitFriend(F, npcOf()),
+  });
+  // 안에서: 나가기 · 차 마시기
+  interact({ x: R.x, z: R.z + R.d / 2 - 0.6, r: 1.6, label: '밖으로 나가기 🚪', action: () => exitHouse() });
+  interact({ x: R.tea.x + 1.6, z: R.tea.z + 0.6, r: 1.5, label: `🍵 ${F.name}와 차 마시기`, action: () => teaTime(F, npcOf()) });
+}
+
+function visitFriend(F, npc) {
+  if (friendLv(F.name) < 1) {
+    sfx.no();
+    say(player, '똑똑… 아직은 문이 잠겨 있어.', 2);
+    toast(`🔒 ${F.name}와 조금 더 친해지면 집에 초대해 줄 거예요 (❤️1개 필요 · K 친구 수첩)`, 3.6);
+    return;
+  }
+  if (riding) setRiding(false);
+  sfx.ok();
+  fadeThen(() => {
+    insideHouse = true;
+    curRoom = F.R;
+    player.root.position.set(F.R.x, 0, F.R.z + F.R.d / 2 - 1.2);
+    player.root.rotation.set(0, Math.PI, 0);
+    houseCamera(player.root.position, camera.position, lookAt);
+    if (npc) {
+      npc.visiting = true;
+      npc.c.root.position.set(F.R.x + 1.6, 0, F.R.z + 0.2);
+      const lv = friendLv(F.name);
+      setTimeout(() => say(npc.c, lv >= 4 ? pick(['와아~ 와 줬구나! 보고 싶었어 💕', '어서 와! 우리 집은 네 집이나 마찬가지야 💗']) : lv >= 2 ? pick(['어서 와~ 편하게 앉아!', '헤헤, 우리 집 어때?']) : pick(['어, 어서 와… 좀 어질러져 있지?', '놀러 와 줘서 고마워!']), 3, F.name), 500);
+      if (!S.visited[F.name]) {
+        S.visited[F.name] = 1;
+        persist();
+        setTimeout(() => { addFriendship(npc, 5); toast(`🏡 ${F.name}네 집에 처음 놀러 왔어요! 호감도가 올랐어요`, 3.2); }, 1300);
+      }
+    }
+    F.R.onExit = () => {
+      if (!npc) return;
+      npc.visiting = false;
+      npc.c.root.position.set(F.R.exit.x + 1.2, 0, F.R.exit.z + 0.6);
+      npc.target = null;
+      npc.wait = 2;
+    };
+  }, 300);
+}
+function teaTime(F, npc) {
+  const key = F.name + '_tea';
+  if (S.visited[key] === dayKey()) {
+    say(npc ? npc.c : player, '차는 아까 마셨잖아~ 배가 출렁출렁해 😆', 2.6, npc ? F.name : '');
+    return;
+  }
+  S.visited[key] = dayKey();
+  S.energy = clamp(S.energy + 15, 0, 100);
+  S.full = clamp(S.full + 5, 0, 100);
+  persist();
+  sfx.ding();
+  const t = F.R.tea;
+  sparkle(t.x, 1.2, t.z, new THREE.Color(0xfff1c8), 20);
+  say(player, '후~ 따뜻하다… 🍵', 2.2);
+  if (npc) {
+    setTimeout(() => say(npc.c, pick(['같이 마시니까 더 맛있다!', '이 차는 내가 제일 아끼는 거야~', '다음에도 또 놀러 와 💕']), 3, F.name), 1200);
+    addFriendship(npc, 6);
+  }
 }
 
 // ---------- 90-loop.js ----------
@@ -4311,6 +5138,12 @@ function resolve(p, r, isPlayer = false) {
     if (d < m && d > 1e-5) { p.x = c.x + (dx / d) * m; p.z = c.z + (dz / d) * m; }
   }
   if (isPlayer && insideHouse) { clampToRoom(p); return; }
+  const I = islandAt(p);
+  if (I.id !== 'main') {
+    const d = Math.hypot(p.x - I.x, p.z - I.z), lim = I.r - 1.8;
+    if (d > lim) { p.x = I.x + ((p.x - I.x) * lim) / d; p.z = I.z + ((p.z - I.z) * lim) / d; }
+    return;
+  }
   // 선착장 위는 섬 밖이어도 걸을 수 있어요
   if (Math.abs(p.x - PIER.x) < PIER.w / 2 && p.z > ISLAND_R - 3) {
     p.x = clamp(p.x, PIER.x - PIER.w / 2 + 0.5, PIER.x + PIER.w / 2 - 0.5);
@@ -4322,6 +5155,12 @@ function resolve(p, r, isPlayer = false) {
 }
 
 let pvy = 0, airborne = false, airTime = 0;
+// 지금 서 있는(가장 가까운) 섬
+function islandAt(p) {
+  let best = ISLANDS[0], bd = Infinity;
+  for (const I of ISLANDS) { const d = Math.hypot(p.x - I.x, p.z - I.z) - I.r; if (d < bd) { bd = d; best = I; } }
+  return best;
+}
 
 function updatePlayer(dt) {
   let dx = 0, dz = 0;
@@ -4338,7 +5177,9 @@ function updatePlayer(dt) {
     const l = Math.hypot(dx, dz);
     dx /= l; dz /= l;
     // 카메라가 바라보는 방향 기준으로 이동
-    const cy = Math.cos(camYaw), sy = Math.sin(camYaw);
+    // 집 안에서는 카메라가 정면으로 고정되니 회전 각도(camYaw)를 쓰지 않아요
+    const yaw = insideHouse ? 0 : camYaw;
+    const cy = Math.cos(yaw), sy = Math.sin(yaw);
     [dx, dz] = [dx * cy + dz * sy, -dx * sy + dz * cy];
     playerVel.set(dx * speed, 0, dz * speed);
     p.x += playerVel.x * dt;
@@ -4412,6 +5253,12 @@ function updateNPCs(dt) {
   for (const n of npcs) {
     const r = n.c.root;
     let moving = false;
+    if (n.visiting) {
+      // 자기 집에 놀러 온 나를 맞이하는 중
+      r.rotation.y = lerpAngle(r.rotation.y, Math.atan2(pp.x - r.position.x, pp.z - r.position.z), damp(5, dt));
+      animateCreature(n.c, false, 0, dt, elapsed);
+      continue;
+    }
     if (n.follow) {
       const f = updateFollower(n, dt);
       r.position.y = groundY(r.position.x, r.position.z);
@@ -4544,6 +5391,10 @@ function updateCamera(dt) {
 
 function updateHUD(dt) {
   $('coins').textContent = S.coins;
+  // 지금 계절 축제에서 쓰는 토큰 (예: 가을이면 🍁 단풍잎)
+  const se = season();
+  if ($('tokenIco').textContent !== se.token.emoji) { $('tokenIco').textContent = se.token.emoji; $('tokenName').textContent = se.token.name; }
+  $('tokenCount').textContent = tokenCount();
   $('fullBar').style.width = S.full + '%';
   $('energyBar').style.width = S.energy + '%';
   // 상호작용 안내
