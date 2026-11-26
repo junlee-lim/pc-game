@@ -301,67 +301,135 @@ function startGame() {
    미니맵
    ========================================================= */
 const mm = $('minimap').getContext('2d');
-const mmBg = document.createElement('canvas');
-mmBg.width = mmBg.height = 340;
-{
-  const g = mmBg.getContext('2d');
-  const s = 340 / (ISLAND_R * 2 + 10), c = 170;
-  const P = (x, z) => [c + x * s, c + z * s];
-  g.fillStyle = '#9fd6ff'; g.fillRect(0, 0, 340, 340);
-  g.fillStyle = '#f6e3b4'; g.beginPath(); g.arc(c, c, (ISLAND_R + 0.6) * s, 0, 7); g.fill();
-  g.fillStyle = '#a7e086'; g.beginPath(); g.arc(c, c, ISLAND_R * s, 0, 7); g.fill();
-  g.fillStyle = '#bdeb98'; g.beginPath(); g.arc(...P(HILL.x, HILL.z), HILL.r * s, 0, 7); g.fill();
-  g.strokeStyle = '#f5dfb6'; g.lineWidth = 4 * s; g.lineCap = 'round';
-  for (const [a, b, cc, d] of PATHS) { g.beginPath(); g.moveTo(...P(a, b)); g.lineTo(...P(cc, d)); g.stroke(); }
-  g.fillStyle = '#f5dfb6'; g.beginPath(); g.arc(c, c, 8 * s, 0, 7); g.fill();
-  g.fillStyle = '#77cdea'; g.beginPath(); g.arc(...P(POND.x, POND.z), POND.r * s, 0, 7); g.fill();
-  g.fillStyle = '#ffb4c8';
-  for (const [x, z] of HOUSES) { const [px, pz] = P(x, z); g.fillRect(px - 6, pz - 6, 12, 12); }
-  g.font = '30px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillStyle = '#d9a878'; g.fillRect(...P(PIER.x - PIER.w / 2, ISLAND_R), PIER.w * s, (PIER.z1 - ISLAND_R) * s);
-  for (const [e, x, z] of [['🎆', 0, -36], ['🍢', 32, -4], ['😴', -38, 3.5], ['🛍️', 22, -26], ['⛲', 0, 0], ...MAP_MARKS]) g.fillText(e, ...P(x, z));
-}
-// 다른 섬의 미니맵 배경
-const islandMapCache = {};
-function islandMapBg(I) {
-  if (islandMapCache[I.id]) return islandMapCache[I.id];
+// 지도 배경 (크기 N 픽셀로 그려서 크기별로 보관)
+const mapBgCache = {};
+function mapBg(I, N) {
+  const key = I.id + N;
+  if (mapBgCache[key]) return mapBgCache[key];
   const cv = document.createElement('canvas');
-  cv.width = cv.height = 340;
+  cv.width = cv.height = N;
   const g = cv.getContext('2d');
-  const s = 340 / (I.r * 2 + 10), c = 170;
-  g.fillStyle = '#9fd6ff'; g.fillRect(0, 0, 340, 340);
-  g.fillStyle = '#f6e3b4'; g.beginPath(); g.arc(c, c, (I.r + 0.6) * s, 0, 7); g.fill();
-  g.fillStyle = I.mapColor || '#a7e086'; g.beginPath(); g.arc(c, c, I.r * s, 0, 7); g.fill();
-  if (I.hill) { g.fillStyle = 'rgba(255,255,255,0.35)'; g.beginPath(); g.arc(c + (I.hill.x - I.x) * s, c + (I.hill.z - I.z) * s, I.hill.r * s, 0, 7); g.fill(); }
-  g.font = '30px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  for (const [e, x, z] of I.marks || []) g.fillText(e, c + (x - I.x) * s, c + (z - I.z) * s);
-  g.font = '26px Jua, sans-serif'; g.fillStyle = '#6a4c3f';
-  g.fillText(`${I.emoji} ${I.name}`, c, 300);
-  islandMapCache[I.id] = cv;
+  const R = I.r, s = N / (R * 2 + 10), c = N / 2, k = N / 340;
+  const P = (x, z) => [c + (x - I.x) * s, c + (z - I.z) * s];
+  g.fillStyle = '#9fd6ff'; g.fillRect(0, 0, N, N);
+  g.fillStyle = '#f6e3b4'; g.beginPath(); g.arc(c, c, (R + 0.6) * s, 0, 7); g.fill();
+  g.fillStyle = I.mapColor || '#a7e086'; g.beginPath(); g.arc(c, c, R * s, 0, 7); g.fill();
+  g.font = `${30 * k}px sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  if (I.id === 'main') {
+    g.fillStyle = '#bdeb98'; g.beginPath(); g.arc(...P(HILL.x, HILL.z), HILL.r * s, 0, 7); g.fill();
+    g.strokeStyle = '#f5dfb6'; g.lineWidth = 4 * s; g.lineCap = 'round';
+    for (const [a, b, cc, d] of PATHS) { g.beginPath(); g.moveTo(...P(a, b)); g.lineTo(...P(cc, d)); g.stroke(); }
+    g.fillStyle = '#f5dfb6'; g.beginPath(); g.arc(c, c, 8 * s, 0, 7); g.fill();
+    g.fillStyle = '#77cdea'; g.beginPath(); g.arc(...P(POND.x, POND.z), POND.r * s, 0, 7); g.fill();
+    g.fillStyle = '#ffb4c8';
+    for (const [x, z] of HOUSES) { const [px, pz] = P(x, z); g.fillRect(px - 6 * k, pz - 6 * k, 12 * k, 12 * k); }
+    g.fillStyle = '#d9a878'; g.fillRect(...P(PIER.x - PIER.w / 2, ISLAND_R), PIER.w * s, (PIER.z1 - ISLAND_R) * s);
+    for (const [e, x, z] of [['🎆', 0, -36], ['🍢', 32, -4], ['😴', -38, 3.5], ['🛍️', 22, -26], ['⛲', 0, 0], ...MAP_MARKS]) g.fillText(e, ...P(x, z));
+  } else {
+    if (I.hill) { g.fillStyle = 'rgba(255,255,255,0.35)'; g.beginPath(); g.arc(...P(I.hill.x, I.hill.z), I.hill.r * s, 0, 7); g.fill(); }
+    for (const [e, x, z] of I.marks || []) g.fillText(e, ...P(x, z));
+    g.font = `${26 * k}px Jua, sans-serif`; g.fillStyle = '#6a4c3f';
+    g.fillText(`${I.emoji} ${I.name}`, c, N * 0.88);
+  }
+  mapBgCache[key] = cv;
   return cv;
+}
+// 둥근 말풍선 모양 글씨표
+let mapTagRects = null; // 큰 지도에서 이미 그린 이름표 자리 (겹치지 않게)
+function mapTag(g, text, x, y, size, bg = 'rgba(255,248,236,0.92)', fg = '#6a4c3f') {
+  g.font = `${size}px Jua, sans-serif`;
+  const w = g.measureText(text).width + size * 0.9, h = size * 1.5;
+  if (mapTagRects) {
+    // 아래 → 위 → 오른쪽 → 왼쪽 순서로 빈자리를 찾고, 없으면 생략해요
+    const hit = (cx, cy) => mapTagRects.some((r) => Math.abs(r.x - cx) < (r.w + w) / 2 + 2 && Math.abs(r.y - cy) < (r.h + h) / 2 + 1);
+    const tries = [[0, 0], [0, -h * 1.9], [w * 0.6, -h * 0.9], [-w * 0.6, -h * 0.9], [0, h * 1.1]];
+    const ok = tries.find(([dx, dy]) => !hit(x + dx, y + dy));
+    if (!ok) return;
+    x += ok[0]; y += ok[1];
+    mapTagRects.push({ x, y, w, h });
+  }
+  g.fillStyle = bg; g.beginPath(); g.roundRect(x - w / 2, y - h / 2, w, h, h / 2); g.fill();
+  g.strokeStyle = '#f1dcc4'; g.lineWidth = Math.max(1.5, size * 0.1); g.stroke();
+  g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, x, y + 1);
+}
+// 지도 한 장 그리기 (미니맵 · 큰 지도 공용)
+function paintMap(g, I, N, big) {
+  const R = I.r, s = N / (R * 2 + 10), c = N / 2, k = N / 340;
+  const P = (x, z) => [c + (x - I.x) * s, c + (z - I.z) * s];
+  g.drawImage(mapBg(I, N), 0, 0);
+  // 코인
+  g.fillStyle = '#ffd166';
+  const coinList = I.id === 'main' ? coins.map((co) => co.m) : islCoins.filter((co) => co.I === I).map((co) => co.m);
+  for (const m of coinList) if (m.visible) { g.beginPath(); g.arc(...P(m.position.x, m.position.z), 4 * k, 0, 7); g.fill(); }
+  // 큰 지도에는 장소 이름표
+  mapTagRects = big ? [] : null;
+  const me = insideHouse ? curRoom.exit : player.root.position;
+  if (big && islandAt(me) === I) { const [mx, my] = P(me.x, me.z); mapTag(g, insideHouse ? '나 (집 안)' : '나', mx, my + 20 * k, 9 * k, '#ff8fb1', '#ffffff'); }
+  if (big) {
+    for (const l of labelDefs) if (islandAt(l.p) === I && !/^(🌴|🍄|🔭|🍓|🌼) /.test(l.el.textContent)) { const [x, y] = P(l.p.x, l.p.z); mapTag(g, l.el.textContent, x, y + 16 * k, 10 * k); }
+    if (I.id === 'main' && typeof FRIEND_HOMES !== 'undefined') for (const F of FRIEND_HOMES) if (F.R) { const [x, y] = P(F.house[0], F.house[1]); mapTag(g, `${F.emoji} ${F.name}네`, x, y - 12 * k, 9 * k, 'rgba(255,230,238,0.95)'); }
+  }
+  // 친구들
+  for (const n of npcs) {
+    if (n.visiting || islandAt(n.c.root.position) !== I) continue;
+    const [x, y] = P(n.c.root.position.x, n.c.root.position.z);
+    g.fillStyle = '#ffffff'; g.strokeStyle = '#ff8fb1'; g.lineWidth = 1.5 * k;
+    g.beginPath(); g.arc(x, y, 5 * k, 0, 7); g.fill(); if (big) g.stroke();
+    if (big) mapTag(g, n.name, x, y - 13 * k, 8.5 * k, 'rgba(255,255,255,0.95)');
+  }
+  // 나
+  const pw = me;
+  if (islandAt(pw) !== I) { mapTagRects = null; return; }
+  const [px, py] = P(pw.x, pw.z), r = player.root.rotation.y;
+  const fa = Math.atan2(-Math.cos(camYaw), -Math.sin(camYaw));
+  g.fillStyle = 'rgba(255, 255, 255, 0.45)';
+  g.beginPath(); g.moveTo(px, py); g.arc(px, py, 46 * k, fa - 0.55, fa + 0.55); g.closePath(); g.fill();
+  g.save();
+  g.translate(px, py);
+  g.rotate(-r);
+  g.scale(k, k);
+  g.fillStyle = '#ff6f91'; g.strokeStyle = '#fff'; g.lineWidth = 3;
+  g.beginPath(); g.moveTo(0, 13); g.lineTo(9, -8); g.lineTo(0, -3); g.lineTo(-9, -8); g.closePath();
+  g.fill(); g.stroke();
+  g.restore();
+  mapTagRects = null;
 }
 function drawMinimap() {
   const pw = insideHouse ? curRoom.exit : player.root.position;
-  const I = islandAt(pw);
-  const R = I.id === 'main' ? ISLAND_R : I.r;
-  const s = 340 / (R * 2 + 10), c = 170;
-  mm.drawImage(I.id === 'main' ? mmBg : islandMapBg(I), 0, 0);
-  if (I.id === 'main') {
-    mm.fillStyle = '#ffd166';
-    for (const co of coins) if (co.m.visible) { mm.beginPath(); mm.arc(c + co.m.position.x * s, c + co.m.position.z * s, 4, 0, 7); mm.fill(); }
-  }
-  mm.fillStyle = '#ffffff';
-  for (const n of npcs) { if (n.visiting || islandAt(n.c.root.position) !== I) continue; mm.beginPath(); mm.arc(c + (n.c.root.position.x - I.x) * s, c + (n.c.root.position.z - I.z) * s, 5, 0, 7); mm.fill(); }
-  const p = { x: pw.x - I.x, z: pw.z - I.z }, r = player.root.rotation.y;
-  // 카메라가 보는 방향 (부채꼴)
-  const fa = Math.atan2(-Math.cos(camYaw), -Math.sin(camYaw));
-  mm.fillStyle = 'rgba(255, 255, 255, 0.45)';
-  mm.beginPath(); mm.moveTo(c + p.x * s, c + p.z * s); mm.arc(c + p.x * s, c + p.z * s, 46, fa - 0.55, fa + 0.55); mm.closePath(); mm.fill();
-  mm.save();
-  mm.translate(c + p.x * s, c + p.z * s);
-  mm.rotate(-r);
-  mm.fillStyle = '#ff6f91'; mm.strokeStyle = '#fff'; mm.lineWidth = 3;
-  mm.beginPath(); mm.moveTo(0, 13); mm.lineTo(9, -8); mm.lineTo(0, -3); mm.lineTo(-9, -8); mm.closePath();
-  mm.fill(); mm.stroke();
-  mm.restore();
+  paintMap(mm, islandAt(pw), 340, false);
 }
+
+/* ---------- 🗺️ 큰 지도 (지도를 누르거나 N 키) ---------- */
+const bigCtx = $('bigmapCanvas').getContext('2d');
+const BM = { idx: 0 };
+function openBigMap() {
+  if (!['play'].includes(state)) return;
+  const here = islandAt(insideHouse ? curRoom.exit : player.root.position);
+  BM.idx = ISLANDS.indexOf(here);
+  state = 'bigmap';
+  $('prompt').classList.add('hidden');
+  $('bigmap').classList.remove('hidden');
+  sfx.select();
+}
+function closeBigMap() {
+  $('bigmap').classList.add('hidden');
+  if (state === 'bigmap') state = 'play';
+}
+modes.bigmap = {
+  key(code) {
+    if (code === 'ArrowLeft' || code === 'KeyA') { BM.idx = (BM.idx - 1 + ISLANDS.length) % ISLANDS.length; sfx.select(); }
+    else if (code === 'ArrowRight' || code === 'KeyD') { BM.idx = (BM.idx + 1) % ISLANDS.length; sfx.select(); }
+    else if (['Escape', 'KeyN', 'Enter', 'Space', 'KeyE'].includes(code)) closeBigMap();
+  },
+  update(dt) {
+    animateCreature(player, false, 0, dt, elapsed);
+    const I = ISLANDS[BM.idx];
+    const here = islandAt(insideHouse ? curRoom.exit : player.root.position) === I;
+    $('bigmapTitle').innerHTML = `🗺️ ${I.emoji} ${I.name} ${here ? '<span class="here">📍 지금 여기</span>' : ''}`;
+    paintMap(bigCtx, I, 760, true);
+  },
+};
+$('minimap').addEventListener('click', () => { initAudio(); openBigMap(); });
+$('bigmap').addEventListener('click', (e) => { if (e.target.closest('.bm-arrow')) return; closeBigMap(); });
+document.querySelectorAll('.bm-arrow').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); modes.bigmap.key(b.dataset.dir === 'L' ? 'ArrowLeft' : 'ArrowRight'); }));
+playKeyHooks.push((code) => { if (code === 'KeyN') { openBigMap(); return true; } return false; });
