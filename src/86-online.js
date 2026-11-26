@@ -2,7 +2,7 @@
    🌐 온라인 — 같은 서버에 접속한 친구들과 실시간으로 만나요
    - 게임을 서버 주소(https://…)로 열면 자동으로 접속해요
    - 파일로 열었을 땐 주소 뒤에 ?server=wss://서버주소/ws 를 붙이면 접속해요
-   - T 채팅 · 1~4 이모티콘 · 채팅창에 "/이름 새이름" 으로 이름 바꾸기
+   - T 채팅 · 채팅창에 "/이름 새이름" 으로 이름 바꾸기
    ========================================================= */
 const ON = {
   url: (() => {
@@ -16,7 +16,6 @@ const ON = {
   sendT: 0, beatT: 0, last: '', lastPos: new THREE.Vector3(),
 };
 save.set('nick', ON.name);
-const EMOTES = { Digit1: '👋', Digit2: '❤️', Digit3: '😊', Digit4: '😂' };
 const escHtml = (s) => String(s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
 
 // ---------- 화면 요소 (온라인 표시 · 채팅창) ----------
@@ -32,7 +31,7 @@ function refreshBadge() {
   if (!ON.url) { onBadge.classList.add('hidden'); return; }
   onBadge.classList.toggle('hidden', state === 'title' || state === 'loading');
   const n = ON.peers.size + 1;
-  onBadge.innerHTML = ON.connected ? `🌐 온라인 <b>${n}</b>명 · ${escHtml(ON.name)} · <kbd>T</kbd> 채팅 <kbd>1</kbd>~<kbd>4</kbd> 이모티콘` : '🌐 서버에 연결하는 중…';
+  onBadge.innerHTML = ON.connected ? `🌐 온라인 <b>${n}</b>명 · ${escHtml(ON.name)} · <kbd>T</kbd> 채팅` : '🌐 서버에 연결하는 중…';
 }
 
 function openChat(prefill = '') {
@@ -68,7 +67,6 @@ function setOnlineName(v) {
 }
 playKeyHooks.push((code) => {
   if (code === 'KeyT') { setTimeout(() => openChat(), 0); return true; } // 바로 열면 't' 글자가 같이 써져요
-  if (EMOTES[code]) { say(player, EMOTES[code], 2.5); netSend({ t: 'emo', e: EMOTES[code] }); return true; }
   return false;
 });
 
