@@ -27,37 +27,81 @@ chatBox.id = 'chatInput'; chatBox.className = 'card hidden';
 chatBox.maxLength = 60; chatBox.autocomplete = 'off'; chatBox.spellcheck = false;
 chatBox.placeholder = '하고 싶은 말 (Enter 보내기 · Esc 닫기 · /이름 새이름)';
 document.body.appendChild(chatBox);
-// 💬 채팅 기록: 오른쪽 아래에 최근 대화가 남아요 (채팅창을 열면 더 많이 보이고 스크롤돼요)
+// 💬 채팅창: 오른쪽 아래에 친구 목록 + 최근 대화가 남아요
+// (T 로 채팅을 쓰면 더 많이 보이고 스크롤돼요 · ✕ 로 닫으면 숨겨지고, T 나 온라인 표시를 누르면 다시 보여요)
 const chatLog = document.createElement('div');
 chatLog.id = 'chatLog'; chatLog.className = 'hidden';
+chatLog.innerHTML = '<div class="cl-head"><span class="cl-title">💬 채팅</span><button type="button" class="cl-x" title="채팅창 닫기" aria-label="채팅창 닫기">✕</button></div><div class="cl-friends"></div><div class="cl-msgs"></div>';
 document.body.appendChild(chatLog);
+const clFriends = chatLog.querySelector('.cl-friends'), clMsgs = chatLog.querySelector('.cl-msgs'), clTitle = chatLog.querySelector('.cl-title');
 const LOG_MAX = 50, LOG_SHOW = 6;
 const logLines = [];
+let chatHidden = save.get('chatHidden', false), unread = 0;
 function addLog(name, text, sys = false) {
   const d = new Date();
   logLines.push({ name, text, sys, time: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` });
   if (logLines.length > LOG_MAX) logLines.shift();
+  if (chatHidden && !sys) { unread++; refreshBadge(); }
   renderLog();
+}
+function setChatHidden(h) {
+  chatHidden = h; save.set('chatHidden', h);
+  if (!h) unread = 0;
+  renderLog(); refreshBadge();
+}
+// 친구가 지금 어디 있는지
+function peerPlace(p) {
+  if (p.hid) return '처음 화면';
+  if (p.room) {
+    if (p.room === 'home' + ON.id) return '🏠 우리 집';
+    if (p.room === 'home' + p.id) return '🏠 자기 집';
+    return p.room.startsWith('home') ? '🏠 친구 집' : '🏡 동물 친구 집';
+  }
+  const I = ISLANDS.find((i) => i.id === p.isl);
+  return I ? `${I.emoji} ${I.name}` : '';
+}
+const lookDot = (look) => `<i class="dot" style="background:#${((look && look.color) ?? 0xfff1df).toString(16).padStart(6, '0')}"></i>`;
+let lastFriendsHtml = '';
+function renderFriends() {
+  const peers = [...ON.peers.values()].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  clTitle.textContent = `💬 채팅 · 👥 ${peers.length + 1}명`;
+  const html = `<span class="fr me">${lookDot(player.look)}${escHtml(ON.name)} <small>(나)</small></span>` +
+    (peers.length ? peers.map((p) => `<span class="fr">${lookDot(p.c.look)}${escHtml(p.name)} <small>${escHtml(peerPlace(p))}</small></span>`).join('')
+      : '<span class="fr none">아직 접속한 친구가 없어요</span>');
+  if (html !== lastFriendsHtml) { lastFriendsHtml = html; clFriends.innerHTML = html; }
 }
 function renderLog() {
   const open = !chatBox.classList.contains('hidden');
-  const lines = open ? logLines : logLines.slice(-LOG_SHOW);
   chatLog.classList.toggle('open', open);
-  chatLog.classList.toggle('hidden', !ON.url || !lines.length || state === 'title' || state === 'loading');
-  chatLog.innerHTML = lines.map((l) => l.sys
+  chatLog.classList.toggle('hidden', !ON.url || !ON.everConnected || (chatHidden && !open) || state === 'title' || state === 'loading');
+  renderFriends();
+  const lines = open ? logLines : logLines.slice(-LOG_SHOW);
+  clMsgs.innerHTML = lines.length ? lines.map((l) => l.sys
     ? `<div class="sys"><span class="t">${l.time}</span>${escHtml(l.text)}</div>`
-    : `<div><span class="t">${l.time}</span><b class="${l.name === ON.name ? 'me' : ''}">${escHtml(l.name)}</b> ${escHtml(l.text)}</div>`).join('');
-  chatLog.scrollTop = chatLog.scrollHeight;
+    : `<div><span class="t">${l.time}</span><b class="${l.name === ON.name ? 'me' : ''}">${escHtml(l.name)}</b> ${escHtml(l.text)}</div>`).join('')
+    : '<div class="sys">아직 대화가 없어요. <kbd>T</kbd> 를 눌러 말을 걸어 보세요!</div>';
+  clMsgs.scrollTop = clMsgs.scrollHeight;
 }
+// 채팅을 쓰는 중에 창을 눌러도 입력칸이 닫히지 않게 (스크롤은 그대로 돼요)
+chatLog.addEventListener('mousedown', (e) => { if (!chatBox.classList.contains('hidden')) e.preventDefault(); });
+chatLog.querySelector('.cl-x').addEventListener('click', () => {
+  if (!chatBox.classList.contains('hidden')) closeChat();
+  setChatHidden(true);
+  toast('💬 채팅창을 숨겼어요. T 를 누르거나 오른쪽 아래 온라인 표시를 누르면 다시 보여요', 3);
+});
+onBadge.addEventListener('click', () => { if (chatHidden) setChatHidden(false); });
 function refreshBadge() {
   if (!ON.url) { onBadge.classList.add('hidden'); return; }
   onBadge.classList.toggle('hidden', state === 'title' || state === 'loading');
+  onBadge.classList.toggle('clickable', chatHidden);
   const n = ON.peers.size + 1;
-  onBadge.innerHTML = ON.connected ? `🌐 온라인 <b>${n}</b>명 · ${escHtml(ON.name)} · <kbd>T</kbd> 채팅` : '🌐 서버에 연결하는 중…';
+  const tail = chatHidden ? (unread ? ` · <b class="new">💬 새 메시지 ${unread}</b>` : ' · 💬 채팅 보기') : '';
+  onBadge.innerHTML = ON.connected ? `🌐 온라인 <b>${n}</b>명 · ${escHtml(ON.name)} · <kbd>T</kbd> 채팅${tail}` : '🌐 서버에 연결하는 중…';
 }
 
 function openChat(prefill = '') {
   if (state !== 'play') return;
+  if (chatHidden) setChatHidden(false);
   keys.clear();
   chatBox.value = prefill;
   chatBox.classList.remove('hidden');
@@ -250,7 +294,11 @@ tickers.push((dt) => {
   for (const p of ON.peers.values()) if (p.c.scarf[0].visible !== winter) p.c.scarf.forEach((m) => (m.visible = winter));
   ON.near = state === 'play' ? near : null;
   ON.badgeT = (ON.badgeT || 0) - dt;
-  if (ON.badgeT <= 0) { ON.badgeT = 0.5; refreshBadge(); if (chatLog.classList.contains('hidden') === !!(logLines.length && state !== 'title')) renderLog(); }
+  if (ON.badgeT <= 0) {
+    ON.badgeT = 0.5; refreshBadge();
+    const shouldHide = !ON.url || !ON.everConnected || (chatHidden && chatBox.classList.contains('hidden')) || state === 'title' || state === 'loading';
+    if (chatLog.classList.contains('hidden') !== shouldHide) renderLog(); else renderFriends(); // 친구 위치는 자주 바뀌어요
+  }
 });
 
 /* ---------- 💬 친구 가까이에서 E: 선물하기 · 집에 놀러 가기 ---------- */
