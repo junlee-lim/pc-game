@@ -7,7 +7,7 @@ player.root.rotation.y = Math.PI;
 scene.add(player.root);
 
 const S = {
-  coins: save.get('coins', 5),
+  coins: save.get('coins', 15),
   full: save.get('full', 70),
   energy: save.get('energy', 80),
   owned: save.get('owned', []),

@@ -143,7 +143,8 @@ function pickSpot(x, z, model, key, label, respawn = 40, amount = () => 1) {
 const islCoinGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.12, 22).rotateX(Math.PI / 2);
 const islCoinMat = toon({ color: 0xffcf3a, emissive: 0xffa000, emissiveIntensity: 0.35 });
 const islCoins = [];
-for (const I of Object.values(ISL)) for (let i = 0; i < 4; i++) {
+// 섬에도 길에 떨어진 동전은 없어요
+for (const I of Object.values(ISL)) for (let i = 0; i < 0; i++) {
   const m = new THREE.Mesh(islCoinGeo, islCoinMat);
   m.castShadow = true;
   m.visible = false; // 첫 프레임에 각 섬 위에 놓여요

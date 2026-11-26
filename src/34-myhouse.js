@@ -24,13 +24,13 @@ MAP_MARKS.push(['🏠', MYHOUSE.x, MYHOUSE.z]);
 
 // 집 안 (앞쪽 벽은 낮게 잘라 인형의 집처럼 들여다봐요)
 const FURNITURE = [
-  { id: 'rug', name: '폭신 러그', emoji: '🟣', price: 4, r: 0 },
-  { id: 'plant', name: '몬스테라 화분', emoji: '🪴', price: 3, r: 0.45 },
-  { id: 'tank', name: '금붕어 어항', emoji: '🐠', price: 6, r: 0.8 },
-  { id: 'shelf', name: '책장', emoji: '📚', price: 5, r: 1.0 },
-  { id: 'lamp', name: '버섯 스탠드', emoji: '🍄', price: 4, r: 0.4 },
-  { id: 'teddy', name: '커다란 곰인형', emoji: '🧸', price: 7, r: 0.45 },
-  { id: 'radio', name: '레트로 라디오', emoji: '📻', price: 5, r: 0.4 },
+  { id: 'rug', name: '폭신 러그', emoji: '🟣', price: 20, r: 0 },
+  { id: 'plant', name: '몬스테라 화분', emoji: '🪴', price: 15, r: 0.45 },
+  { id: 'tank', name: '금붕어 어항', emoji: '🐠', price: 35, r: 0.8 },
+  { id: 'shelf', name: '책장', emoji: '📚', price: 28, r: 1.0 },
+  { id: 'lamp', name: '버섯 스탠드', emoji: '🍄', price: 22, r: 0.4 },
+  { id: 'teddy', name: '커다란 곰인형', emoji: '🧸', price: 40, r: 0.45 },
+  { id: 'radio', name: '레트로 라디오', emoji: '📻', price: 30, r: 0.4 },
   // 계절 축제 한정 (토큰으로 교환)
   { id: 'sakurapot', name: '벚꽃 분재', emoji: '🌸', price: 0, r: 0.5, season: 'spring' },
   { id: 'fan', name: '하늘색 선풍기', emoji: '🌀', price: 0, r: 0.45, season: 'summer' },

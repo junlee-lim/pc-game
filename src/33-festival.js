@@ -79,8 +79,8 @@ MAP_MARKS.push(['🎠', FEST.x, FEST.z]);
 // 회전목마 타기
 let rideTime = 0;
 function startRide() {
-  if (S.coins < 1) { sfx.no(); say(player, '회전목마는 1코인이야… 코인을 모아 오자!', 2.5); return; }
-  S.coins -= 1; persist();
+  if (S.coins < 3) { sfx.no(); say(player, '회전목마는 3코인이야… 코인을 모아 오자!', 2.5); return; }
+  S.coins -= 3; persist();
   state = 'ride';
   rideTime = 0;
   $('prompt').classList.add('hidden');
@@ -114,7 +114,7 @@ modes.ride = {
   },
   onExit() {},
 };
-interact({ x: FEST.x, z: FEST.z - 6.2, r: 2.4, label: '회전목마 타기 (🪙 1)', action: () => startRide() });
+interact({ x: FEST.x, z: FEST.z - 6.2, r: 2.4, label: '회전목마 타기 (🪙 3)', action: () => startRide() });
 
 // 노점 (금붕어 뜨기 · 사격)
 function booth(x, z, color, title, keeperOpts) {
@@ -147,14 +147,14 @@ function booth(x, z, color, title, keeperOpts) {
     f.scale.set(1.6, 0.6, 0.8);
     f.rotation.y = i;
   }
-  interact({ x: 21, z: 31.4, r: 2.4, label: '금붕어 뜨기 한 판 (🪙 2)', action: () => askMini('goldfish') });
+  interact({ x: 21, z: 31.4, r: 2.4, label: '금붕어 뜨기 한 판 (🪙 4)', action: () => askMini('goldfish') });
 }
 {
   const g = booth(39, 29, 0xffc46b, '🎯 코르크 사격', { color: 0xe4f2ff, ears: 'bunny', accent: 0x9fb8ff });
   for (const [x, y, c] of [[-1, 1.35, 0xffd166], [0, 1.4, 0xff8fb1], [1, 1.35, 0x9fd6ff]]) add(new THREE.SphereGeometry(0.25, 12, 10), c, x, y, -0.2, g);
   const gun = add(new THREE.BoxGeometry(0.15, 0.15, 0.9), 0x8a5a3c, 0.9, 1.1, 0.4, g);
   gun.rotation.y = 0.4;
-  interact({ x: 39, z: 31.4, r: 2.4, label: '코르크 사격 한 판 (🪙 2)', action: () => askMini('shooting') });
+  interact({ x: 39, z: 31.4, r: 2.4, label: '코르크 사격 한 판 (🪙 4)', action: () => askMini('shooting') });
 }
 
 /* ---------- 미니게임 공통 ---------- */
@@ -168,9 +168,9 @@ function askMini(kind) {
     title: info.title,
     desc: () => `${info.desc}<br>내 코인 🪙 ${S.coins}`,
     items: () => [
-      { label: '한 판 할게요!', right: '🪙 2', dim: S.coins < 2, act: () => {
-        if (S.coins < 2) { sfx.no(); toast('코인이 모자라요 🪙'); return true; }
-        S.coins -= 2; persist();
+      { label: '한 판 할게요!', right: '🪙 4', dim: S.coins < 4, act: () => {
+        if (S.coins < 4) { sfx.no(); toast('코인이 모자라요 🪙'); return true; }
+        S.coins -= 4; persist();
         setTimeout(() => startMini(kind === 'goldfish' ? goldfishGame() : shootingGame()), 0);
         return false;
       } },

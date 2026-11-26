@@ -93,7 +93,7 @@
       💗 친구들과 이야기하고 좋아하는 걸 선물하면 하트가 쌓여요. 하트 3개면 같이 산책할 수 있어요!<br />
       💾 다른 기기에서 이어 하려면 <kbd>Esc</kbd> 메뉴의 "저장 코드 만들기"로 코드를 복사해 옮기세요.<br />
       🗓️ 하루가 3번 지나면 계절이 바뀌어요. 광장 옆 계절 축제 부스에서 한정 상품을 받아 보세요!<br />
-      마을 곳곳의 반짝이는 🪙 코인을 모으면 맛있는 걸 사 먹을 수 있어요!
+      🪙 코인은 낚시, 미니게임, 우체통 부탁, 섬 특산물 판매로 벌 수 있어요!
     </div>
   </div>
 
@@ -663,21 +663,21 @@ const POND = { x: 0, z: -44, r: 10.5 };
    🍢 먹자골목 (동쪽)
    ========================================================= */
 const FOODS = {
-  tteok: { name: '떡볶이', emoji: '🌶️', price: 3, full: 35, energy: 5, desc: '매콤달콤 쫄깃한 떡볶이!', line: '호호~ 매콤해! 그래도 또 먹고 싶어 😋' },
-  fish: { name: '붕어빵', emoji: '🐟', price: 2, full: 22, energy: 5, desc: '바삭한 껍질에 달콤한 팥이 가득', line: '머리부터 먹을까, 꼬리부터 먹을까~' },
-  cotton: { name: '솜사탕', emoji: '🍭', price: 2, full: 12, energy: 15, desc: '구름처럼 폭신한 분홍 솜사탕', line: '입에서 사르르 녹아요~ ☁️' },
-  bingsu: { name: '팥빙수', emoji: '🍧', price: 4, full: 25, energy: 12, desc: '시원하고 달콤한 빙수 한 그릇!', line: '으~ 머리가 찡! 그래도 시원해 ❄️' },
+  tteok: { name: '떡볶이', emoji: '🌶️', price: 8, full: 35, energy: 5, desc: '매콤달콤 쫄깃한 떡볶이!', line: '호호~ 매콤해! 그래도 또 먹고 싶어 😋' },
+  fish: { name: '붕어빵', emoji: '🐟', price: 6, full: 22, energy: 5, desc: '바삭한 껍질에 달콤한 팥이 가득', line: '머리부터 먹을까, 꼬리부터 먹을까~' },
+  cotton: { name: '솜사탕', emoji: '🍭', price: 6, full: 12, energy: 15, desc: '구름처럼 폭신한 분홍 솜사탕', line: '입에서 사르르 녹아요~ ☁️' },
+  bingsu: { name: '팥빙수', emoji: '🍧', price: 10, full: 25, energy: 12, desc: '시원하고 달콤한 빙수 한 그릇!', line: '으~ 머리가 찡! 그래도 시원해 ❄️' },
   // 계절 축제 부스에서만 파는 음식
-  mochi: { name: '딸기 찹쌀떡', emoji: '🍓', price: 3, full: 20, energy: 15, desc: '봄 딸기가 쏙 들어간 말랑 찹쌀떡', line: '말랑말랑 새콤달콤~ 봄 맛이야! 🌸', seasonal: true },
-  hwachae: { name: '수박 화채', emoji: '🍉', price: 3, full: 22, energy: 15, desc: '동글동글 수박이 동동 뜬 시원한 화채', line: '시원하고 달콤해~ 여름 최고! 🌻', seasonal: true },
-  goguma: { name: '군고구마', emoji: '🍠', price: 3, full: 30, energy: 10, desc: '드럼통에서 노릇노릇 구운 군고구마', line: '앗 뜨거! 호호~ 달달하다 🍂', seasonal: true },
+  mochi: { name: '딸기 찹쌀떡', emoji: '🍓', price: 8, full: 20, energy: 15, desc: '봄 딸기가 쏙 들어간 말랑 찹쌀떡', line: '말랑말랑 새콤달콤~ 봄 맛이야! 🌸', seasonal: true },
+  hwachae: { name: '수박 화채', emoji: '🍉', price: 8, full: 22, energy: 15, desc: '동글동글 수박이 동동 뜬 시원한 화채', line: '시원하고 달콤해~ 여름 최고! 🌻', seasonal: true },
+  goguma: { name: '군고구마', emoji: '🍠', price: 8, full: 30, energy: 10, desc: '드럼통에서 노릇노릇 구운 군고구마', line: '앗 뜨거! 호호~ 달달하다 🍂', seasonal: true },
   // 다른 섬에서만 파는 음식
-  coconut: { name: '코코넛 주스', emoji: '🥥', price: 2, full: 15, energy: 20, desc: '야자수섬 명물! 빨대 꽂은 코코넛', line: '쪼옥~ 달콤하고 시원해! 🌴', island: true },
-  soup: { name: '숲 버섯 수프', emoji: '🍲', price: 3, full: 35, energy: 10, desc: '부엉 할머니의 따끈한 버섯 수프', line: '후~ 후~ 숲 향기가 나! 🍄', island: true },
-  berrymilk: { name: '딸기 우유', emoji: '🍼', price: 2, full: 18, energy: 15, desc: '갓 딴 딸기로 만든 분홍 우유', line: '달콤해~ 콧수염이 생겼어! 🍓', island: true },
-  tanghulu: { name: '딸기 탕후루', emoji: '🍡', price: 2, full: 14, energy: 14, desc: '반짝반짝 설탕옷을 입은 딸기 꼬치', line: '와삭! 달콤새콤해~ 🍓', island: true },
-  parfait: { name: '딸기 파르페', emoji: '🍨', price: 4, full: 28, energy: 12, desc: '생크림과 딸기를 층층이 쌓은 파르페', line: '한 숟갈 한 숟갈이 행복해~ 💕', island: true },
-  cocoa: { name: '마시멜로 코코아', emoji: '☕', price: 3, full: 15, energy: 25, desc: '마시멜로를 동동 띄운 따끈한 코코아', line: '몸이 사르르 녹는다~ ⛄', seasonal: true },
+  coconut: { name: '코코넛 주스', emoji: '🥥', price: 6, full: 15, energy: 20, desc: '야자수섬 명물! 빨대 꽂은 코코넛', line: '쪼옥~ 달콤하고 시원해! 🌴', island: true },
+  soup: { name: '숲 버섯 수프', emoji: '🍲', price: 9, full: 35, energy: 10, desc: '부엉 할머니의 따끈한 버섯 수프', line: '후~ 후~ 숲 향기가 나! 🍄', island: true },
+  berrymilk: { name: '딸기 우유', emoji: '🍼', price: 6, full: 18, energy: 15, desc: '갓 딴 딸기로 만든 분홍 우유', line: '달콤해~ 콧수염이 생겼어! 🍓', island: true },
+  tanghulu: { name: '딸기 탕후루', emoji: '🍡', price: 6, full: 14, energy: 14, desc: '반짝반짝 설탕옷을 입은 딸기 꼬치', line: '와삭! 달콤새콤해~ 🍓', island: true },
+  parfait: { name: '딸기 파르페', emoji: '🍨', price: 12, full: 28, energy: 12, desc: '생크림과 딸기를 층층이 쌓은 파르페', line: '한 숟갈 한 숟갈이 행복해~ 💕', island: true },
+  cocoa: { name: '마시멜로 코코아', emoji: '☕', price: 8, full: 15, energy: 25, desc: '마시멜로를 동동 띄운 따끈한 코코아', line: '몸이 사르르 녹는다~ ⛄', seasonal: true },
 };
 function foodModel(key) {
   const g = new THREE.Group();
@@ -725,6 +725,9 @@ function foodModel(key) {
     add(new THREE.CylinderGeometry(0.2, 0.2, 0.55, 14), 0xffd6e4, 0, 0.28, 0, g);
     add(new THREE.ConeGeometry(0.2, 0.2, 4), 0xff8fb1, 0, 0.65, 0, g).rotation.y = Math.PI / 4;
     add(new THREE.SphereGeometry(0.08, 8, 6), 0xff4d6d, 0, 0.3, 0.2, g, false);
+  } else if (key === 'cloudcandy') {
+    add(new THREE.CylinderGeometry(0.03, 0.03, 0.8, 6), 0xfff1df, 0, 0.4, 0, g);
+    for (const [x, y, z, r, c] of [[0, 0.95, 0, 0.32, 0xffffff], [0.2, 0.85, 0.1, 0.22, 0xdff4ff], [-0.18, 0.88, -0.05, 0.24, 0xf3e6ff], [0, 1.15, 0, 0.2, 0xffffff]]) add(new THREE.SphereGeometry(r, 14, 10), c, x, y, z, g);
   } else if (key === 'tanghulu') {
     add(new THREE.CylinderGeometry(0.025, 0.025, 1.2, 5), 0xe8c49a, 0, 0.6, 0, g, false);
     for (let i = 0; i < 4; i++) add(new THREE.SphereGeometry(0.15, 12, 10), toon({ color: 0xff3d5a, emissive: 0xff8fa0, emissiveIntensity: 0.25 }), 0, 0.55 + i * 0.25, 0, g).scale.y = 1.15;
@@ -868,13 +871,13 @@ scene.add(new THREE.Points(fireflyGeo, fireflyMat));
    🛍️ 포근 잡화점 (북동쪽)
    ========================================================= */
 const SHOP_ITEMS = [
-  { id: 'straw', name: '밀짚모자', emoji: '👒', price: 6, slot: 'hat' },
-  { id: 'ribbon', name: '분홍 리본', emoji: '🎀', price: 4, slot: 'hat' },
-  { id: 'crown', name: '반짝 왕관', emoji: '👑', price: 12, slot: 'hat' },
-  { id: 'flower', name: '꽃 머리핀', emoji: '🌼', price: 3, slot: 'hat' },
-  { id: 'glasses', name: '동글 선글라스', emoji: '🕶️', price: 5, slot: 'face' },
-  { id: 'balloon', name: '하트 풍선', emoji: '🎈', price: 5, slot: 'hand' },
-  { id: 'parasol', name: '레이스 양산', emoji: '⛱️', price: 7, slot: 'hand' },
+  { id: 'straw', name: '밀짚모자', emoji: '👒', price: 25, slot: 'hat' },
+  { id: 'ribbon', name: '분홍 리본', emoji: '🎀', price: 15, slot: 'hat' },
+  { id: 'crown', name: '반짝 왕관', emoji: '👑', price: 60, slot: 'hat' },
+  { id: 'flower', name: '꽃 머리핀', emoji: '🌼', price: 12, slot: 'hat' },
+  { id: 'glasses', name: '동글 선글라스', emoji: '🕶️', price: 20, slot: 'face' },
+  { id: 'balloon', name: '하트 풍선', emoji: '🎈', price: 18, slot: 'hand' },
+  { id: 'parasol', name: '레이스 양산', emoji: '⛱️', price: 28, slot: 'hand' },
   // 축제 경품 (가게에서는 팔지 않아요)
   { id: 'fishbag', name: '금붕어 봉지', emoji: '🐠', price: 0, slot: 'hand', prize: true },
   { id: 'starband', name: '별 머리띠', emoji: '⭐', price: 0, slot: 'hat', prize: true },
@@ -1635,8 +1638,8 @@ MAP_MARKS.push(['🎠', FEST.x, FEST.z]);
 // 회전목마 타기
 let rideTime = 0;
 function startRide() {
-  if (S.coins < 1) { sfx.no(); say(player, '회전목마는 1코인이야… 코인을 모아 오자!', 2.5); return; }
-  S.coins -= 1; persist();
+  if (S.coins < 3) { sfx.no(); say(player, '회전목마는 3코인이야… 코인을 모아 오자!', 2.5); return; }
+  S.coins -= 3; persist();
   state = 'ride';
   rideTime = 0;
   $('prompt').classList.add('hidden');
@@ -1670,7 +1673,7 @@ modes.ride = {
   },
   onExit() {},
 };
-interact({ x: FEST.x, z: FEST.z - 6.2, r: 2.4, label: '회전목마 타기 (🪙 1)', action: () => startRide() });
+interact({ x: FEST.x, z: FEST.z - 6.2, r: 2.4, label: '회전목마 타기 (🪙 3)', action: () => startRide() });
 
 // 노점 (금붕어 뜨기 · 사격)
 function booth(x, z, color, title, keeperOpts) {
@@ -1703,14 +1706,14 @@ function booth(x, z, color, title, keeperOpts) {
     f.scale.set(1.6, 0.6, 0.8);
     f.rotation.y = i;
   }
-  interact({ x: 21, z: 31.4, r: 2.4, label: '금붕어 뜨기 한 판 (🪙 2)', action: () => askMini('goldfish') });
+  interact({ x: 21, z: 31.4, r: 2.4, label: '금붕어 뜨기 한 판 (🪙 4)', action: () => askMini('goldfish') });
 }
 {
   const g = booth(39, 29, 0xffc46b, '🎯 코르크 사격', { color: 0xe4f2ff, ears: 'bunny', accent: 0x9fb8ff });
   for (const [x, y, c] of [[-1, 1.35, 0xffd166], [0, 1.4, 0xff8fb1], [1, 1.35, 0x9fd6ff]]) add(new THREE.SphereGeometry(0.25, 12, 10), c, x, y, -0.2, g);
   const gun = add(new THREE.BoxGeometry(0.15, 0.15, 0.9), 0x8a5a3c, 0.9, 1.1, 0.4, g);
   gun.rotation.y = 0.4;
-  interact({ x: 39, z: 31.4, r: 2.4, label: '코르크 사격 한 판 (🪙 2)', action: () => askMini('shooting') });
+  interact({ x: 39, z: 31.4, r: 2.4, label: '코르크 사격 한 판 (🪙 4)', action: () => askMini('shooting') });
 }
 
 /* ---------- 미니게임 공통 ---------- */
@@ -1724,9 +1727,9 @@ function askMini(kind) {
     title: info.title,
     desc: () => `${info.desc}<br>내 코인 🪙 ${S.coins}`,
     items: () => [
-      { label: '한 판 할게요!', right: '🪙 2', dim: S.coins < 2, act: () => {
-        if (S.coins < 2) { sfx.no(); toast('코인이 모자라요 🪙'); return true; }
-        S.coins -= 2; persist();
+      { label: '한 판 할게요!', right: '🪙 4', dim: S.coins < 4, act: () => {
+        if (S.coins < 4) { sfx.no(); toast('코인이 모자라요 🪙'); return true; }
+        S.coins -= 4; persist();
         setTimeout(() => startMini(kind === 'goldfish' ? goldfishGame() : shootingGame()), 0);
         return false;
       } },
@@ -1990,13 +1993,13 @@ MAP_MARKS.push(['🏠', MYHOUSE.x, MYHOUSE.z]);
 
 // 집 안 (앞쪽 벽은 낮게 잘라 인형의 집처럼 들여다봐요)
 const FURNITURE = [
-  { id: 'rug', name: '폭신 러그', emoji: '🟣', price: 4, r: 0 },
-  { id: 'plant', name: '몬스테라 화분', emoji: '🪴', price: 3, r: 0.45 },
-  { id: 'tank', name: '금붕어 어항', emoji: '🐠', price: 6, r: 0.8 },
-  { id: 'shelf', name: '책장', emoji: '📚', price: 5, r: 1.0 },
-  { id: 'lamp', name: '버섯 스탠드', emoji: '🍄', price: 4, r: 0.4 },
-  { id: 'teddy', name: '커다란 곰인형', emoji: '🧸', price: 7, r: 0.45 },
-  { id: 'radio', name: '레트로 라디오', emoji: '📻', price: 5, r: 0.4 },
+  { id: 'rug', name: '폭신 러그', emoji: '🟣', price: 20, r: 0 },
+  { id: 'plant', name: '몬스테라 화분', emoji: '🪴', price: 15, r: 0.45 },
+  { id: 'tank', name: '금붕어 어항', emoji: '🐠', price: 35, r: 0.8 },
+  { id: 'shelf', name: '책장', emoji: '📚', price: 28, r: 1.0 },
+  { id: 'lamp', name: '버섯 스탠드', emoji: '🍄', price: 22, r: 0.4 },
+  { id: 'teddy', name: '커다란 곰인형', emoji: '🧸', price: 40, r: 0.45 },
+  { id: 'radio', name: '레트로 라디오', emoji: '📻', price: 30, r: 0.4 },
   // 계절 축제 한정 (토큰으로 교환)
   { id: 'sakurapot', name: '벚꽃 분재', emoji: '🌸', price: 0, r: 0.5, season: 'spring' },
   { id: 'fan', name: '하늘색 선풍기', emoji: '🌀', price: 0, r: 0.45, season: 'summer' },
@@ -3767,7 +3770,8 @@ function pickSpot(x, z, model, key, label, respawn = 40, amount = () => 1) {
 const islCoinGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.12, 22).rotateX(Math.PI / 2);
 const islCoinMat = toon({ color: 0xffcf3a, emissive: 0xffa000, emissiveIntensity: 0.35 });
 const islCoins = [];
-for (const I of Object.values(ISL)) for (let i = 0; i < 4; i++) {
+// 섬에도 길에 떨어진 동전은 없어요
+for (const I of Object.values(ISL)) for (let i = 0; i < 0; i++) {
   const m = new THREE.Mesh(islCoinGeo, islCoinMat);
   m.castShadow = true;
   m.visible = false; // 첫 프레임에 각 섬 위에 놓여요
@@ -4684,14 +4688,14 @@ ISLANDS.push(SKY);
 
 /* ---------- 기념품 ---------- */
 const SOUVENIRS = [
-  { id: 'starStatue', name: '별 조각상', emoji: '⭐', price: 6, r: 0.8 },
-  { id: 'moonLamp', name: '초승달 램프', emoji: '🌙', price: 5, r: 0.4 },
-  { id: 'planet', name: '토성 장식', emoji: '🪐', price: 7, r: 0.8 },
-  { id: 'cloudSofa', name: '구름 소파', emoji: '☁️', price: 6, r: 1.2 },
-  { id: 'miniRocket', name: '미니 로켓', emoji: '🚀', price: 8, r: 0.7 },
-  { id: 'chime', name: '별빛 풍경', emoji: '🎐', price: 4, r: 0.6 },
-  { id: 'galaxyTree', name: '은하수 나무', emoji: '🌌', price: 10, r: 0.9 },
-  { id: 'scope', name: '작은 망원경', emoji: '🔭', price: 5, r: 0.5 },
+  { id: 'starStatue', name: '별 조각상', emoji: '⭐', price: 30, r: 0.8 },
+  { id: 'moonLamp', name: '초승달 램프', emoji: '🌙', price: 25, r: 0.4 },
+  { id: 'planet', name: '토성 장식', emoji: '🪐', price: 35, r: 0.8 },
+  { id: 'cloudSofa', name: '구름 소파', emoji: '☁️', price: 30, r: 1.2 },
+  { id: 'miniRocket', name: '미니 로켓', emoji: '🚀', price: 40, r: 0.7 },
+  { id: 'chime', name: '별빛 풍경', emoji: '🎐', price: 18, r: 0.6 },
+  { id: 'galaxyTree', name: '은하수 나무', emoji: '🌌', price: 50, r: 0.9 },
+  { id: 'scope', name: '작은 망원경', emoji: '🔭', price: 25, r: 0.5 },
 ];
 const skyGlowMats = [];
 const glowToon = (color, base = 0.3) => { const m = toon({ color, emissive: color, emissiveIntensity: base }); m.userData.base = base; skyGlowMats.push(m); return m; };
@@ -4822,11 +4826,11 @@ function openSouvenirShop() {
         };
       }),
       {
-        label: `${helmet.emoji} ${helmet.name} (쓰는 기념품)`, right: S.owned.includes('helmet') ? '✅ 갖고 있어요' : '🪙 9', dim: !S.owned.includes('helmet') && S.coins < 9,
+        label: `${helmet.emoji} ${helmet.name} (쓰는 기념품)`, right: S.owned.includes('helmet') ? '✅ 갖고 있어요' : '🪙 45', dim: !S.owned.includes('helmet') && S.coins < 45,
         act: () => {
           if (S.owned.includes('helmet')) return true;
-          if (S.coins < 9) { sfx.no(); toast('코인이 모자라요 🪙'); return true; }
-          S.coins -= 9; givePrize('helmet', 0); return true;
+          if (S.coins < 45) { sfx.no(); toast('코인이 모자라요 🪙'); return true; }
+          S.coins -= 45; givePrize('helmet', 0); return true;
         },
       },
       { label: '그만두기', act: () => false },
@@ -5071,6 +5075,158 @@ modes.rocket = {
   },
 };
 
+// ---------- 46-skyfun.js ----------
+/* =========================================================
+   ☁️ 하늘섬 활동 — 구름 양 털 깎기 · 구름 솜사탕 · 연날리기
+   ========================================================= */
+Object.assign(EXTRA_BAG, { fluff: { name: '구름 솜', emoji: '☁️' } });
+MARKET_PRICE.fluff = 5;
+FOODS.cloudcandy = { name: '구름 솜사탕', emoji: '🍭', price: 0, full: 10, energy: 30, desc: '하늘섬 구름 솜으로 만든 몽실몽실 솜사탕', line: '입에 넣자마자 스르르~ 몸이 가벼워져! ☁️', island: true };
+const skyPos = (lx, lz) => [SKY.x + lx, SKY.z + lz];
+
+/* ---------- 🐑 구름 양 몽글이 ---------- */
+const sheep = new THREE.Group();
+let sheepT = 0;
+{
+  const [px, pz] = skyPos(-7, -10);
+  // 구름 울타리
+  const fenceM = toon({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.25 });
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2;
+    if (Math.abs(a - Math.PI / 2) < 0.4) continue; // 입구
+    add(new THREE.SphereGeometry(0.45, 10, 8), fenceM, px + Math.cos(a) * 3.6, SKY.y + 0.35, pz + Math.sin(a) * 3.6, scene, false);
+  }
+  sheep.position.set(px, SKY.y, pz);
+  scene.add(sheep);
+  const wool = new THREE.Group(); wool.name = 'wool'; sheep.add(wool);
+  for (const [x, y, z, r] of [[0, 0.9, 0, 0.75], [0.45, 1.0, 0.3, 0.5], [-0.45, 1.0, 0.3, 0.5], [0.4, 0.95, -0.4, 0.5], [-0.4, 0.95, -0.4, 0.5], [0, 1.35, 0, 0.5]]) add(new THREE.SphereGeometry(r, 12, 10), 0xffffff, x, y, z, wool);
+  const head = add(new THREE.SphereGeometry(0.35, 12, 10), 0x6a5a6a, 0, 1.05, 0.85, sheep);
+  head.scale.set(0.9, 1, 1.1);
+  for (const s of [-1, 1]) {
+    add(new THREE.SphereGeometry(0.06, 6, 6), 0xffffff, s * 0.14, 1.12, 1.15, sheep, false);
+    add(new THREE.SphereGeometry(0.12, 8, 6), 0x6a5a6a, s * 0.35, 1.2, 0.8, sheep, false).scale.set(1.4, 0.6, 0.8);
+  }
+  for (const [lx, lz] of [[-0.3, 0.4], [0.3, 0.4], [-0.3, -0.4], [0.3, -0.4]]) add(new THREE.CylinderGeometry(0.08, 0.08, 0.5, 6), 0x6a5a6a, lx, 0.25, lz, sheep);
+  collide(px, pz, 1.1);
+  interact({
+    x: px, z: pz + 2.2, r: 2.2,
+    get label() { return sheepT > 0 ? `🐑 몽글이 털이 다시 자라는 중 (${Math.ceil(sheepT)}초)` : '🐑 구름 양 몽글이 털 깎기'; },
+    action: () => {
+      if (sheepT > 0) { say(player, '털이 아직 덜 자랐어~ 조금만 기다리자 🐑', 2); return; }
+      sheepT = 40;
+      bagAdd('fluff', 2);
+      tone(330, 0.3, 'triangle', 0.08, 1.4); tone(300, 0.4, 'triangle', 0.06, 1.2, 0.3);
+      sparkle(px, SKY.y + 1.4, pz, new THREE.Color(0xffffff), 30);
+      say(player, '☁️ 몽실몽실 구름 솜 2개! "메에~"', 2.2);
+    },
+  });
+  SKY.marks.push(['🐑', px, pz]);
+  ZONE_LABELS.push(['🐑 구름 양 몽글이', px, SKY.y + 3, pz]);
+}
+tickers.push((dt) => {
+  sheepT = Math.max(0, sheepT - dt);
+  const w = sheep.getObjectByName('wool');
+  const s = sheepT > 0 ? 0.6 + 0.4 * (1 - sheepT / 40) : 1; // 털이 점점 다시 자라요
+  w.scale.setScalar(s);
+  sheep.rotation.y = Math.sin(elapsed * 0.3) * 0.6;
+  sheep.position.y = SKY.y + Math.abs(Math.sin(elapsed * 1.5)) * 0.05;
+});
+
+/* ---------- 🍭 구름 솜사탕 기계 ---------- */
+{
+  const [mx, mz] = skyPos(7, -9);
+  const cart = new THREE.Group(); cart.position.set(mx, SKY.y, mz); scene.add(cart);
+  add(new THREE.BoxGeometry(2, 1, 1.2), 0xffd6e2, 0, 0.8, 0, cart);
+  for (const s of [-1, 1]) { const w = add(new THREE.TorusGeometry(0.3, 0.08, 8, 16), 0xc3a6ff, s * 0.8, 0.3, 0.62, cart); }
+  add(new THREE.CylinderGeometry(0.6, 0.35, 0.5, 16, 1, true), toon({ color: 0xe8f6ff, side: THREE.DoubleSide }), 0, 1.55, 0, cart);
+  const swirl = add(new THREE.SphereGeometry(0.45, 12, 10), 0xffffff, 0, 1.7, 0, cart);
+  swirl.scale.y = 0.6;
+  const umb = add(new THREE.ConeGeometry(1.4, 0.5, 12), toon({ map: stripeTexture('#c3a6ff', '#ffffff', 12) }), 0, 2.9, 0, cart);
+  add(new THREE.CylinderGeometry(0.04, 0.04, 1.4, 6), 0xffffff, 0.9, 2, 0, cart);
+  collide(mx, mz, 1.2);
+  tickers.push((dt) => (swirl.rotation.y += dt * 3));
+  interact({ x: mx, z: mz + 1.9, r: 1.9, label: '🍭 구름 솜사탕 만들기 (☁️2)', action: () => craftMenu('🍭 구름 솜사탕 기계', { fluff: 2 }, 'cloudcandy') });
+  SKY.marks.push(['🍭', mx, mz]);
+  ZONE_LABELS.push(['🍭 솜사탕 기계', mx, SKY.y + 3.6, mz]);
+}
+
+/* ---------- 🪁 연날리기 ---------- */
+{
+  const [kx, kz] = skyPos(-2, -4);
+  const post = add(new THREE.CylinderGeometry(0.08, 0.08, 1.8, 6), 0xb07a56, kx, SKY.y + 0.9, kz);
+  // 하늘 높이 떠 있는 연 (장식)
+  const kite = new THREE.Group(); kite.position.set(kx + 4, SKY.y + 12, kz - 6); scene.add(kite);
+  const k = add(new THREE.CylinderGeometry(1, 1, 0.06, 4), toon({ color: 0xff8fb1, side: THREE.DoubleSide }), 0, 0, 0, kite);
+  k.rotation.x = Math.PI / 2; k.scale.set(0.8, 1, 1.2);
+  for (let i = 0; i < 4; i++) add(new THREE.BoxGeometry(0.3, 0.12, 0.02), pick([0xffd166, 0x9fd6ff, 0xc3a6ff]), 0, -1.4 - i * 0.45, 0, kite, false).rotation.z = 0.5 * (i % 2 ? 1 : -1);
+  const lineGeo2 = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(kx, SKY.y + 1.8, kz), kite.position.clone()]);
+  scene.add(new THREE.Line(lineGeo2, new THREE.LineBasicMaterial({ color: 0xffffff })));
+  tickers.push(() => { kite.rotation.z = Math.sin(elapsed * 1.2) * 0.25; kite.position.y = SKY.y + 12 + Math.sin(elapsed * 0.8) * 0.6; const a = lineGeo2.attributes.position.array; a[4] = kite.position.y; lineGeo2.attributes.position.needsUpdate = true; });
+  collide(kx, kz, 0.3);
+  interact({ x: kx, z: kz + 1.8, r: 2, label: '🪁 연날리기', action: () => { sfx.ok(); startMini(kiteGame()); } });
+  SKY.marks.push(['🪁', kx, kz]);
+  ZONE_LABELS.push(['🪁 연날리기', kx, SKY.y + 3, kz]);
+}
+// 🪁 바람 길(반짝이는 띠)을 따라 연을 띄워요. ↑ 당기기, ↓ 풀기
+function kiteGame() {
+  const W = 640, H = 400;
+  const g = { title: '🪁 구름 위 연날리기', y: 250, vy: 0, band: 180, bandV: 0, time: 30, score: 0, gust: 0, result: null, msg: '반짝이는 바람 길 안에 연을 두세요! ↑ 당기기 · ↓ 풀기' };
+  g.finish = () => {
+    const n = Math.floor(g.score);
+    const reward = n >= 22 ? 12 : n >= 15 ? 7 : n >= 8 ? 3 : 0;
+    g.result = {
+      title: n >= 22 ? `${n}점! 바람의 친구 🌬️` : `${n}점!`,
+      text: reward ? `보상: 코인 ${reward}개 + 구름 솜 1개` : '참가상: 구름 솜 1개',
+      give: () => { S.coins += reward; bagAdd('fluff', 1); persist(); sfx.coin(); toast(reward ? `🎁 코인 ${reward}개와 구름 솜을 받았어요!` : '☁️ 구름 솜 1개를 받았어요'); },
+    };
+  };
+  g.key = () => {};
+  g.update = (dt) => {
+    g.time -= dt;
+    if (g.time <= 0) { g.time = 0; g.finish(); return; }
+    // 바람 길은 천천히 오르내려요
+    g.bandV += rr(-140, 140) * dt;
+    g.bandV = clamp(g.bandV * 0.99, -70, 70);
+    g.band = clamp(g.band + g.bandV * dt, 90, 300);
+    if (g.band <= 90 || g.band >= 300) g.bandV *= -1;
+    // 가끔 돌풍
+    g.gust -= dt;
+    if (g.gust <= 0) { g.gust = rr(2.5, 5); g.vy += rr(-160, 160); g.msg = '휘잉~ 돌풍이다!'; }
+    if (down('ArrowUp', 'KeyW')) g.vy -= 340 * dt;
+    if (down('ArrowDown', 'KeyS')) g.vy += 340 * dt;
+    g.vy += 40 * dt; // 연은 살짝씩 내려와요
+    g.vy *= 0.97;
+    g.y = clamp(g.y + g.vy * dt, 40, 360);
+    const inBand = Math.abs(g.y - g.band) < 36;
+    if (inBand) { g.score += dt; if (Math.random() < dt * 2) g.msg = '좋아요~ 바람을 탔어요!'; }
+  };
+  g.draw = (c) => {
+    const sky = c.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#7ec8ff'); sky.addColorStop(1, '#e6f5ff');
+    c.fillStyle = sky; c.fillRect(0, 0, W, H);
+    c.fillStyle = 'rgba(255,255,255,0.9)';
+    for (let i = 0; i < 6; i++) { const x = ((i * 140 + elapsed * 30) % (W + 120)) - 60; c.beginPath(); c.ellipse(x, 60 + (i % 3) * 110, 50, 18, 0, 0, 7); c.fill(); }
+    // 바람 길
+    const inBand = Math.abs(g.y - g.band) < 36;
+    c.fillStyle = inBand ? 'rgba(159, 227, 200, 0.45)' : 'rgba(255, 241, 168, 0.35)';
+    c.fillRect(0, g.band - 36, W, 72);
+    c.strokeStyle = 'rgba(255,255,255,0.8)'; c.setLineDash([10, 10]); c.lineWidth = 2;
+    for (const dy of [-36, 36]) { c.beginPath(); c.moveTo(0, g.band + dy); c.lineTo(W, g.band + dy); c.stroke(); }
+    c.setLineDash([]);
+    // 연줄과 연
+    const kx = 420, ky = g.y;
+    c.strokeStyle = '#ffffff'; c.lineWidth = 2; c.beginPath(); c.moveTo(120, 390); c.quadraticCurveTo(260, 300, kx, ky); c.stroke();
+    c.save(); c.translate(kx, ky); c.rotate(Math.sin(elapsed * 3) * 0.2);
+    c.fillStyle = '#ff8fb1'; c.beginPath(); c.moveTo(0, -30); c.lineTo(22, 0); c.lineTo(0, 34); c.lineTo(-22, 0); c.closePath(); c.fill();
+    c.strokeStyle = '#ffffff'; c.beginPath(); c.moveTo(0, -30); c.lineTo(0, 34); c.moveTo(-22, 0); c.lineTo(22, 0); c.stroke();
+    c.restore();
+    for (let i = 0; i < 4; i++) { c.fillStyle = ['#ffd166', '#9fd6ff', '#c3a6ff', '#ffd166'][i]; c.fillRect(kx - 6 + Math.sin(elapsed * 4 + i) * 6, ky + 40 + i * 14, 12, 6); }
+    c.font = '40px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('🐻', 110, 370);
+    c.fillStyle = '#6a4c3f'; c.font = '22px Jua, sans-serif'; c.fillText(g.msg, W / 2, 28);
+  };
+  g.info = () => `⏱ ${Math.ceil(g.time)}초 · 🌬️ ${Math.floor(g.score)}점 · <kbd>↑</kbd> 당기기 <kbd>↓</kbd> 풀기 · <kbd>Esc</kbd> 그만하기`;
+  return g;
+}
+
 // ---------- 80-nature.js ----------
 /* =========================================================
    집 · 나무 · 꽃 · 구름
@@ -5187,7 +5343,9 @@ function randomFreeSpot() {
   }
   return [3, 9];
 }
-for (let i = 0; i < 14; i++) {
+// 길에 떨어진 동전은 없어요. 낚시·미니게임·부탁·특산물 판매로 벌어요
+const STREET_COINS = 0;
+for (let i = 0; i < STREET_COINS; i++) {
   const m = new THREE.Mesh(coinGeo, coinMat);
   m.castShadow = true;
   scene.add(m);
@@ -5204,7 +5362,8 @@ const NPC_LINES = [
   '북쪽 호숫가 데크에서 불꽃놀이를 볼 수 있대! 🎆',
   '붕어빵은 팥이 최고야. 슈크림도 좋지만!',
   '언덕 위 해먹에서 낮잠 자면 기운이 펄펄 나~',
-  '반짝이는 코인 봤어? 모으면 잡화점에서 쇼핑할 수 있어!',
+  '돈이 필요하면 선착장에서 낚시를 하거나, 다른 섬 특산물을 팔아 봐!',
+  '우체통 부탁을 들어주면 다들 코인으로 고마움을 표시한대 📮',
   '잡화점 밀짚모자, 너한테 잘 어울릴 것 같아 👒',
   '밤이 되면 언덕에 반딧불이가 날아다녀 ✨',
   '솜사탕 먹으면 기분이 구름처럼 둥실둥실~',
@@ -5249,7 +5408,7 @@ player.root.rotation.y = Math.PI;
 scene.add(player.root);
 
 const S = {
-  coins: save.get('coins', 5),
+  coins: save.get('coins', 15),
   full: save.get('full', 70),
   energy: save.get('energy', 80),
   owned: save.get('owned', []),
@@ -5626,7 +5785,7 @@ function eat(key, free = false) {
   const f = FOODS[key];
   if (!free && S.coins < f.price) {
     sfx.no();
-    say(player, '코인이 모자라… 마을에서 반짝이는 코인을 찾아보자! 🪙', 3);
+    say(player, '코인이 모자라… 낚시나 미니게임, 섬 특산물로 벌어 오자! 🪙', 3);
     return;
   }
   if (!free) S.coins -= f.price;

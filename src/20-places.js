@@ -82,21 +82,21 @@ const POND = { x: 0, z: -44, r: 10.5 };
    🍢 먹자골목 (동쪽)
    ========================================================= */
 const FOODS = {
-  tteok: { name: '떡볶이', emoji: '🌶️', price: 3, full: 35, energy: 5, desc: '매콤달콤 쫄깃한 떡볶이!', line: '호호~ 매콤해! 그래도 또 먹고 싶어 😋' },
-  fish: { name: '붕어빵', emoji: '🐟', price: 2, full: 22, energy: 5, desc: '바삭한 껍질에 달콤한 팥이 가득', line: '머리부터 먹을까, 꼬리부터 먹을까~' },
-  cotton: { name: '솜사탕', emoji: '🍭', price: 2, full: 12, energy: 15, desc: '구름처럼 폭신한 분홍 솜사탕', line: '입에서 사르르 녹아요~ ☁️' },
-  bingsu: { name: '팥빙수', emoji: '🍧', price: 4, full: 25, energy: 12, desc: '시원하고 달콤한 빙수 한 그릇!', line: '으~ 머리가 찡! 그래도 시원해 ❄️' },
+  tteok: { name: '떡볶이', emoji: '🌶️', price: 8, full: 35, energy: 5, desc: '매콤달콤 쫄깃한 떡볶이!', line: '호호~ 매콤해! 그래도 또 먹고 싶어 😋' },
+  fish: { name: '붕어빵', emoji: '🐟', price: 6, full: 22, energy: 5, desc: '바삭한 껍질에 달콤한 팥이 가득', line: '머리부터 먹을까, 꼬리부터 먹을까~' },
+  cotton: { name: '솜사탕', emoji: '🍭', price: 6, full: 12, energy: 15, desc: '구름처럼 폭신한 분홍 솜사탕', line: '입에서 사르르 녹아요~ ☁️' },
+  bingsu: { name: '팥빙수', emoji: '🍧', price: 10, full: 25, energy: 12, desc: '시원하고 달콤한 빙수 한 그릇!', line: '으~ 머리가 찡! 그래도 시원해 ❄️' },
   // 계절 축제 부스에서만 파는 음식
-  mochi: { name: '딸기 찹쌀떡', emoji: '🍓', price: 3, full: 20, energy: 15, desc: '봄 딸기가 쏙 들어간 말랑 찹쌀떡', line: '말랑말랑 새콤달콤~ 봄 맛이야! 🌸', seasonal: true },
-  hwachae: { name: '수박 화채', emoji: '🍉', price: 3, full: 22, energy: 15, desc: '동글동글 수박이 동동 뜬 시원한 화채', line: '시원하고 달콤해~ 여름 최고! 🌻', seasonal: true },
-  goguma: { name: '군고구마', emoji: '🍠', price: 3, full: 30, energy: 10, desc: '드럼통에서 노릇노릇 구운 군고구마', line: '앗 뜨거! 호호~ 달달하다 🍂', seasonal: true },
+  mochi: { name: '딸기 찹쌀떡', emoji: '🍓', price: 8, full: 20, energy: 15, desc: '봄 딸기가 쏙 들어간 말랑 찹쌀떡', line: '말랑말랑 새콤달콤~ 봄 맛이야! 🌸', seasonal: true },
+  hwachae: { name: '수박 화채', emoji: '🍉', price: 8, full: 22, energy: 15, desc: '동글동글 수박이 동동 뜬 시원한 화채', line: '시원하고 달콤해~ 여름 최고! 🌻', seasonal: true },
+  goguma: { name: '군고구마', emoji: '🍠', price: 8, full: 30, energy: 10, desc: '드럼통에서 노릇노릇 구운 군고구마', line: '앗 뜨거! 호호~ 달달하다 🍂', seasonal: true },
   // 다른 섬에서만 파는 음식
-  coconut: { name: '코코넛 주스', emoji: '🥥', price: 2, full: 15, energy: 20, desc: '야자수섬 명물! 빨대 꽂은 코코넛', line: '쪼옥~ 달콤하고 시원해! 🌴', island: true },
-  soup: { name: '숲 버섯 수프', emoji: '🍲', price: 3, full: 35, energy: 10, desc: '부엉 할머니의 따끈한 버섯 수프', line: '후~ 후~ 숲 향기가 나! 🍄', island: true },
-  berrymilk: { name: '딸기 우유', emoji: '🍼', price: 2, full: 18, energy: 15, desc: '갓 딴 딸기로 만든 분홍 우유', line: '달콤해~ 콧수염이 생겼어! 🍓', island: true },
-  tanghulu: { name: '딸기 탕후루', emoji: '🍡', price: 2, full: 14, energy: 14, desc: '반짝반짝 설탕옷을 입은 딸기 꼬치', line: '와삭! 달콤새콤해~ 🍓', island: true },
-  parfait: { name: '딸기 파르페', emoji: '🍨', price: 4, full: 28, energy: 12, desc: '생크림과 딸기를 층층이 쌓은 파르페', line: '한 숟갈 한 숟갈이 행복해~ 💕', island: true },
-  cocoa: { name: '마시멜로 코코아', emoji: '☕', price: 3, full: 15, energy: 25, desc: '마시멜로를 동동 띄운 따끈한 코코아', line: '몸이 사르르 녹는다~ ⛄', seasonal: true },
+  coconut: { name: '코코넛 주스', emoji: '🥥', price: 6, full: 15, energy: 20, desc: '야자수섬 명물! 빨대 꽂은 코코넛', line: '쪼옥~ 달콤하고 시원해! 🌴', island: true },
+  soup: { name: '숲 버섯 수프', emoji: '🍲', price: 9, full: 35, energy: 10, desc: '부엉 할머니의 따끈한 버섯 수프', line: '후~ 후~ 숲 향기가 나! 🍄', island: true },
+  berrymilk: { name: '딸기 우유', emoji: '🍼', price: 6, full: 18, energy: 15, desc: '갓 딴 딸기로 만든 분홍 우유', line: '달콤해~ 콧수염이 생겼어! 🍓', island: true },
+  tanghulu: { name: '딸기 탕후루', emoji: '🍡', price: 6, full: 14, energy: 14, desc: '반짝반짝 설탕옷을 입은 딸기 꼬치', line: '와삭! 달콤새콤해~ 🍓', island: true },
+  parfait: { name: '딸기 파르페', emoji: '🍨', price: 12, full: 28, energy: 12, desc: '생크림과 딸기를 층층이 쌓은 파르페', line: '한 숟갈 한 숟갈이 행복해~ 💕', island: true },
+  cocoa: { name: '마시멜로 코코아', emoji: '☕', price: 8, full: 15, energy: 25, desc: '마시멜로를 동동 띄운 따끈한 코코아', line: '몸이 사르르 녹는다~ ⛄', seasonal: true },
 };
 function foodModel(key) {
   const g = new THREE.Group();
@@ -144,6 +144,9 @@ function foodModel(key) {
     add(new THREE.CylinderGeometry(0.2, 0.2, 0.55, 14), 0xffd6e4, 0, 0.28, 0, g);
     add(new THREE.ConeGeometry(0.2, 0.2, 4), 0xff8fb1, 0, 0.65, 0, g).rotation.y = Math.PI / 4;
     add(new THREE.SphereGeometry(0.08, 8, 6), 0xff4d6d, 0, 0.3, 0.2, g, false);
+  } else if (key === 'cloudcandy') {
+    add(new THREE.CylinderGeometry(0.03, 0.03, 0.8, 6), 0xfff1df, 0, 0.4, 0, g);
+    for (const [x, y, z, r, c] of [[0, 0.95, 0, 0.32, 0xffffff], [0.2, 0.85, 0.1, 0.22, 0xdff4ff], [-0.18, 0.88, -0.05, 0.24, 0xf3e6ff], [0, 1.15, 0, 0.2, 0xffffff]]) add(new THREE.SphereGeometry(r, 14, 10), c, x, y, z, g);
   } else if (key === 'tanghulu') {
     add(new THREE.CylinderGeometry(0.025, 0.025, 1.2, 5), 0xe8c49a, 0, 0.6, 0, g, false);
     for (let i = 0; i < 4; i++) add(new THREE.SphereGeometry(0.15, 12, 10), toon({ color: 0xff3d5a, emissive: 0xff8fa0, emissiveIntensity: 0.25 }), 0, 0.55 + i * 0.25, 0, g).scale.y = 1.15;
@@ -287,13 +290,13 @@ scene.add(new THREE.Points(fireflyGeo, fireflyMat));
    🛍️ 포근 잡화점 (북동쪽)
    ========================================================= */
 const SHOP_ITEMS = [
-  { id: 'straw', name: '밀짚모자', emoji: '👒', price: 6, slot: 'hat' },
-  { id: 'ribbon', name: '분홍 리본', emoji: '🎀', price: 4, slot: 'hat' },
-  { id: 'crown', name: '반짝 왕관', emoji: '👑', price: 12, slot: 'hat' },
-  { id: 'flower', name: '꽃 머리핀', emoji: '🌼', price: 3, slot: 'hat' },
-  { id: 'glasses', name: '동글 선글라스', emoji: '🕶️', price: 5, slot: 'face' },
-  { id: 'balloon', name: '하트 풍선', emoji: '🎈', price: 5, slot: 'hand' },
-  { id: 'parasol', name: '레이스 양산', emoji: '⛱️', price: 7, slot: 'hand' },
+  { id: 'straw', name: '밀짚모자', emoji: '👒', price: 25, slot: 'hat' },
+  { id: 'ribbon', name: '분홍 리본', emoji: '🎀', price: 15, slot: 'hat' },
+  { id: 'crown', name: '반짝 왕관', emoji: '👑', price: 60, slot: 'hat' },
+  { id: 'flower', name: '꽃 머리핀', emoji: '🌼', price: 12, slot: 'hat' },
+  { id: 'glasses', name: '동글 선글라스', emoji: '🕶️', price: 20, slot: 'face' },
+  { id: 'balloon', name: '하트 풍선', emoji: '🎈', price: 18, slot: 'hand' },
+  { id: 'parasol', name: '레이스 양산', emoji: '⛱️', price: 28, slot: 'hand' },
   // 축제 경품 (가게에서는 팔지 않아요)
   { id: 'fishbag', name: '금붕어 봉지', emoji: '🐠', price: 0, slot: 'hand', prize: true },
   { id: 'starband', name: '별 머리띠', emoji: '⭐', price: 0, slot: 'hat', prize: true },
