@@ -190,6 +190,8 @@ function rampY(x, z) {
 function groundY(x, z) {
   if (onPier(x, z)) return PIER.h;
   if (Math.abs(x) + Math.abs(z) > 110) {
+    // 하늘섬은 구름 위 높은 곳에 떠 있어요
+    for (const I of ISLANDS) if (I.sky && Math.hypot(x - I.x, z - I.z) < I.r + 4) return I.y;
     // 다른 섬의 언덕
     for (const I of ISLANDS) {
       if (!I.hill) continue;

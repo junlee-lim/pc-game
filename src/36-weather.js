@@ -105,7 +105,7 @@ tickers.push((dt) => {
   rainbowGroup.visible = W.rainbow > 0.01;
   ensureRainSound();
   if (rainGain) rainGain.gain.value = soundOn ? r * 0.12 * (insideHouse ? 0.4 : 1) : 0;
-  const wantUmbrella = r > 0.3 && W.raining && !insideHouse && ['play', 'menu'].includes(state) && !riding;
+  const wantUmbrella = r > 0.3 && W.raining && !insideHouse && ['play', 'menu'].includes(state) && !riding && !islandAt(player.root.position).sky;
   umbrella.visible = wantUmbrella;
   player.handSlot.visible = !wantUmbrella && state !== 'fishing';
 });

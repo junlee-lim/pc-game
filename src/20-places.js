@@ -94,6 +94,8 @@ const FOODS = {
   coconut: { name: '코코넛 주스', emoji: '🥥', price: 2, full: 15, energy: 20, desc: '야자수섬 명물! 빨대 꽂은 코코넛', line: '쪼옥~ 달콤하고 시원해! 🌴', island: true },
   soup: { name: '숲 버섯 수프', emoji: '🍲', price: 3, full: 35, energy: 10, desc: '부엉 할머니의 따끈한 버섯 수프', line: '후~ 후~ 숲 향기가 나! 🍄', island: true },
   berrymilk: { name: '딸기 우유', emoji: '🍼', price: 2, full: 18, energy: 15, desc: '갓 딴 딸기로 만든 분홍 우유', line: '달콤해~ 콧수염이 생겼어! 🍓', island: true },
+  tanghulu: { name: '딸기 탕후루', emoji: '🍡', price: 2, full: 14, energy: 14, desc: '반짝반짝 설탕옷을 입은 딸기 꼬치', line: '와삭! 달콤새콤해~ 🍓', island: true },
+  parfait: { name: '딸기 파르페', emoji: '🍨', price: 4, full: 28, energy: 12, desc: '생크림과 딸기를 층층이 쌓은 파르페', line: '한 숟갈 한 숟갈이 행복해~ 💕', island: true },
   cocoa: { name: '마시멜로 코코아', emoji: '☕', price: 3, full: 15, energy: 25, desc: '마시멜로를 동동 띄운 따끈한 코코아', line: '몸이 사르르 녹는다~ ⛄', seasonal: true },
 };
 function foodModel(key) {
@@ -142,6 +144,16 @@ function foodModel(key) {
     add(new THREE.CylinderGeometry(0.2, 0.2, 0.55, 14), 0xffd6e4, 0, 0.28, 0, g);
     add(new THREE.ConeGeometry(0.2, 0.2, 4), 0xff8fb1, 0, 0.65, 0, g).rotation.y = Math.PI / 4;
     add(new THREE.SphereGeometry(0.08, 8, 6), 0xff4d6d, 0, 0.3, 0.2, g, false);
+  } else if (key === 'tanghulu') {
+    add(new THREE.CylinderGeometry(0.025, 0.025, 1.2, 5), 0xe8c49a, 0, 0.6, 0, g, false);
+    for (let i = 0; i < 4; i++) add(new THREE.SphereGeometry(0.15, 12, 10), toon({ color: 0xff3d5a, emissive: 0xff8fa0, emissiveIntensity: 0.25 }), 0, 0.55 + i * 0.25, 0, g).scale.y = 1.15;
+  } else if (key === 'parfait') {
+    add(new THREE.CylinderGeometry(0.3, 0.12, 0.6, 14), toon({ color: 0xe8f6ff, transparent: true, opacity: 0.6 }), 0, 0.4, 0, g, false);
+    add(new THREE.CylinderGeometry(0.06, 0.15, 0.1, 10), 0xe8f6ff, 0, 0.05, 0, g, false);
+    add(new THREE.CylinderGeometry(0.26, 0.14, 0.25, 14), 0xffc4d8, 0, 0.35, 0, g, false);
+    add(new THREE.SphereGeometry(0.28, 12, 10), 0xfffaf4, 0, 0.75, 0, g).scale.y = 0.7;
+    add(new THREE.SphereGeometry(0.12, 10, 8), 0xff3d5a, 0, 0.98, 0, g, false);
+    add(new THREE.SphereGeometry(0.09, 8, 6), 0xff3d5a, 0.16, 0.85, 0.08, g, false);
   } else if (key === 'cocoa') {
     add(new THREE.CylinderGeometry(0.25, 0.22, 0.45, 16), 0xff8fb1, 0, 0.23, 0, g);
     add(new THREE.CylinderGeometry(0.22, 0.22, 0.02, 16), 0x8a5a3c, 0, 0.44, 0, g, false);
@@ -293,6 +305,8 @@ const SHOP_ITEMS = [
   { id: 'knithat', name: '방울 털모자', emoji: '🧶', price: 0, slot: 'hat', prize: true },
   // 친구와 단짝이 되면 받아요
   { id: 'bffheart', name: '단짝 하트 스티커', emoji: '💗', price: 0, slot: 'face', prize: true },
+  // 별빛섬 기념품 가게
+  { id: 'helmet', name: '반짝 우주 헬멧', emoji: '🧑‍🚀', price: 0, slot: 'hat', prize: true },
 ];
 function itemModel(id) {
   const g = new THREE.Group();
@@ -390,6 +404,11 @@ function itemModel(id) {
     h.scale.y = 1.05;
     add(new THREE.CylinderGeometry(0.62, 0.62, 0.2, 18), 0xffffff, 0, -0.17, 0, g);
     add(new THREE.SphereGeometry(0.17, 12, 10), 0xffffff, 0, 0.45, 0, g);
+  } else if (id === 'helmet') {
+    const bubble = add(new THREE.SphereGeometry(0.85, 22, 16), new THREE.MeshToonMaterial({ color: 0xdff4ff, transparent: true, opacity: 0.32, gradientMap: gradTex, depthWrite: false }), 0, -0.55, 0, g, false);
+    add(new THREE.TorusGeometry(0.62, 0.09, 8, 24), 0xc9d4ff, 0, -1.05, 0, g, false).rotation.x = Math.PI / 2;
+    add(new THREE.CylinderGeometry(0.03, 0.03, 0.35, 5), 0xffffff, 0.3, 0.38, 0, g, false);
+    add(new THREE.OctahedronGeometry(0.1, 0), toon({ color: 0xffd34d, emissive: 0xffb000, emissiveIntensity: 0.6 }), 0.3, 0.6, 0, g, false);
   } else if (id === 'bffheart') {
     const hs = new THREE.Shape();
     hs.moveTo(0, -0.1);

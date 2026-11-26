@@ -478,3 +478,5 @@ kbd {
 }
 .stats .row.small.warn { color: #e0566e; }
 .stats b.neg { color: #e0566e; }
+
+#fade.white { background: #fffaf2; }

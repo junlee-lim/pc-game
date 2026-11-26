@@ -446,6 +446,7 @@ addEventListener('resize', () => {
 });
 
 refreshFurniture();
+refreshSky();
 applySeason();
 $('loading').remove();
 state = 'title';
