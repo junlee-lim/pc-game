@@ -381,6 +381,9 @@ function paintMap(g, I, N, big) {
   mapTagRects = big ? [] : null;
   const me = insideHouse ? curRoom.exit : player.root.position;
   if (big && islandAt(me) === I) { const [mx, my] = P(me.x, me.z); mapTag(g, insideHouse ? '나 (집 안)' : '나', mx, my + 20 * k, 9 * k, '#ff8fb1', '#ffffff'); }
+  // 온라인 친구 이름표는 장소 이름보다 먼저 자리를 잡아요 (겹치면 생략되니까)
+  const peersHere = typeof ON === 'undefined' ? [] : [...ON.peers.values()].filter((p) => !p.hid && !p.room && p.isl === I.id);
+  if (big) for (const p of peersHere) { const [x, y] = P(p.tx, p.tz); mapTag(g, `🌐 ${p.name}`, x, y - 16 * k, 8.5 * k, '#ff8fb1', '#ffffff'); }
   if (big) {
     for (const l of labelDefs) if (islandAt(l.p) === I && !/^(🌴|🍄|🔭|🍓|🌼) /.test(l.el.textContent)) { const [x, y] = P(l.p.x, l.p.z); mapTag(g, l.el.textContent, x, y + 16 * k, 10 * k); }
     if (I.id === 'main' && typeof FRIEND_HOMES !== 'undefined') for (const F of FRIEND_HOMES) if (F.R) { const [x, y] = P(F.house[0], F.house[1]); mapTag(g, `${F.emoji} ${F.name}네`, x, y - 12 * k, 9 * k, 'rgba(255,230,238,0.95)'); }
@@ -392,6 +395,12 @@ function paintMap(g, I, N, big) {
     g.fillStyle = '#ffffff'; g.strokeStyle = '#ff8fb1'; g.lineWidth = 1.5 * k;
     g.beginPath(); g.arc(x, y, 5 * k, 0, 7); g.fill(); if (big) g.stroke();
     if (big) mapTag(g, n.name, x, y - 13 * k, 8.5 * k, 'rgba(255,255,255,0.95)');
+  }
+  // 🌐 온라인 친구 (바깥에 있을 때만, 각자 고른 몸 색으로)
+  for (const p of peersHere) {
+    const [x, y] = P(p.tx, p.tz);
+    g.fillStyle = '#' + (p.c.look ? p.c.look.color : 0xfff1df).toString(16).padStart(6, '0'); g.strokeStyle = '#ff6f91'; g.lineWidth = 2.5 * k;
+    g.beginPath(); g.arc(x, y, 6 * k, 0, 7); g.fill(); g.stroke();
   }
   // 나
   const pw = me;

@@ -10,7 +10,7 @@ const HOUSE_LEVELS = [
 ];
 const RENT_EVERY = 5;
 function applyHouseLevel() {
-  const H = HOUSE_LEVELS[S.houseLv] || HOUSE_LEVELS[1];
+  const H = HOUSE_LEVELS[roomData().houseLv] || HOUSE_LEVELS[1];
   ROOM.w = H.w; ROOM.d = H.d;
   roomShellBuild();
   refreshFurniture();
@@ -47,7 +47,7 @@ function openExpand() {
         persist();
         setTimeout(() => fadeThen(() => {
           applyHouseLevel();
-          if (insideHouse && curRoom === ROOM) { player.root.position.set(ROOM.x, 0, ROOM.z + ROOM.d / 2 - 1.2); houseCamera(player.root.position, camera.position, lookAt); }
+          if (insideHouse && curRoom === ROOM && !roomOwner) { player.root.position.set(ROOM.x, 0, ROOM.z + ROOM.d / 2 - 1.2); houseCamera(player.root.position, camera.position, lookAt); }
           sfx.fanfare();
           addXP(30, '집 넓히기');
           toast(`🏠 뚝딱뚝딱~ ${next.name}이 되었어요! 가구를 넓게 배치해 보세요 (F)`, 4);

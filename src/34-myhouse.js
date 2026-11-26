@@ -6,6 +6,10 @@ const ROOM = { x: 300, z: 300, w: 13, d: 9 }; // 집 안은 바다 멀리 따로
 let insideHouse = false;
 // 지금 들어가 있는 방 (내 집 또는 친구 집). exit: 나왔을 때 설 자리
 let curRoom = ROOM;
+// 🌐 온라인 친구 집에 놀러 갔을 때: 친구의 { houseLv, furniture, layout, name } (내 집이면 null)
+let roomOwner = null;
+const roomData = () => roomOwner || S;
+const notMyHouse = () => { if (!roomOwner) return false; sfx.no(); toast(`${roomOwner.name}님 집이에요. 내 집에서 해 주세요 🏠`); return true; };
 ROOM.exit = { x: MYHOUSE.x, z: MYHOUSE.z + 3.4, rot: 0 };
 AVOID.push([MYHOUSE.x, MYHOUSE.z, 6]);
 {
@@ -128,19 +132,19 @@ let roomShellBuild = null;
   F('xtree', -1.8, 2.6, (g) => { add(new THREE.CylinderGeometry(0.28, 0.24, 0.35, 10), 0xff6f6f, 0, 0.18, 0, g); for (const [y, r, h] of [[0.7, 0.6, 0.7], [1.15, 0.45, 0.6], [1.55, 0.3, 0.5]]) add(new THREE.ConeGeometry(r, h, 10), 0x4fae6a, 0, y, 0, g); add(new THREE.OctahedronGeometry(0.13, 0), toon({ color: 0xffd34d, emissive: 0xffc000, emissiveIntensity: 0.8 }), 0, 1.9, 0, g, false); for (let i = 0; i < 10; i++) add(new THREE.SphereGeometry(0.05, 6, 4), lanternMats[i % 5], Math.cos(i * 2.3) * (0.5 - i * 0.035), 0.5 + i * 0.11, Math.sin(i * 2.3) * (0.5 - i * 0.035), g, false); });
   glowLights.push((() => { const l = new THREE.PointLight(0xffc890, 0, 16, 1.2); l.position.set(R.x, 3, R.z); scene.add(l); return l; })());
 
-  interact({ get x() { return bed.position.x + 1.6; }, get z() { return bed.position.z + 0.8; }, r: 1.8, label: '침대에서 잠자기 🛏️', action: () => sleepInBed() });
-  interact({ get x() { return ward.position.x - 0.2; }, get z() { return ward.position.z + 1.4; }, r: 1.6, label: '옷장 열기 👗', action: () => openWardrobe() });
-  interact({ get x() { return desk.position.x - 1.3; }, get z() { return desk.position.z; }, r: 1.6, label: '가구 카탈로그 · 집 넓히기 📖', action: () => openCatalog() });
+  interact({ get x() { return bed.position.x + 1.6; }, get z() { return bed.position.z + 0.8; }, r: 1.8, label: '침대에서 잠자기 🛏️', action: () => notMyHouse() || sleepInBed() });
+  interact({ get x() { return ward.position.x - 0.2; }, get z() { return ward.position.z + 1.4; }, r: 1.6, label: '옷장 열기 👗', action: () => notMyHouse() || openWardrobe() });
+  interact({ get x() { return desk.position.x - 1.3; }, get z() { return desk.position.z; }, r: 1.6, label: '가구 카탈로그 · 집 넓히기 📖', action: () => notMyHouse() || openCatalog() });
   interact({ x: R.x, get z() { return R.z + ROOM.d / 2 - 0.6; }, r: 1.6, label: '밖으로 나가기 🚪', action: () => exitHouse() });
   interact({ get x() { return furnitureModels.radio.position.x; }, get z() { return furnitureModels.radio.position.z + 0.9; }, get r() { return furnitureModels.radio.visible && state === 'play' ? 1.3 : 0; }, label: '라디오 켜기 📻', action: () => { for (let i = 0; i < 8; i++) tone(pick([523, 659, 784, 880, 1047]), 0.35, 'triangle', 0.07, 0, i * 0.18); say(player, '♪ 랄랄라~ 🎶', 2); } });
 }
-const furnLayout = (id) => S.layout[id] || [...FURN_DEFAULT[id], 0];
+const furnLayout = (id) => roomData().layout[id] || [...FURN_DEFAULT[id], 0];
 function refreshFurniture() {
   for (const [id, m] of Object.entries(furnitureModels)) {
     const [x, z, rot, stored] = furnLayout(id);
     m.position.set(ROOM.x + x, 0, ROOM.z + z);
     m.rotation.y = rot;
-    m.visible = S.furniture.includes(id) && !stored;
+    m.visible = roomData().furniture.includes(id) && !stored;
     const c = furnColliders[id];
     if (c) { c.x = m.position.x; c.z = m.position.z; c.off = !m.visible; }
   }
@@ -186,6 +190,7 @@ function exitHouse() {
   fadeThen(() => {
     const ex = curRoom.exit;
     if (curRoom.onExit) curRoom.onExit();
+    if (roomOwner) { roomOwner = null; applyHouseLevel(); } // 친구 집에서 나오면 우리 집 모습으로 되돌려요
     insideHouse = false;
     curRoom = ROOM;
     player.root.position.set(ex.x, 0, ex.z);
@@ -338,6 +343,7 @@ modes.decorate = {
 };
 playKeyHooks.push((code) => {
   if (code !== 'KeyF' || !insideHouse || curRoom !== ROOM) return false;
+  if (notMyHouse()) return true;
   startDecorate();
   return true;
 });
