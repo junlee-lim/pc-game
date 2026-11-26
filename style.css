@@ -606,3 +606,4 @@ body.photo-mode #hud, body.photo-mode #onlineBadge, body.photo-mode #chatLog, bo
 }
 #whisperTag .x { opacity: 0.85; font-size: 12px; }
 body.photo-mode #whisperTag { display: none !important; }
+body.look-open #chatLog { display: none !important; }

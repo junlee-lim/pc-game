@@ -35,6 +35,7 @@ function openLookMenu(first = false) {
   });
   let saved = false;
   $('menu').classList.add('side');
+  document.body.classList.add('look-open'); // 오른쪽 채팅창과 겹치지 않게 잠시 숨겨요
   openMenu({
     title: first ? '🐻 반가워요! 내 모습을 골라 볼까요?' : '🐻 내 모습 바꾸기',
     desc: () => `<kbd>←</kbd><kbd>→</kbd> 또는 <kbd>Enter</kbd> 로 바꿔 보세요.${ON.url ? ' 온라인 친구들에게도 이 모습으로 보여요!' : ''}`,
@@ -54,6 +55,7 @@ function openLookMenu(first = false) {
     ],
     onClose: () => {
       $('menu').classList.remove('side');
+      document.body.classList.remove('look-open');
       if (saved) return;
       // 그냥 닫으면 원래 모습으로 (처음이면 기본 모습으로 정해요)
       player.setLook(before);
