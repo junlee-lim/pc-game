@@ -144,6 +144,7 @@ function openPauseMenu() {
     title: '🌼 포근마을 메뉴',
     desc: () => '진행 상황은 이 브라우저에 자동으로 저장돼요. 다른 기기에서 이어 하려면 저장 코드를 옮겨 주세요.',
     items: () => [
+      ...(ON.url ? [{ label: '🌐 온라인 이름 바꾸기', right: escHtml(ON.name), act: () => { setTimeout(() => openChat('/이름 '), 0); return false; } }] : []),
       { label: '💾 저장 코드 만들기', right: '다른 기기로 옮기기', act: () => { setTimeout(() => showSaveBox('export'), 0); return false; } },
       { label: '📥 저장 코드 불러오기', right: '다른 기기에서 이어 하기', act: () => { setTimeout(() => showSaveBox('import'), 0); return false; } },
       { label: soundOn ? '🔊 소리 끄기' : '🔇 소리 켜기', act: () => {

@@ -1,0 +1,9 @@
+# Render(https://render.com) 에서 "New → Blueprint" 로 이 저장소를 고르면 아래 설정으로 서버가 만들어져요.
+services:
+  - type: web
+    name: pogeun-village
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
