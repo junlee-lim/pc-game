@@ -18,12 +18,14 @@ function craftMenu(title, needs, foodKey) {
         if (!hasAll(needs)) { sfx.no(); toast(`재료가 모자라요 (${needsText(needs)})`); return true; }
         for (const [k, n] of Object.entries(needs)) bagAdd(k, -n);
         eat(foodKey, true);
+        daily('craft'); addXP(3, '요리');
         return false;
       } },
       { label: `만들어서 가방에 담기 🎒`, dim: !hasAll(needs), act: () => {
         if (!hasAll(needs)) { sfx.no(); toast(`재료가 모자라요 (${needsText(needs)})`); return true; }
         for (const [k, n] of Object.entries(needs)) bagAdd(k, -n);
         bagAdd(foodKey); sfx.ok(); toast(`${f.emoji} ${f.name}을(를) 만들어 가방에 담았어요`);
+        daily('craft'); addXP(3, '요리');
         return true;
       } },
       { label: '그만두기', act: () => false },
@@ -63,13 +65,15 @@ function openMarket() {
         dim: !(S.bag[k] > 0),
         act: () => {
           if (!(S.bag[k] > 0)) { sfx.no(); toast(`${EXTRA_BAG[k].name}이(가) 없어요. 배를 타고 다른 섬에 가 보세요 🚤`, 3); return true; }
-          bagAdd(k, -1); S.coins += MARKET_PRICE[k]; persist(); sfx.coin(); return true;
+          bagAdd(k, -1); S.coins += MARKET_PRICE[k]; persist(); sfx.coin(); daily('sell'); addXP(1); return true;
         },
       })),
       { label: '💰 모두 팔기', right: sellable().length ? `🪙 ${total()}` : '팔 것이 없어요', dim: !sellable().length, act: () => {
         const t = total();
         if (!t) { sfx.no(); return true; }
+        const cnt = sellable().reduce((a, k) => a + S.bag[k], 0);
         for (const k of sellable()) bagAdd(k, -S.bag[k]);
+        daily('sell', cnt); addXP(cnt, '판매');
         S.coins += t; persist(); sfx.fanfare();
         toast(`💰 섬 특산물을 모두 팔아서 🪙 ${t}개를 벌었어요!`, 3);
         return true;
@@ -281,7 +285,7 @@ function startWish() {
       title: '🌠 아직 낮이에요',
       desc: () => '별똥별은 밤하늘에서만 보여요. 벤치에 앉아 밤까지 기다릴까요?',
       items: () => [
-        { label: '🌙 밤까지 기다리기', act: () => { setTimeout(() => fadeThen(() => { tod = todTarget = 2; toast('🌙 별이 총총한 밤이 되었어요', 2.4); setTimeout(startWish, 1200); }, 1000), 0); return false; } },
+        { label: '🌙 밤까지 기다리기', act: () => { setTimeout(() => fadeThen(() => { ensureNight(); tod = todTarget; toast('🌙 별이 총총한 밤이 되었어요', 2.4); setTimeout(startWish, 1200); }, 1000), 0); return false; } },
         { label: '그냥 둘러볼래요', act: () => false },
       ],
     });
@@ -313,6 +317,7 @@ function makeWish() {
     () => { const n = pick(npcs); addFriendship(n, 5); return `💗 ${n.name}와 더 친해지는 소원이 이루어졌어요!`; },
   ];
   const msg = pick(gifts)();
+  addXP(3, '소원');
   persist();
   sfx.wish();
   sparkle(player.root.position.x, player.root.position.y + 2.5, player.root.position.z, new THREE.Color(0xfff1a8), 30);

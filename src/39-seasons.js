@@ -166,6 +166,7 @@ function buildSnowman() {
   sfx.ok();
   if (S.snowman >= 3) {
     addToken(3);
+    addXP(8, '눈사람');
     sfx.fanfare();
     say(player, '눈사람 완성! 안녕, 눈사람아~ ⛄', 3);
     toast('⛄ 눈사람을 완성했어요! 눈꽃 결정 3개를 받았어요', 3.5);
@@ -273,9 +274,10 @@ function newDay() {
   S.dayCount++;
   bikeNewDay();
   S.seasonDay++;
-  if (S.seasonDay > DAYS_PER_SEASON) { setSeason(S.season + 1); return; }
+  if (S.seasonDay > DAYS_PER_SEASON) setSeason(S.season + 1);
+  else toast(`${season().emoji} ${season().name} ${S.seasonDay}일째 아침이에요`, 2.6);
+  for (const h of NEW_DAY_HOOKS) h();
   persist();
-  toast(`${season().emoji} ${season().name} ${S.seasonDay}일째 아침이에요`, 2.6);
 }
 
 function openEventBooth() {

@@ -480,3 +480,21 @@ kbd {
 .stats b.neg { color: #e0566e; }
 
 #fade.white { background: #fffaf2; }
+
+/* ---------- 레벨 · 사진 모드 ---------- */
+.stats .lv-row { position: relative; }
+.stats .bar.xp { height: 10px; }
+#xpBar { background: linear-gradient(90deg, #ffd166, #ffb86b); }
+#xpGain { position: absolute; right: 0; top: -18px; font-size: 14px; color: #f0a020; opacity: 0; white-space: nowrap; pointer-events: none; }
+#xpGain.pop { animation: xpPop 1.6s ease-out; }
+@keyframes xpPop { 0% { opacity: 0; transform: translateY(6px); } 15% { opacity: 1; transform: translateY(0); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-8px); } }
+body.photo-mode #hud, body.photo-mode #labels, body.photo-mode #bubbles, body.photo-mode #prompt, body.photo-mode #toast, body.photo-mode #scene-msg { display: none !important; }
+#photoHint {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+  padding: 8px 16px; border-radius: 16px; font-size: 15px; color: #fff;
+  background: rgba(40, 30, 50, 0.45); white-space: nowrap; pointer-events: none;
+}
+#photoHint kbd { font-size: 12px; }
+#photoFlash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+#photoFlash.go { animation: flash 0.5s ease-out; }
+@keyframes flash { 0% { opacity: 0.9; } 100% { opacity: 0; } }

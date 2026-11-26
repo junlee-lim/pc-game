@@ -94,6 +94,7 @@ function travelTo(I) {
     camera.position.set(a.x + Math.sin(camYaw) * 16, 13, a.z + Math.cos(camYaw) * 16);
     lookAt.set(a.x, 1.4, a.z);
     toast(`🚤 통통통~ ${I.emoji} ${I.name}에 도착했어요!`, 3);
+    if (I.id !== 'main') daily('island');
     if (follower) say(follower.c, '나도 같이 왔지롱~ 🚤', 2.4, follower.name);
   }, 900);
 }
@@ -143,7 +144,8 @@ function pickSpot(x, z, model, key, label, respawn = 40, amount = () => 1) {
 const islCoinGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.12, 22).rotateX(Math.PI / 2);
 const islCoinMat = toon({ color: 0xffcf3a, emissive: 0xffa000, emissiveIntensity: 0.35 });
 const islCoins = [];
-for (const I of Object.values(ISL)) for (let i = 0; i < 4; i++) {
+// 섬에도 길에 떨어진 동전은 없어요
+for (const I of Object.values(ISL)) for (let i = 0; i < 0; i++) {
   const m = new THREE.Mesh(islCoinGeo, islCoinMat);
   m.castShadow = true;
   m.visible = false; // 첫 프레임에 각 섬 위에 놓여요
@@ -259,7 +261,7 @@ function palm(x, z, s = 1) {
       S.sandStage++;
       sfx.ok();
       sparkle(sx, 1.2, sz, new THREE.Color(0xfff1c8), 18);
-      if (S.sandStage >= 4) { S.coins += 4; sfx.fanfare(); say(player, '짜잔~ 멋진 모래성 완성! 🏰', 3); toast('🏰 모래성 완성! 🪙 4개 (파도가 밤새 쓸어 가서 내일 또 쌓을 수 있어요)', 3.6); }
+      if (S.sandStage >= 4) { S.coins += 4; addXP(8, '모래성'); sfx.fanfare(); say(player, '짜잔~ 멋진 모래성 완성! 🏰', 3); toast('🏰 모래성 완성! 🪙 4개 (파도가 밤새 쓸어 가서 내일 또 쌓을 수 있어요)', 3.6); }
       else say(player, pick(['토닥토닥~', '영차영차!', '조심조심…']), 1.6);
       persist();
     },
@@ -422,7 +424,7 @@ function startStargaze() {
       title: '🔭 아직 낮이에요',
       desc: () => '별은 밤에만 보여요. 천문대에서 밤이 될 때까지 기다릴까요?',
       items: () => [
-        { label: '🌙 밤까지 기다리기', act: () => { setTimeout(() => fadeThen(() => { tod = todTarget = 2; toast('🌙 별이 총총한 밤이 되었어요', 2.6); setTimeout(startStargaze, 1200); }, 1000), 0); return false; } },
+        { label: '🌙 밤까지 기다리기', act: () => { setTimeout(() => fadeThen(() => { ensureNight(); tod = todTarget; toast('🌙 별이 총총한 밤이 되었어요', 2.6); setTimeout(startStargaze, 1200); }, 1000), 0); return false; } },
         { label: '그냥 둘러볼래요', act: () => false },
       ],
     });
@@ -458,7 +460,7 @@ modes.stargaze = {
       SG.announced = true;
       const c = SG.c;
       if (!S.stars[c.id]) {
-        S.stars[c.id] = 1; S.coins += 3; persist();
+        S.stars[c.id] = 1; S.coins += 3; persist(); addXP(10, '별자리');
         sfx.fanfare();
         toast(`✨ 새 별자리 발견! ${c.emoji} ${c.name} (+3🪙)`, 3.4);
       } else { sfx.chime(); toast(`${c.emoji} ${c.name}… 또 만났네! 반가워`, 2.6); }

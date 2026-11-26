@@ -55,20 +55,24 @@ function openMailbox() {
     });
     return;
   }
+  if (S.questDay === S.dayCount) {
+    openMenu({ title: '📮 우체통', desc: () => '오늘 편지는 이미 받았어요.<br>내일 아침 6시에 새 편지가 와요 💌', items: () => [{ label: '알겠어요', act: () => false }] });
+    return;
+  }
   if (!pendingLetter) pendingLetter = makeLetter();
   const L = pendingLetter;
   openMenu({
     title: '📮 편지가 왔어요!',
     desc: () => `<b>${L.npc}</b>: "${L.text}"<br>보답: 🪙 ${L.reward}개`,
     items: () => [
-      { label: '부탁 들어주기 💌', act: () => { S.quest = L; pendingLetter = null; persist(); sfx.ding(); toast(`💌 ${L.npc}의 부탁을 받았어요!`); return false; } },
+      { label: '부탁 들어주기 💌', act: () => { S.quest = L; S.questDay = S.dayCount; pendingLetter = null; persist(); sfx.ding(); toast(`💌 ${L.npc}의 부탁을 받았어요!`); return false; } },
       { label: '다른 편지 보기', act: () => { pendingLetter = makeLetter(); setTimeout(openMailbox, 0); return false; } },
       { label: '다음에 할게요', act: () => false },
     ],
   });
 }
 interact({ x: MAILBOX.x - 0.4, z: MAILBOX.z + 1.6, r: 1.8, label: '우체통 열어 보기 📮', action: () => openMailbox() });
-tickers.push(() => { mailFlag.rotation.z = S.quest ? -Math.PI / 2 : Math.sin(elapsed * 3) * 0.1; });
+tickers.push(() => { mailFlag.rotation.z = S.quest || S.questDay === S.dayCount ? -Math.PI / 2 : Math.sin(elapsed * 3) * 0.1; });
 
 function completeQuest(npc) {
   const q = S.quest;
@@ -78,6 +82,7 @@ function completeQuest(npc) {
   S.quest = null;
   persist();
   addFriendship(npc, 12);
+  addXP(20, '부탁 완료');
   sfx.fanfare();
   const p = npc.c.root.position;
   sparkle(p.x, p.y + 2, p.z, new THREE.Color(0xff8fb1), 40);
@@ -102,9 +107,16 @@ function updateStatusLines() {
   const bs = Object.entries(S.bag).filter(([, n]) => n > 0).map(([k, n]) => `${info[k] ? info[k].emoji : '📦'}×${n}`).join(' ');
   const od = bikeOverdue();
   const bk = !S.bikeRented ? '' : (od >= 2 ? `🚲 반납이 늦었어요! 하루 🪙${BIKE_LATE_FEE}씩 연체료 (지금까지 🪙${S.bikeFee})` : od === 1 ? '🚲 자전거 대여 중 · ⚠️ 오늘 반납해 주세요!' : '🚲 자전거 대여 중 (내일까지 반납)') + (riding ? ' · 타는 중' : '');
-  const key = qs + '|' + bs + '|' + bk;
+  ensureDaily();
+  const dn = S.daily.tasks.filter((t) => t.prog >= dailyDef(t.id).n).length;
+  const ds = `📋 오늘의 할 일 ${dn}/3${S.daily.tasks.some((t) => t.prog >= dailyDef(t.id).n && !t.claimed) ? ' · 🎁 보상 있음' : ''}`;
+  const rs = S.rentDue === null ? '' : `🏠 월세 🪙${HOUSE_LEVELS[S.houseLv].rent} · ${rentDaysLeft() <= 0 ? '오늘 아침' : rentDaysLeft() === 1 ? '내일 아침' : `${rentDaysLeft()}일 뒤`}`;
+  const key = qs + '|' + bs + '|' + bk + '|' + ds + '|' + rs;
   if (key === lastStatus) return;
   lastStatus = key;
+  $('dailyLine').textContent = ds;
+  $('rentLine').textContent = rs;
+  $('rentLine').classList.toggle('hidden', !rs);
   $('questLine').textContent = qs;
   $('questLine').classList.toggle('hidden', !qs);
   $('bikeLine').textContent = bk;

@@ -7,7 +7,7 @@ player.root.rotation.y = Math.PI;
 scene.add(player.root);
 
 const S = {
-  coins: save.get('coins', 5),
+  coins: save.get('coins', 15),
   full: save.get('full', 70),
   energy: save.get('energy', 80),
   owned: save.get('owned', []),
@@ -37,12 +37,20 @@ const S = {
   wishDay: save.get('wishDay', ''), wishN: save.get('wishN', 0), // 별똥별 소원
   skyItems: save.get('skyItems', []),   // 하늘섬 기념품
   skyLayout: save.get('skyLayout', {}), // 하늘섬 기념품 자리 { id: [x, z, 회전, 보관중] }
+  clock: save.get('clock', 8 * 60),     // 마을 시계 (자정부터 지난 분)
+  xp: save.get('xp', 0), level: save.get('level', 1),
+  daily: save.get('daily', null),       // 오늘의 할 일
+  questDay: save.get('questDay', -1),   // 우체통 편지를 받은 날
+  jobDay: save.get('jobDay', -1), jobN: save.get('jobN', 0),
+  garden: save.get('garden', [null, null, null, null, null, null]),
+  houseLv: save.get('houseLv', 1), rentDue: save.get('rentDue', null),
+  bdayGift: save.get('bdayGift', {}),   // 생일 선물을 준 날
 };
 if (S.bikeRented && S.bikeRentDay === null) S.bikeRentDay = S.dayCount;
 function persist() {
   save.set('coins', S.coins); save.set('full', Math.round(S.full)); save.set('energy', Math.round(S.energy));
   save.set('owned', S.owned); save.set('equipped', S.equipped);
-  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented', 'layout', 'season', 'seasonDay', 'tokens', 'snowman', 'friends', 'friendDay', 'giftDay', 'favKnown', 'stars', 'sandStage', 'sandDay', 'visited', 'dayCount', 'bikeRentDay', 'bikeFee', 'wishDay', 'wishN', 'skyItems', 'skyLayout']) save.set(k, S[k]);
+  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented', 'layout', 'season', 'seasonDay', 'tokens', 'snowman', 'friends', 'friendDay', 'giftDay', 'favKnown', 'stars', 'sandStage', 'sandDay', 'visited', 'dayCount', 'bikeRentDay', 'bikeFee', 'wishDay', 'wishN', 'skyItems', 'skyLayout', 'clock', 'xp', 'level', 'daily', 'questDay', 'jobDay', 'jobN', 'garden', 'houseLv', 'rentDue', 'bdayGift']) save.set(k, S[k]);
 }
 const bagAdd = (k, n = 1) => { S.bag[k] = Math.max(0, (S.bag[k] || 0) + n); if (!S.bag[k]) delete S.bag[k]; persist(); };
 const slotGroups = { hat: player.hatSlot, face: player.faceSlot, hand: player.handSlot };

@@ -108,6 +108,8 @@ function catchBug(slot) {
     toast(`📖 새로운 곤충! ${bug.emoji} ${bug.name}을(를) 도감에 기록했어요 (+3🪙)`, 3.5);
   } else sfx.ding();
   persist();
+  addXP(5 + (n === 1 ? 10 : 0), '곤충 채집');
+  daily('bug');
   say(player, `${bug.emoji} ${bug.name} 잡았다! ${n > 1 ? `(${n}마리째)` : ''}`, 2.4);
   setTimeout(() => say(player, '잘 가~ 놓아줄게 👋', 1.6), 2500);
 }

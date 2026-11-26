@@ -8,14 +8,14 @@ ISLANDS.push(SKY);
 
 /* ---------- 기념품 ---------- */
 const SOUVENIRS = [
-  { id: 'starStatue', name: '별 조각상', emoji: '⭐', price: 6, r: 0.8 },
-  { id: 'moonLamp', name: '초승달 램프', emoji: '🌙', price: 5, r: 0.4 },
-  { id: 'planet', name: '토성 장식', emoji: '🪐', price: 7, r: 0.8 },
-  { id: 'cloudSofa', name: '구름 소파', emoji: '☁️', price: 6, r: 1.2 },
-  { id: 'miniRocket', name: '미니 로켓', emoji: '🚀', price: 8, r: 0.7 },
-  { id: 'chime', name: '별빛 풍경', emoji: '🎐', price: 4, r: 0.6 },
-  { id: 'galaxyTree', name: '은하수 나무', emoji: '🌌', price: 10, r: 0.9 },
-  { id: 'scope', name: '작은 망원경', emoji: '🔭', price: 5, r: 0.5 },
+  { id: 'starStatue', name: '별 조각상', emoji: '⭐', price: 30, r: 0.8 },
+  { id: 'moonLamp', name: '초승달 램프', emoji: '🌙', price: 25, r: 0.4 },
+  { id: 'planet', name: '토성 장식', emoji: '🪐', price: 35, r: 0.8 },
+  { id: 'cloudSofa', name: '구름 소파', emoji: '☁️', price: 30, r: 1.2 },
+  { id: 'miniRocket', name: '미니 로켓', emoji: '🚀', price: 40, r: 0.7 },
+  { id: 'chime', name: '별빛 풍경', emoji: '🎐', price: 18, r: 0.6 },
+  { id: 'galaxyTree', name: '은하수 나무', emoji: '🌌', price: 50, r: 0.9 },
+  { id: 'scope', name: '작은 망원경', emoji: '🔭', price: 25, r: 0.5 },
 ];
 const skyGlowMats = [];
 const glowToon = (color, base = 0.3) => { const m = toon({ color, emissive: color, emissiveIntensity: base }); m.userData.base = base; skyGlowMats.push(m); return m; };
@@ -146,11 +146,11 @@ function openSouvenirShop() {
         };
       }),
       {
-        label: `${helmet.emoji} ${helmet.name} (쓰는 기념품)`, right: S.owned.includes('helmet') ? '✅ 갖고 있어요' : '🪙 9', dim: !S.owned.includes('helmet') && S.coins < 9,
+        label: `${helmet.emoji} ${helmet.name} (쓰는 기념품)`, right: S.owned.includes('helmet') ? '✅ 갖고 있어요' : '🪙 45', dim: !S.owned.includes('helmet') && S.coins < 45,
         act: () => {
           if (S.owned.includes('helmet')) return true;
-          if (S.coins < 9) { sfx.no(); toast('코인이 모자라요 🪙'); return true; }
-          S.coins -= 9; givePrize('helmet', 0); return true;
+          if (S.coins < 45) { sfx.no(); toast('코인이 모자라요 🪙'); return true; }
+          S.coins -= 45; givePrize('helmet', 0); return true;
         },
       },
       { label: '그만두기', act: () => false },
@@ -380,6 +380,7 @@ modes.rocket = {
       camera.position.set(T.x, T.y + 13, T.z + 19.6);
       lookAt.set(T.x, T.y + 1.4, T.z + 3.6);
       sfx.fanfare();
+      if (T.island === SKY) daily('island');
       toast(T.island === SKY ? '☁️ 하늘섬에 도착했어요! 🛠️ 안내판(F)에서 기념품으로 꾸밀 수 있어요' : '🔭 별빛섬에 돌아왔어요!', 4);
       if (follower) { follower.c.root.position.set(T.x + 1.5, groundY(T.x, T.z + 4), T.z + 4); say(follower.c, '우와, 진짜 날았어! 🚀', 2.4, follower.name); }
     }
