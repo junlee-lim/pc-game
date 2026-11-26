@@ -512,47 +512,35 @@ function makeCreature({ color = 0xfff1df, ears = 'bear', accent = 0xffb4c8, scal
   const body = new THREE.Group();
   root.add(body);
   const base = mat(color);
-  const b = withOutline(add(new THREE.SphereGeometry(0.72, 24, 18), base, 0, 0.78, 0, body));
+  const baseMs = [], accMs = []; // 몸 색 · 볼터치 색을 쓰는 부분 (모습 바꾸기에서 색을 갈아 끼워요)
+  const B = (m) => (baseMs.push(m), m);
+  const A = (m) => (accMs.push(m), m);
+  const b = withOutline(B(add(new THREE.SphereGeometry(0.72, 24, 18), base, 0, 0.78, 0, body)));
   b.scale.set(1, 0.92, 0.95);
   add(new THREE.SphereGeometry(0.42, 18, 14), 0xffffff, 0, 0.72, 0.42, body).scale.set(1, 0.95, 0.5);
   const head = new THREE.Group();
   head.position.set(0, 1.78, 0);
   body.add(head);
-  withOutline(add(new THREE.SphereGeometry(0.66, 26, 20), base, 0, 0, 0, head), 1.05);
-  // 귀
-  const earGeo = ears === 'cat' ? new THREE.ConeGeometry(0.2, 0.38, 12) : new THREE.SphereGeometry(0.2, 14, 12);
+  withOutline(B(add(new THREE.SphereGeometry(0.66, 26, 20), base, 0, 0, 0, head)), 1.05);
   for (const s of [-1, 1]) {
-    let e;
-    if (ears === 'bunny') {
-      e = add(new THREE.SphereGeometry(0.16, 14, 12), base, s * 0.24, 0.72, -0.05, head);
-      e.scale.set(0.8, 2.4, 0.6);
-      e.rotation.z = -s * 0.15;
-      add(new THREE.SphereGeometry(0.09, 10, 8), accent, s * 0.24, 0.72, 0.03, head).scale.set(0.8, 2.6, 0.3);
-    } else if (ears === 'cat') {
-      e = add(earGeo, base, s * 0.36, 0.56, -0.02, head);
-      e.rotation.z = -s * 0.35;
-    } else {
-      e = add(earGeo, base, s * 0.42, 0.5, -0.05, head);
-      add(new THREE.SphereGeometry(0.11, 10, 8), accent, s * 0.42, 0.5, 0.08, head).scale.z = 0.4;
-    }
-    withOutline(e, 1.08);
     // 눈
     const eye = add(new THREE.SphereGeometry(0.085, 12, 10), 0x3b2a25, s * 0.23, 0.04, 0.6, head, false);
     eye.scale.set(1, 1.25, 0.5);
     add(new THREE.SphereGeometry(0.03, 8, 6), 0xffffff, s * 0.23 + 0.025, 0.08, 0.645, head, false);
     // 볼터치
-    add(new THREE.SphereGeometry(0.11, 12, 8), accent, s * 0.39, -0.12, 0.5, head, false).scale.set(1, 0.6, 0.35);
-    // 팔·발
-    add(new THREE.SphereGeometry(0.19, 12, 10), base, s * 0.7, 0.85, 0.12, body);
+    A(add(new THREE.SphereGeometry(0.11, 12, 8), accent, s * 0.39, -0.12, 0.5, head, false)).scale.set(1, 0.6, 0.35);
+    // 팔
+    B(add(new THREE.SphereGeometry(0.19, 12, 10), base, s * 0.7, 0.85, 0.12, body));
   }
   add(new THREE.SphereGeometry(0.045, 8, 6), 0x3b2a25, 0, -0.1, 0.645, head, false).scale.set(1.3, 0.7, 0.5);
   const feet = [-1, 1].map((s) => {
-    const f = add(new THREE.SphereGeometry(0.22, 12, 10), base, s * 0.3, 0.12, 0.1, root);
+    const f = B(add(new THREE.SphereGeometry(0.22, 12, 10), base, s * 0.3, 0.12, 0.1, root));
     f.scale.set(1, 0.6, 1.3);
     return f;
   });
-  if (ears === 'cat') add(new THREE.SphereGeometry(0.16, 10, 8), base, 0, 0.55, -0.72, body);
-  if (ears === 'bunny') add(new THREE.SphereGeometry(0.2, 10, 8), 0xffffff, 0, 0.5, -0.68, body);
+  // 귀 · 꼬리 (종류에 따라 다시 만들 수 있게 따로 묶어 둬요)
+  const earG = new THREE.Group(); head.add(earG);
+  const tailG = new THREE.Group(); body.add(tailG);
   const hatSlot = new THREE.Group(); hatSlot.position.set(0, 0.55, 0); head.add(hatSlot);
   const faceSlot = new THREE.Group(); faceSlot.position.set(0, 0.04, 0.62); head.add(faceSlot);
   const handSlot = new THREE.Group(); handSlot.position.set(0.75, 0.85, 0.15); body.add(handSlot);
@@ -564,9 +552,39 @@ function makeCreature({ color = 0xfff1df, ears = 'bear', accent = 0xffb4c8, scal
   tail.rotation.z = 0.2;
   const scarfG = [scarf, tail];
   scarfG.forEach((m) => (m.visible = false));
-  const creature = { root, body, head, feet, hatSlot, faceSlot, handSlot, scarf: scarfG, phase: Math.random() * 10 };
+  const creature = { root, body, head, feet, hatSlot, faceSlot, handSlot, scarf: scarfG, phase: Math.random() * 10, look: null };
+  creature.setLook = (look) => setCreatureLook(creature, look, baseMs, accMs, earG, tailG);
+  creature.setLook({ color, ears, accent });
   CREATURES.push(creature);
   return creature;
+}
+function setCreatureLook(c, { color, ears, accent }, baseMs, accMs, earG, tailG) {
+  const prev = c.look || {};
+  c.look = { color, ears, accent };
+  const base = mat(color);
+  if (prev.color !== color) baseMs.forEach((m) => (m.material = base));
+  if (prev.accent !== accent) accMs.forEach((m) => (m.material = mat(accent)));
+  if (prev.ears === ears && prev.color === color && prev.accent === accent) return;
+  for (const g of [earG, tailG]) while (g.children.length) g.remove(g.children[0]);
+  const earGeo = ears === 'cat' ? new THREE.ConeGeometry(0.2, 0.38, 12) : new THREE.SphereGeometry(0.2, 14, 12);
+  for (const s of [-1, 1]) {
+    let e;
+    if (ears === 'bunny') {
+      e = add(new THREE.SphereGeometry(0.16, 14, 12), base, s * 0.24, 0.72, -0.05, earG);
+      e.scale.set(0.8, 2.4, 0.6);
+      e.rotation.z = -s * 0.15;
+      add(new THREE.SphereGeometry(0.09, 10, 8), accent, s * 0.24, 0.72, 0.03, earG).scale.set(0.8, 2.6, 0.3);
+    } else if (ears === 'cat') {
+      e = add(earGeo, base, s * 0.36, 0.56, -0.02, earG);
+      e.rotation.z = -s * 0.35;
+    } else {
+      e = add(earGeo, base, s * 0.42, 0.5, -0.05, earG);
+      add(new THREE.SphereGeometry(0.11, 10, 8), accent, s * 0.42, 0.5, 0.08, earG).scale.z = 0.4;
+    }
+    withOutline(e, 1.08);
+  }
+  if (ears === 'cat') add(new THREE.SphereGeometry(0.16, 10, 8), base, 0, 0.55, -0.72, tailG);
+  if (ears === 'bunny') add(new THREE.SphereGeometry(0.2, 10, 8), 0xffffff, 0, 0.5, -0.68, tailG);
 }
 function animateCreature(c, moving, speed, dt, t) {
   if (moving) {
@@ -2197,6 +2215,7 @@ function openWardrobe() {
         right: S.equipped[it.slot] === it.id ? '✅ 착용 중' : '입기',
         act: () => { S.equipped[it.slot] = S.equipped[it.slot] === it.id ? null : it.id; refreshEquip(); persist(); sfx.select(); return true; },
       })),
+      { label: '🐻 내 모습 바꾸기', right: '색 · 귀 모양', act: () => { setTimeout(() => openLookMenu(), 0); return false; } },
       { label: '🧺 모두 벗기', act: () => { S.equipped = {}; refreshEquip(); persist(); return true; } },
       { label: '닫기', act: () => false },
     ],
@@ -3656,6 +3675,7 @@ function openPauseMenu() {
     title: '🌼 포근마을 메뉴',
     desc: () => '진행 상황은 이 브라우저에 자동으로 저장돼요. 다른 기기에서 이어 하려면 저장 코드를 옮겨 주세요.',
     items: () => [
+      { label: '🐻 내 모습 바꾸기', right: '색 · 귀 모양', act: () => { setTimeout(() => openLookMenu(), 0); return false; } },
       ...(ON.url ? [{ label: '🌐 온라인 이름 바꾸기', right: escHtml(ON.name), act: () => { setTimeout(() => openChat('/이름 '), 0); return false; } }] : []),
       { label: '💾 저장 코드 만들기', right: '다른 기기로 옮기기', act: () => { setTimeout(() => showSaveBox('export'), 0); return false; } },
       { label: '📥 저장 코드 불러오기', right: '다른 기기에서 이어 하기', act: () => { setTimeout(() => showSaveBox('import'), 0); return false; } },
@@ -6120,12 +6140,13 @@ const S = {
   garden: save.get('garden', [null, null, null, null, null, null]),
   houseLv: save.get('houseLv', 1), rentDue: save.get('rentDue', null),
   bdayGift: save.get('bdayGift', {}),   // 생일 선물을 준 날
+  look: save.get('look', null),         // 내 모습 { color, ears, accent } (처음엔 null → 시작할 때 골라요)
 };
 if (S.bikeRented && S.bikeRentDay === null) S.bikeRentDay = S.dayCount;
 function persist() {
   save.set('coins', S.coins); save.set('full', Math.round(S.full)); save.set('energy', Math.round(S.energy));
   save.set('owned', S.owned); save.set('equipped', S.equipped);
-  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented', 'layout', 'season', 'seasonDay', 'tokens', 'snowman', 'friends', 'friendDay', 'giftDay', 'favKnown', 'stars', 'sandStage', 'sandDay', 'visited', 'dayCount', 'bikeRentDay', 'bikeFee', 'wishDay', 'wishN', 'skyItems', 'skyLayout', 'clock', 'xp', 'level', 'daily', 'questDay', 'jobDay', 'jobN', 'garden', 'houseLv', 'rentDue', 'bdayGift']) save.set(k, S[k]);
+  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented', 'layout', 'season', 'seasonDay', 'tokens', 'snowman', 'friends', 'friendDay', 'giftDay', 'favKnown', 'stars', 'sandStage', 'sandDay', 'visited', 'dayCount', 'bikeRentDay', 'bikeFee', 'wishDay', 'wishN', 'skyItems', 'skyLayout', 'clock', 'xp', 'level', 'daily', 'questDay', 'jobDay', 'jobN', 'garden', 'houseLv', 'rentDue', 'bdayGift', 'look']) save.set(k, S[k]);
 }
 const bagAdd = (k, n = 1) => { S.bag[k] = Math.max(0, (S.bag[k] || 0) + n); if (!S.bag[k]) delete S.bag[k]; persist(); };
 const slotGroups = { hat: player.hatSlot, face: player.faceSlot, hand: player.handSlot };
@@ -6368,6 +6389,71 @@ setInterval(() => {
   if (Math.random() < 0.15) tone(pick(scale) * 2, 0.8, 'sine', vol * 0.6, 0, 0.2);
 }, 420);
 
+// ---------- 83-look.js ----------
+/* =========================================================
+   🐻 내 모습 바꾸기 — 몸 색 · 귀 모양 · 볼터치 색
+   (온라인에서는 다른 사람에게도 이 모습으로 보여요)
+   ========================================================= */
+const LOOK_COLORS = [
+  [0xfff1df, '크림'], [0xc69a6b, '코코아'], [0xffd6e2, '딸기우유'], [0xcde8ff, '하늘'],
+  [0xd8f5e8, '민트'], [0xfff3b0, '바나나'], [0xe6dcff, '라벤더'], [0xd9d4d0, '구름 회색'], [0x8a8a92, '먹구름'],
+];
+const LOOK_EARS = [['bear', '🐻 곰'], ['cat', '🐱 고양이'], ['bunny', '🐰 토끼']];
+const LOOK_ACCENTS = [[0xffa3b8, '분홍'], [0xffb37a, '살구'], [0xff7f7f, '빨강'], [0xc3a6ff, '보라'], [0x8fc8ff, '파랑']];
+const DEFAULT_LOOK = { color: 0xfff1df, ears: 'bear', accent: 0xffa3b8 };
+// 저장된 값이나 다른 사람이 보낸 값이 목록에 없으면 기본값으로
+function validLook(l) {
+  const ok = (list, v) => list.some((o) => o[0] === v);
+  return l && typeof l === 'object' ? {
+    color: ok(LOOK_COLORS, l.color) ? l.color : DEFAULT_LOOK.color,
+    ears: ok(LOOK_EARS, l.ears) ? l.ears : DEFAULT_LOOK.ears,
+    accent: ok(LOOK_ACCENTS, l.accent) ? l.accent : DEFAULT_LOOK.accent,
+  } : { ...DEFAULT_LOOK };
+}
+player.setLook(validLook(S.look));
+
+function openLookMenu(first = false) {
+  if (state !== 'play') return;
+  sfx.ok();
+  const before = { ...player.look };
+  const cur = { ...player.look };
+  const idx = (list, v) => Math.max(0, list.findIndex((o) => o[0] === v));
+  const step = (list, key, d) => { cur[key] = list[(idx(list, cur[key]) + d + list.length) % list.length][0]; player.setLook(cur); };
+  const row = (emoji, title, list, key) => ({
+    label: `${emoji} ${title}`,
+    right: `◀ ${list[idx(list, cur[key])][1]} ▶`,
+    prev: () => step(list, key, -1), next: () => step(list, key, 1),
+    act: () => { step(list, key, 1); sfx.select(); return true; },
+  });
+  let saved = false;
+  $('menu').classList.add('side');
+  openMenu({
+    title: first ? '🐻 반가워요! 내 모습을 골라 볼까요?' : '🐻 내 모습 바꾸기',
+    desc: () => `<kbd>←</kbd><kbd>→</kbd> 또는 <kbd>Enter</kbd> 로 바꿔 보세요.${ON.url ? ' 온라인 친구들에게도 이 모습으로 보여요!' : ''}`,
+    items: () => [
+      row('🎨', '몸 색', LOOK_COLORS, 'color'),
+      row('👂', '귀 모양', LOOK_EARS, 'ears'),
+      row('🌸', '볼터치', LOOK_ACCENTS, 'accent'),
+      { label: '🎲 아무거나!', act: () => { cur.color = pick(LOOK_COLORS)[0]; cur.ears = pick(LOOK_EARS)[0]; cur.accent = pick(LOOK_ACCENTS)[0]; player.setLook(cur); sfx.select(); return true; } },
+      { label: '✅ 이걸로 할래요', act: () => {
+        saved = true;
+        S.look = { ...cur }; persist(); sfx.fanfare();
+        const p = player.root.position;
+        sparkle(p.x, p.y + 1.5, p.z, new THREE.Color(0xfff1a8), 24);
+        setTimeout(() => say(player, first ? '안녕! 오늘은 뭐 하고 놀까? 🌼' : '짠~ 어때요? ✨', 3), 300);
+        return false;
+      } },
+    ],
+    onClose: () => {
+      $('menu').classList.remove('side');
+      if (saved) return;
+      // 그냥 닫으면 원래 모습으로 (처음이면 기본 모습으로 정해요)
+      player.setLook(before);
+      if (first) { S.look = { ...before }; persist(); }
+    },
+  });
+}
+
 // ---------- 84-ui.js ----------
 /* =========================================================
    UI 헬퍼
@@ -6438,7 +6524,9 @@ function menuKey(code) {
   else if (code === 'Enter' || code === 'Space' || code === 'KeyE') {
     const keep = items[menu.index].act();
     if (keep && menu) renderMenu(); else closeMenu();
-  } else if (code === 'Escape') closeMenu();
+  } else if ((code === 'ArrowLeft' || code === 'KeyA') && items[menu.index].prev) { items[menu.index].prev(); sfx.select(); renderMenu(); }
+  else if ((code === 'ArrowRight' || code === 'KeyD') && items[menu.index].next) { items[menu.index].next(); sfx.select(); renderMenu(); }
+  else if (code === 'Escape') closeMenu();
 }
 
 function openFoodMenu(key) {
@@ -6676,7 +6764,8 @@ function startGame() {
   $('title').classList.add('hidden');
   $('hud').classList.remove('hidden');
   sfx.ok();
-  setTimeout(() => say(player, '안녕! 오늘은 뭐 하고 놀까? 🌼', 3.5), 600);
+  if (!S.look) setTimeout(() => openLookMenu(true), 700); // 처음 시작하면 내 모습부터 골라요
+  else setTimeout(() => say(player, '안녕! 오늘은 뭐 하고 놀까? 🌼', 3.5), 600);
   setTimeout(() => toast('H 키를 누르면 도움말을 볼 수 있어요', 3), 4500);
   camera.position.set(player.root.position.x, 30, player.root.position.z + 30);
 }
@@ -7148,6 +7237,7 @@ function applyPeer(p, d) {
     if (Math.hypot(d.x - p.tx, d.z - p.tz) > 12) p.c.root.position.set(d.x, d.y, d.z);
     p.tx = d.x; p.ty = d.y; p.tz = d.z; p.tr = d.r; p.mv = d.mv; p.run = d.run; p.isl = d.isl; p.hid = d.hid;
   }
+  if (d.look) p.c.setLook(validLook(d.look));
   const eqKey = JSON.stringify(d.eq || {});
   if (d.eq && eqKey !== p.eqKey) {
     p.eqKey = eqKey;
@@ -7163,7 +7253,7 @@ function myState() {
   const here = islandAt(insideHouse ? curRoom.exit : p);
   const mv = p.distanceTo(ON.lastPos) > 0.03;
   ON.lastPos.copy(p);
-  return { x: p.x, y: p.y, z: p.z, r: player.root.rotation.y, mv, run: down('ShiftLeft', 'ShiftRight'), isl: here.id, hid: insideHouse || state === 'title', eq: S.equipped };
+  return { x: p.x, y: p.y, z: p.z, r: player.root.rotation.y, mv, run: down('ShiftLeft', 'ShiftRight'), isl: here.id, hid: insideHouse || state === 'title', eq: S.equipped, look: player.look };
 }
 function netSend(m) { if (ON.connected && ON.ws.readyState === 1) ON.ws.send(JSON.stringify(m)); }
 function connectOnline() {

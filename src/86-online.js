@@ -102,6 +102,7 @@ function applyPeer(p, d) {
     if (Math.hypot(d.x - p.tx, d.z - p.tz) > 12) p.c.root.position.set(d.x, d.y, d.z);
     p.tx = d.x; p.ty = d.y; p.tz = d.z; p.tr = d.r; p.mv = d.mv; p.run = d.run; p.isl = d.isl; p.hid = d.hid;
   }
+  if (d.look) p.c.setLook(validLook(d.look));
   const eqKey = JSON.stringify(d.eq || {});
   if (d.eq && eqKey !== p.eqKey) {
     p.eqKey = eqKey;
@@ -117,7 +118,7 @@ function myState() {
   const here = islandAt(insideHouse ? curRoom.exit : p);
   const mv = p.distanceTo(ON.lastPos) > 0.03;
   ON.lastPos.copy(p);
-  return { x: p.x, y: p.y, z: p.z, r: player.root.rotation.y, mv, run: down('ShiftLeft', 'ShiftRight'), isl: here.id, hid: insideHouse || state === 'title', eq: S.equipped };
+  return { x: p.x, y: p.y, z: p.z, r: player.root.rotation.y, mv, run: down('ShiftLeft', 'ShiftRight'), isl: here.id, hid: insideHouse || state === 'title', eq: S.equipped, look: player.look };
 }
 function netSend(m) { if (ON.connected && ON.ws.readyState === 1) ON.ws.send(JSON.stringify(m)); }
 function connectOnline() {

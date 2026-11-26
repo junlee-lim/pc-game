@@ -41,9 +41,15 @@ const cleanEq = (eq) => {
   if (eq && typeof eq === 'object') for (const s of ['hat', 'face', 'hand']) { const id = str(eq[s], 20); if (/^[a-z0-9_]+$/i.test(id)) out[s] = id; }
   return out;
 };
+// 내 모습: 색은 0xRRGGBB 숫자, 귀는 정해진 것 중 하나 (자세한 검사는 게임 쪽에서 한 번 더 해요)
+const cleanLook = (l) => (l && typeof l === 'object' ? {
+  color: Number.isInteger(l.color) && l.color >= 0 && l.color <= 0xffffff ? l.color : 0xfff1df,
+  ears: ['bear', 'cat', 'bunny'].includes(l.ears) ? l.ears : 'bear',
+  accent: Number.isInteger(l.accent) && l.accent >= 0 && l.accent <= 0xffffff ? l.accent : 0xffa3b8,
+} : null);
 const cleanState = (m) => ({
   x: num(m.x), y: num(m.y), z: num(m.z), r: num(m.r, 100),
-  mv: !!m.mv, run: !!m.run, isl: str(m.isl, 20), hid: !!m.hid, eq: cleanEq(m.eq),
+  mv: !!m.mv, run: !!m.run, isl: str(m.isl, 20), hid: !!m.hid, eq: cleanEq(m.eq), look: cleanLook(m.look),
 });
 const pub = (p) => ({ id: p.id, name: p.name, ...p.st });
 

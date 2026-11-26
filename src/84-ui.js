@@ -67,7 +67,9 @@ function menuKey(code) {
   else if (code === 'Enter' || code === 'Space' || code === 'KeyE') {
     const keep = items[menu.index].act();
     if (keep && menu) renderMenu(); else closeMenu();
-  } else if (code === 'Escape') closeMenu();
+  } else if ((code === 'ArrowLeft' || code === 'KeyA') && items[menu.index].prev) { items[menu.index].prev(); sfx.select(); renderMenu(); }
+  else if ((code === 'ArrowRight' || code === 'KeyD') && items[menu.index].next) { items[menu.index].next(); sfx.select(); renderMenu(); }
+  else if (code === 'Escape') closeMenu();
 }
 
 function openFoodMenu(key) {
@@ -305,7 +307,8 @@ function startGame() {
   $('title').classList.add('hidden');
   $('hud').classList.remove('hidden');
   sfx.ok();
-  setTimeout(() => say(player, '안녕! 오늘은 뭐 하고 놀까? 🌼', 3.5), 600);
+  if (!S.look) setTimeout(() => openLookMenu(true), 700); // 처음 시작하면 내 모습부터 골라요
+  else setTimeout(() => say(player, '안녕! 오늘은 뭐 하고 놀까? 🌼', 3.5), 600);
   setTimeout(() => toast('H 키를 누르면 도움말을 볼 수 있어요', 3), 4500);
   camera.position.set(player.root.position.x, 30, player.root.position.z + 30);
 }
