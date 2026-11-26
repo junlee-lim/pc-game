@@ -23,15 +23,19 @@
       <div class="row"><span class="ico">🍙</span><div class="bar"><i id="fullBar"></i></div></div>
       <div class="row"><span class="ico">⚡</span><div class="bar"><i id="energyBar"></i></div></div>
       <div class="row"><span class="ico" id="todIco">☀️</span><span id="todText">맑은 낮</span></div>
+      <div class="row small hidden" id="bikeLine"></div>
       <div class="row small hidden" id="questLine"></div>
       <div class="row small hidden" id="bagLine"></div>
     </div>
     <canvas id="minimap" width="340" height="340"></canvas>
     <div id="keys" class="card">
+      <button id="keysToggle" type="button" title="조작법 접기">–</button>
+      <div class="keys-body">
       <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / 방향키 이동 &nbsp; <kbd>Shift</kbd> 달리기<br />
       <kbd>Q</kbd><kbd>R</kbd> 카메라 회전 &nbsp; <kbd>C</kbd> 시점 초기화<br />
       <kbd>E</kbd> 상호작용 &nbsp; <kbd>Space</kbd> 점프 &nbsp; <kbd>B</kbd> 자전거 &nbsp; <kbd>G</kbd> 도감 &nbsp; <kbd>K</kbd> 친구 &nbsp; <kbd>N</kbd> 지도<br />
       <kbd>Esc</kbd> 메뉴·저장 &nbsp; <kbd>H</kbd> 도움말 &nbsp; <kbd>M</kbd> 소리
+      </div>
     </div>
   </div>
 
@@ -93,7 +97,7 @@
 
   <div id="title">
     <h1>포근마을</h1>
-    <div class="sub">작은 마을에서 보내는 느긋한 여름 하루</div>
+    <div class="sub">작은 마을에서 보내는 느긋한 하루</div>
     <div class="start card"><kbd>Enter</kbd> 를 눌러 시작하기</div>
     <div class="hint">키보드만으로 즐기는 게임이에요 · 소리가 함께 나와요 (<kbd>M</kbd> 으로 끄기)</div>
   </div>
@@ -2312,16 +2316,26 @@ const myBike = bikeModel(0x9fd6ff);
   collide(BIKE_STAND.x, BIKE_STAND.z - 0.3, 1.0);
   interact({
     x: BIKE_STAND.x, z: BIKE_STAND.z + 1.8, r: 2.2,
-    get label() { return S.bikeRented ? '자전거 반납하기' : '자전거 빌리기 (무료)'; },
+    get label() { return S.bikeRented ? (bikeOverdue() >= 2 ? '자전거 반납하기 (⚠️ 연체 중)' : '자전거 반납하기') : '자전거 빌리기 (하루 무료)'; },
     action: () => {
       if (!S.bikeRented) {
-        S.bikeRented = true; persist();
+        S.bikeRented = true;
+        S.bikeRentDay = S.dayCount;
+        S.bikeFee = 0;
+        persist();
         setRiding(true);
-        toast('🚲 자전거를 빌렸어요! B 키로 타고 내릴 수 있어요. 점프대도 찾아보세요!', 4);
+        toast('🚲 자전거를 빌렸어요! B 키로 타고 내릴 수 있어요. 내일까지 반납해 주세요~', 4.5);
       } else {
-        S.bikeRented = false; persist();
+        const fee = S.bikeFee;
+        const late = bikeOverdue();
+        S.bikeRented = false;
+        S.bikeRentDay = null;
+        S.bikeFee = 0;
+        persist();
         setRiding(false);
-        toast('자전거를 반납했어요. 또 타러 와요~');
+        if (fee > 0) toast(`자전거를 반납했어요. 연체료는 모두 🪙 ${fee}개였어요. 다음엔 제때 반납해요~`, 4);
+        else if (late >= 1) toast('제때 반납해 줘서 고마워요! 또 타러 와요~ 🚲', 3);
+        else toast('자전거를 반납했어요. 또 타러 와요~');
       }
       sfx.bell();
     },
@@ -2344,6 +2358,21 @@ AVOID.push([BIKE_STAND.x, BIKE_STAND.z, 4]);
   }
 }
 
+// 대여 기한: 빌린 날 0 · 다음 날 1(반납일) · 그 뒤로는 연체
+const BIKE_LATE_FEE = 3;
+const bikeOverdue = () => (S.bikeRented ? S.dayCount - (S.bikeRentDay ?? S.dayCount) : 0);
+function bikeNewDay() {
+  if (!S.bikeRented) return;
+  const d = bikeOverdue();
+  if (d === 1) {
+    setTimeout(() => { sfx.bell(); toast('🚲 자전거를 빌린 지 하루가 지났어요! 오늘 광장 옆 대여소에 반납해 주세요', 4.5); }, 3200);
+  } else if (d >= 2) {
+    S.coins -= BIKE_LATE_FEE;
+    S.bikeFee += BIKE_LATE_FEE;
+    persist();
+    setTimeout(() => { sfx.no(); toast(`🚲 자전거 반납이 늦었어요… 연체료 🪙 ${BIKE_LATE_FEE}개가 빠져나갔어요 (반납할 때까지 매일)`, 5); }, 3200);
+  }
+}
 function setRiding(on) {
   if (on === riding) return;
   riding = on;
@@ -2769,13 +2798,18 @@ function updateStatusLines() {
   const qs = q ? `📮 ${q.npc}: ${q.short}${questReady(q) ? ' ✅' : ''}` : '';
   const info = BAG_INFO();
   const bs = Object.entries(S.bag).filter(([, n]) => n > 0).map(([k, n]) => `${info[k] ? info[k].emoji : '📦'}×${n}`).join(' ');
-  const key = qs + '|' + bs + '|' + riding;
+  const od = bikeOverdue();
+  const bk = !S.bikeRented ? '' : (od >= 2 ? `🚲 반납이 늦었어요! 하루 🪙${BIKE_LATE_FEE}씩 연체료 (지금까지 🪙${S.bikeFee})` : od === 1 ? '🚲 자전거 대여 중 · ⚠️ 오늘 반납해 주세요!' : '🚲 자전거 대여 중 (내일까지 반납)') + (riding ? ' · 타는 중' : '');
+  const key = qs + '|' + bs + '|' + bk;
   if (key === lastStatus) return;
   lastStatus = key;
   $('questLine').textContent = qs;
   $('questLine').classList.toggle('hidden', !qs);
-  $('bagLine').textContent = (bs ? `🎒 ${bs}` : '') + (riding ? '  🚲 자전거 타는 중' : '');
-  $('bagLine').classList.toggle('hidden', !bs && !riding);
+  $('bikeLine').textContent = bk;
+  $('bikeLine').classList.toggle('hidden', !bk);
+  $('bikeLine').classList.toggle('warn', od >= 1);
+  $('bagLine').textContent = bs ? `🎒 ${bs}` : '';
+  $('bagLine').classList.toggle('hidden', !bs);
 }
 
 // ---------- 39-seasons.js ----------
@@ -3051,6 +3085,8 @@ function setSeason(i, announce = true) {
   }
 }
 function newDay() {
+  S.dayCount++;
+  bikeNewDay();
   S.seasonDay++;
   if (S.seasonDay > DAYS_PER_SEASON) { setSeason(S.season + 1); return; }
   persist();
@@ -4293,11 +4329,15 @@ const S = {
   stars: save.get('stars', {}),         // 찾은 별자리
   sandStage: save.get('sandStage', 0), sandDay: save.get('sandDay', ''), // 야자수섬 모래성
   visited: save.get('visited', {}),     // 놀러 간 친구 집 · 차 마신 날
+  dayCount: save.get('dayCount', 1),    // 지금까지 지난 날 (밤 → 아침마다 +1)
+  bikeRentDay: save.get('bikeRentDay', null), // 자전거를 빌린 날
+  bikeFee: save.get('bikeFee', 0),      // 이번 대여에서 낸 연체료
 };
+if (S.bikeRented && S.bikeRentDay === null) S.bikeRentDay = S.dayCount;
 function persist() {
   save.set('coins', S.coins); save.set('full', Math.round(S.full)); save.set('energy', Math.round(S.energy));
   save.set('owned', S.owned); save.set('equipped', S.equipped);
-  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented', 'layout', 'season', 'seasonDay', 'tokens', 'snowman', 'friends', 'friendDay', 'giftDay', 'favKnown', 'stars', 'sandStage', 'sandDay', 'visited']) save.set(k, S[k]);
+  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented', 'layout', 'season', 'seasonDay', 'tokens', 'snowman', 'friends', 'friendDay', 'giftDay', 'favKnown', 'stars', 'sandStage', 'sandDay', 'visited', 'dayCount', 'bikeRentDay', 'bikeFee']) save.set(k, S[k]);
 }
 const bagAdd = (k, n = 1) => { S.bag[k] = Math.max(0, (S.bag[k] || 0) + n); if (!S.bag[k]) delete S.bag[k]; persist(); };
 const slotGroups = { hat: player.hatSlot, face: player.faceSlot, hand: player.handSlot };
@@ -4776,6 +4816,18 @@ interact({ x: 0, z: -29.3, r: 3.2, label: '데크에 앉아 불꽃놀이 보기'
 /* =========================================================
    입력
    ========================================================= */
+// 왼쪽 아래 조작법 카드 접기/펴기
+function setKeysHidden(h) {
+  $('keys').classList.toggle('collapsed', h);
+  $('keysToggle').textContent = h ? '⌨️ 조작법 보기' : '–';
+  $('keysToggle').title = h ? '조작법 펼치기' : '조작법 접기';
+  save.set('keysHidden', h);
+}
+setKeysHidden(save.get('keysHidden', false));
+$('keysToggle').addEventListener('click', (e) => {
+  setKeysHidden(!$('keys').classList.contains('collapsed'));
+  e.currentTarget.blur(); // Space 점프가 버튼을 다시 누르지 않도록
+});
 const keys = new Set();
 let state = 'loading';
 let helpOpen = false;
@@ -5470,6 +5522,7 @@ function updateCamera(dt) {
 
 function updateHUD(dt) {
   $('coins').textContent = S.coins;
+  $('coins').classList.toggle('neg', S.coins < 0);
   // 지금 계절 축제에서 쓰는 토큰 (예: 가을이면 🍁 단풍잎)
   const se = season();
   if ($('tokenIco').textContent !== se.token.emoji) { $('tokenIco').textContent = se.token.emoji; $('tokenName').textContent = se.token.name; }

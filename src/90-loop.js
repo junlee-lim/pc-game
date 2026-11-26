@@ -267,6 +267,7 @@ function updateCamera(dt) {
 
 function updateHUD(dt) {
   $('coins').textContent = S.coins;
+  $('coins').classList.toggle('neg', S.coins < 0);
   // 지금 계절 축제에서 쓰는 토큰 (예: 가을이면 🍁 단풍잎)
   const se = season();
   if ($('tokenIco').textContent !== se.token.emoji) { $('tokenIco').textContent = se.token.emoji; $('tokenName').textContent = se.token.name; }

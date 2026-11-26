@@ -100,11 +100,16 @@ function updateStatusLines() {
   const qs = q ? `📮 ${q.npc}: ${q.short}${questReady(q) ? ' ✅' : ''}` : '';
   const info = BAG_INFO();
   const bs = Object.entries(S.bag).filter(([, n]) => n > 0).map(([k, n]) => `${info[k] ? info[k].emoji : '📦'}×${n}`).join(' ');
-  const key = qs + '|' + bs + '|' + riding;
+  const od = bikeOverdue();
+  const bk = !S.bikeRented ? '' : (od >= 2 ? `🚲 반납이 늦었어요! 하루 🪙${BIKE_LATE_FEE}씩 연체료 (지금까지 🪙${S.bikeFee})` : od === 1 ? '🚲 자전거 대여 중 · ⚠️ 오늘 반납해 주세요!' : '🚲 자전거 대여 중 (내일까지 반납)') + (riding ? ' · 타는 중' : '');
+  const key = qs + '|' + bs + '|' + bk;
   if (key === lastStatus) return;
   lastStatus = key;
   $('questLine').textContent = qs;
   $('questLine').classList.toggle('hidden', !qs);
-  $('bagLine').textContent = (bs ? `🎒 ${bs}` : '') + (riding ? '  🚲 자전거 타는 중' : '');
-  $('bagLine').classList.toggle('hidden', !bs && !riding);
+  $('bikeLine').textContent = bk;
+  $('bikeLine').classList.toggle('hidden', !bk);
+  $('bikeLine').classList.toggle('warn', od >= 1);
+  $('bagLine').textContent = bs ? `🎒 ${bs}` : '';
+  $('bagLine').classList.toggle('hidden', !bs);
 }
