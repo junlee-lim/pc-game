@@ -9,7 +9,7 @@ Object.assign(EXTRA_BAG, {
   jam: { name: '딸기 잼', emoji: '🫙' },
 });
 const ISL = {
-  palm: { id: 'palm', name: '야자수섬', emoji: '🌴', desc: '야자수 그늘, 모래성, 코코넛 주스', x: 150, z: 140, r: 34, ground: 0xf2dca0, side: 0xd9a878, mapColor: '#f2dca0' },
+  palm: { id: 'palm', name: '야자수섬', emoji: '🌴', warm: true, desc: '야자수 그늘, 모래성, 비치볼, 코코넛', x: 150, z: 140, r: 34, ground: 0xf2dca0, side: 0xd9a878, mapColor: '#f2dca0' },
   mush: { id: 'mush', name: '버섯숲섬', emoji: '🍄', desc: '거대한 버섯 숲과 부엉 할머니 (밤엔 버섯이 반짝)', x: -160, z: 120, r: 36, ground: 0x86c46e, side: 0x9a7a5a, mapColor: '#86c46e' },
   star: { id: 'star', name: '별빛섬', emoji: '🔭', desc: '언덕 위 천문대에서 별자리 찾기', x: -150, z: -150, r: 32, ground: 0xb5dfa0, side: 0xc9b08a, mapColor: '#b5dfa0' },
   berry: { id: 'berry', name: '딸기섬', emoji: '🍓', desc: '딸기 농장, 풍차, 딸기 우유', x: 160, z: -140, r: 34, ground: 0x9fd87a, side: 0xd9a878, mapColor: '#9fd87a' },
@@ -274,7 +274,7 @@ function palm(x, z, s = 1) {
   const ksign = signPlane('🥥 코코넛 주스', 2.2, { font: 76, border: '#ffd166' }); ksign.position.set(0, 1.9, 0.68); kiosk.add(ksign);
   collide(kx, kz, 1.8);
   resident(I, -6, -3.6, 0, { color: 0xffe0b8, ears: 'bunny', accent: 0xff9f8f }, '코코',
-    ['어서 와~ 여긴 일 년 내내 여름이야! 🌴', '야자수 아래 떨어진 코코넛은 마음껏 주워 가!', '모래성은 파도가 밤마다 쓸어 가. 매일 새로 쌓아 봐!'],
+    ['어서 와~ 여긴 언제나 따뜻한 섬이야! 🌴', '야자수 아래 떨어진 코코넛은 마음껏 주워 가!', '모래성은 파도가 밤마다 쓸어 가. 매일 새로 쌓아 봐!'],
     () => sellMenu('🥥 코코의 주스 가게', '갓 딴 코코넛으로 만든 주스예요!', () => [foodItem('coconut'), packItem('coconut'), sellItem('coco', 2)]), 'flower');
   I.marks.push(['🏰', sx, sz], ['🥥', kx, kz]);
   ZONE_LABELS.push(['🥥 코코넛 주스', kx, 4.6, kz]);
@@ -521,6 +521,13 @@ modes.stargaze = {
     () => sellMenu('🍓 딸기 아저씨의 농장 가게', '"딸기는 사랑이란다~"', () => [
       foodItem('berrymilk'), packItem('berrymilk'),
       { label: '🫙 딸기 잼 만들기', right: '🍓 3개', dim: !((S.bag.berry || 0) >= 3), act: () => { if ((S.bag.berry || 0) < 3) { sfx.no(); toast('딸기가 3개 필요해요 🍓'); return true; } bagAdd('berry', -3); bagAdd('jam'); sfx.fanfare(); toast('🫙 딸기 잼 완성! 친구에게 선물하면 좋아할 거예요'); return true; } },
+      { label: '🍼 딸기 우유 직접 만들기', right: '🍓1 · 🥛1', dim: !((S.bag.berry || 0) >= 1 && (S.bag.milk || 0) >= 1), act: () => { setTimeout(() => craftMenu('🍼 딸기 우유 만들기', { berry: 1, milk: 1 }, 'berrymilk'), 0); return false; } },
+      { label: '🍰 딸기 케이크 굽기', right: '🍓2 · 🥛1 · 🫙1', dim: !((S.bag.berry || 0) >= 2 && (S.bag.milk || 0) >= 1 && (S.bag.jam || 0) >= 1), act: () => {
+        if (!((S.bag.berry || 0) >= 2 && (S.bag.milk || 0) >= 1 && (S.bag.jam || 0) >= 1)) { sfx.no(); toast('딸기 2개, 우유 1개, 딸기 잼 1개가 필요해요 (우유는 젖소 음매에게서!)', 3.2); return true; }
+        bagAdd('berry', -2); bagAdd('milk', -1); bagAdd('jam', -1); bagAdd('cake'); sfx.fanfare();
+        sparkle(player.root.position.x, 2, player.root.position.z, new THREE.Color(0xffc4d8), 30);
+        toast('🍰 폭신폭신 딸기 케이크 완성! 포근섬 특산물 가게에서 비싸게 팔거나 친구에게 선물해요', 4); return true;
+      } },
       sellItem('berry', 2), sellItem('jam', 9),
     ]), 'straw');
   I.marks.push(['🍓', fx, fz], ['🏚️', bx, bz], ['🌬️', wx, wz]);

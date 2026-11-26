@@ -34,12 +34,13 @@ const S = {
   dayCount: save.get('dayCount', 1),    // 지금까지 지난 날 (밤 → 아침마다 +1)
   bikeRentDay: save.get('bikeRentDay', null), // 자전거를 빌린 날
   bikeFee: save.get('bikeFee', 0),      // 이번 대여에서 낸 연체료
+  wishDay: save.get('wishDay', ''), wishN: save.get('wishN', 0), // 별똥별 소원
 };
 if (S.bikeRented && S.bikeRentDay === null) S.bikeRentDay = S.dayCount;
 function persist() {
   save.set('coins', S.coins); save.set('full', Math.round(S.full)); save.set('energy', Math.round(S.energy));
   save.set('owned', S.owned); save.set('equipped', S.equipped);
-  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented', 'layout', 'season', 'seasonDay', 'tokens', 'snowman', 'friends', 'friendDay', 'giftDay', 'favKnown', 'stars', 'sandStage', 'sandDay', 'visited', 'dayCount', 'bikeRentDay', 'bikeFee']) save.set(k, S[k]);
+  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented', 'layout', 'season', 'seasonDay', 'tokens', 'snowman', 'friends', 'friendDay', 'giftDay', 'favKnown', 'stars', 'sandStage', 'sandDay', 'visited', 'dayCount', 'bikeRentDay', 'bikeFee', 'wishDay', 'wishN']) save.set(k, S[k]);
 }
 const bagAdd = (k, n = 1) => { S.bag[k] = Math.max(0, (S.bag[k] || 0) + n); if (!S.bag[k]) delete S.bag[k]; persist(); };
 const slotGroups = { hat: player.hatSlot, face: player.faceSlot, hand: player.handSlot };
@@ -257,6 +258,8 @@ const sfx = {
   yawn() { tone(500, 1.2, 'sine', 0.08, 0.5); },
   jump() { tone(300, 0.25, 'square', 0.05, 2.2); },
   hop() { tone(420, 0.16, 'sine', 0.09, 1.9); },
+  boing() { tone(180, 0.4, 'sine', 0.14, 3); tone(360, 0.3, 'triangle', 0.05, 2, 0.05); },
+  wish() { [1047, 1319, 1568, 2093].forEach((f, i) => tone(f, 0.5, 'sine', 0.06, 1, i * 0.09)); },
   land() { noise(0.15, 500, 0.25); tone(120, 0.15, 'sine', 0.15, 0.6); },
   splash() { noise(0.5, 2500, 0.18, 'bandpass', 600); },
   bite() { tone(1200, 0.08, 'square', 0.07); tone(1500, 0.12, 'square', 0.07, 0, 0.1); },

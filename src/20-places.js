@@ -68,7 +68,7 @@ const POND = { x: 0, z: -44, r: 10.5 };
   lanternString(pc, pa, 7, 0.6);
   lanternString(pb, pd, 7, 0.6);
   glowLight(0, 3, -30, 0xffb070, 18);
-  const banner = signPlane('🎆 여름밤 불꽃축제', 5.6, { w: 640, h: 160, font: 78, border: '#ffb4c8' });
+  const banner = signPlane('🎆 밤하늘 불꽃축제', 5.6, { w: 640, h: 160, font: 78, border: '#ffb4c8' });
   banner.position.set(0, 4.3, -29.15);
   banner.rotation.y = Math.PI;
   scene.add(banner);
@@ -85,7 +85,7 @@ const FOODS = {
   tteok: { name: '떡볶이', emoji: '🌶️', price: 3, full: 35, energy: 5, desc: '매콤달콤 쫄깃한 떡볶이!', line: '호호~ 매콤해! 그래도 또 먹고 싶어 😋' },
   fish: { name: '붕어빵', emoji: '🐟', price: 2, full: 22, energy: 5, desc: '바삭한 껍질에 달콤한 팥이 가득', line: '머리부터 먹을까, 꼬리부터 먹을까~' },
   cotton: { name: '솜사탕', emoji: '🍭', price: 2, full: 12, energy: 15, desc: '구름처럼 폭신한 분홍 솜사탕', line: '입에서 사르르 녹아요~ ☁️' },
-  bingsu: { name: '팥빙수', emoji: '🍧', price: 4, full: 25, energy: 12, desc: '여름엔 역시 시원한 빙수!', line: '으~ 머리가 찡! 그래도 시원해 ❄️' },
+  bingsu: { name: '팥빙수', emoji: '🍧', price: 4, full: 25, energy: 12, desc: '시원하고 달콤한 빙수 한 그릇!', line: '으~ 머리가 찡! 그래도 시원해 ❄️' },
   // 계절 축제 부스에서만 파는 음식
   mochi: { name: '딸기 찹쌀떡', emoji: '🍓', price: 3, full: 20, energy: 15, desc: '봄 딸기가 쏙 들어간 말랑 찹쌀떡', line: '말랑말랑 새콤달콤~ 봄 맛이야! 🌸', seasonal: true },
   hwachae: { name: '수박 화채', emoji: '🍉', price: 3, full: 22, energy: 15, desc: '동글동글 수박이 동동 뜬 시원한 화채', line: '시원하고 달콤해~ 여름 최고! 🌻', seasonal: true },
