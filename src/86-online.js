@@ -27,6 +27,28 @@ chatBox.id = 'chatInput'; chatBox.className = 'card hidden';
 chatBox.maxLength = 60; chatBox.autocomplete = 'off'; chatBox.spellcheck = false;
 chatBox.placeholder = '하고 싶은 말 (Enter 보내기 · Esc 닫기 · /이름 새이름)';
 document.body.appendChild(chatBox);
+// 💬 채팅 기록: 오른쪽 아래에 최근 대화가 남아요 (채팅창을 열면 더 많이 보이고 스크롤돼요)
+const chatLog = document.createElement('div');
+chatLog.id = 'chatLog'; chatLog.className = 'hidden';
+document.body.appendChild(chatLog);
+const LOG_MAX = 50, LOG_SHOW = 6;
+const logLines = [];
+function addLog(name, text, sys = false) {
+  const d = new Date();
+  logLines.push({ name, text, sys, time: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` });
+  if (logLines.length > LOG_MAX) logLines.shift();
+  renderLog();
+}
+function renderLog() {
+  const open = !chatBox.classList.contains('hidden');
+  const lines = open ? logLines : logLines.slice(-LOG_SHOW);
+  chatLog.classList.toggle('open', open);
+  chatLog.classList.toggle('hidden', !ON.url || !lines.length || state === 'title' || state === 'loading');
+  chatLog.innerHTML = lines.map((l) => l.sys
+    ? `<div class="sys"><span class="t">${l.time}</span>${escHtml(l.text)}</div>`
+    : `<div><span class="t">${l.time}</span><b class="${l.name === ON.name ? 'me' : ''}">${escHtml(l.name)}</b> ${escHtml(l.text)}</div>`).join('');
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
 function refreshBadge() {
   if (!ON.url) { onBadge.classList.add('hidden'); return; }
   onBadge.classList.toggle('hidden', state === 'title' || state === 'loading');
@@ -40,8 +62,9 @@ function openChat(prefill = '') {
   chatBox.value = prefill;
   chatBox.classList.remove('hidden');
   chatBox.focus();
+  renderLog();
 }
-function closeChat() { chatBox.classList.add('hidden'); chatBox.blur(); keys.clear(); }
+function closeChat() { chatBox.classList.add('hidden'); chatBox.blur(); keys.clear(); renderLog(); }
 chatBox.addEventListener('keydown', (e) => {
   e.stopPropagation(); // 채팅을 쓰는 동안엔 게임 조작을 멈춰요
   if (e.code === 'Escape') { e.preventDefault(); closeChat(); return; }
@@ -53,6 +76,7 @@ chatBox.addEventListener('keydown', (e) => {
   const nm = text.match(/^\/(이름|name)\s+(.+)$/i);
   if (nm) { setOnlineName(nm[2]); return; }
   say(player, escHtml(text), 4.5);
+  if (ON.connected) addLog(ON.name, text.slice(0, 60));
   netSend({ t: 'chat', text });
   if (!ON.connected) toast(ON.url ? '🌐 아직 서버에 연결되지 않았어요' : '🌐 온라인 서버로 접속해야 친구에게 보여요');
 });
@@ -65,10 +89,16 @@ function setOnlineName(v) {
   toast(`🌐 이제 "${name}"(으)로 보여요`);
   refreshBadge();
 }
-playKeyHooks.push((code) => {
-  if (code === 'KeyT') { setTimeout(() => openChat(), 0); return true; } // 바로 열면 't' 글자가 같이 써져요
-  return false;
-});
+// T: 채팅창 열기. 키 누름 자체를 막아야 채팅창에 't' 가 같이 써지지 않아요 (그래서 게임 키 처리보다 먼저 받아요)
+addEventListener('keydown', (e) => {
+  if (e.code !== 'KeyT' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || state !== 'play' || helpOpen) return;
+  if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  e.preventDefault();
+  e.stopPropagation();
+  openChat();
+  // 한글 입력기가 켜져 있으면 'ㅅ' 이 남을 수 있어서 한 번 더 지워요
+  setTimeout(() => { if (/^[tTㅅ]$/.test(chatBox.value)) chatBox.value = ''; }, 0);
+}, true);
 
 // ---------- 다른 친구들 ----------
 function makePeer(d) {
@@ -145,16 +175,20 @@ function connectOnline() {
     } else if (m.t === 'join') {
       makePeer(m);
       if (state !== 'title') toast(`👋 ${m.name}님이 놀러 왔어요`);
+      addLog('', `👋 ${m.name}님이 들어왔어요`, true);
     } else if (m.t === 'leave') {
       const p = ON.peers.get(m.id);
       if (p && state !== 'title') toast(`${p.name}님이 집에 갔어요`);
+      if (p) addLog('', `${p.name}님이 나갔어요`, true);
       removePeer(m.id);
     } else if (m.t === 'st' || m.t === 'name') {
       const p = ON.peers.get(m.id);
+      if (p && m.t === 'name' && m.name !== p.name) addLog('', `${p.name}님이 이름을 ${m.name}(으)로 바꿨어요`, true);
       if (p) applyPeer(p, m);
     } else if (m.t === 'chat' || m.t === 'emo') {
       const p = ON.peers.get(m.id);
       if (p && p.c.root.visible) say(p.c, escHtml(m.t === 'chat' ? m.text : m.e), m.t === 'chat' ? 5 : 2.5, m.t === 'chat' ? escHtml(p.name) : '');
+      if (p && m.t === 'chat') addLog(p.name, m.text);
     } else if (m.t === 'gift') onGift(m);
     else if (m.t === 'giftres') onGiftRes(m);
     else if (m.t === 'visit') onVisit(m);
@@ -216,7 +250,7 @@ tickers.push((dt) => {
   for (const p of ON.peers.values()) if (p.c.scarf[0].visible !== winter) p.c.scarf.forEach((m) => (m.visible = winter));
   ON.near = state === 'play' ? near : null;
   ON.badgeT = (ON.badgeT || 0) - dt;
-  if (ON.badgeT <= 0) { ON.badgeT = 0.5; refreshBadge(); }
+  if (ON.badgeT <= 0) { ON.badgeT = 0.5; refreshBadge(); if (chatLog.classList.contains('hidden') === !!(logLines.length && state !== 'title')) renderLog(); }
 });
 
 /* ---------- 💬 친구 가까이에서 E: 선물하기 · 집에 놀러 가기 ---------- */
@@ -293,6 +327,7 @@ function onGiftRes(m) {
   sfx.coin();
   addXP(3, '선물');
   toast(`🎁 ${g.peer}님에게 ${g.name}을(를) 선물했어요!`, 3);
+  addLog('', `🎁 ${g.peer}님에게 ${g.name}을(를) 선물했어요`, true);
 }
 function onGift(m) {
   const p = ON.peers.get(m.from);
@@ -307,6 +342,7 @@ function onGift(m) {
   sfx.fanfare();
   if (p.c.root.visible) say(p.c, '🎁', 2.5);
   toast(`🎁 ${p.name}님에게 ${name}을(를) 받았어요!${m.kind === 'item' ? ' (옷장에서 입어 보세요)' : ''}`, 3.5);
+  addLog('', `🎁 ${p.name}님에게 ${name}을(를) 받았어요`, true);
 }
 
 // ---------- 🏠 친구 집에 놀러 가기 ----------
@@ -325,6 +361,7 @@ function onVisit(m) {
   netSend({ t: 'visitres', to: m.from, ok: true, house: { houseLv: S.houseLv, furniture: S.furniture, layout: S.layout } });
   sfx.bell();
   toast(`🏠 ${p.name}님이 우리 집에 놀러 와요! (집에 가면 만날 수 있어요)`, 3.5);
+  addLog('', `🏠 ${p.name}님이 우리 집에 놀러 왔어요`, true);
 }
 function onVisitRes(m) {
   const v = visitPending;
