@@ -41,7 +41,9 @@ function updatePlayer(dt) {
     const l = Math.hypot(dx, dz);
     dx /= l; dz /= l;
     // 카메라가 바라보는 방향 기준으로 이동
-    const cy = Math.cos(camYaw), sy = Math.sin(camYaw);
+    // 집 안에서는 카메라가 정면으로 고정되니 회전 각도(camYaw)를 쓰지 않아요
+    const yaw = insideHouse ? 0 : camYaw;
+    const cy = Math.cos(yaw), sy = Math.sin(yaw);
     [dx, dz] = [dx * cy + dz * sy, -dx * sy + dz * cy];
     playerVel.set(dx * speed, 0, dz * speed);
     p.x += playerVel.x * dt;
