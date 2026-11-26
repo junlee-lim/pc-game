@@ -50,16 +50,26 @@ const myBike = bikeModel(0x9fd6ff);
   collide(BIKE_STAND.x, BIKE_STAND.z - 0.3, 1.0);
   interact({
     x: BIKE_STAND.x, z: BIKE_STAND.z + 1.8, r: 2.2,
-    get label() { return S.bikeRented ? '자전거 반납하기' : '자전거 빌리기 (무료)'; },
+    get label() { return S.bikeRented ? (bikeOverdue() >= 2 ? '자전거 반납하기 (⚠️ 연체 중)' : '자전거 반납하기') : '자전거 빌리기 (하루 무료)'; },
     action: () => {
       if (!S.bikeRented) {
-        S.bikeRented = true; persist();
+        S.bikeRented = true;
+        S.bikeRentDay = S.dayCount;
+        S.bikeFee = 0;
+        persist();
         setRiding(true);
-        toast('🚲 자전거를 빌렸어요! B 키로 타고 내릴 수 있어요. 점프대도 찾아보세요!', 4);
+        toast('🚲 자전거를 빌렸어요! B 키로 타고 내릴 수 있어요. 내일까지 반납해 주세요~', 4.5);
       } else {
-        S.bikeRented = false; persist();
+        const fee = S.bikeFee;
+        const late = bikeOverdue();
+        S.bikeRented = false;
+        S.bikeRentDay = null;
+        S.bikeFee = 0;
+        persist();
         setRiding(false);
-        toast('자전거를 반납했어요. 또 타러 와요~');
+        if (fee > 0) toast(`자전거를 반납했어요. 연체료는 모두 🪙 ${fee}개였어요. 다음엔 제때 반납해요~`, 4);
+        else if (late >= 1) toast('제때 반납해 줘서 고마워요! 또 타러 와요~ 🚲', 3);
+        else toast('자전거를 반납했어요. 또 타러 와요~');
       }
       sfx.bell();
     },
@@ -82,6 +92,21 @@ AVOID.push([BIKE_STAND.x, BIKE_STAND.z, 4]);
   }
 }
 
+// 대여 기한: 빌린 날 0 · 다음 날 1(반납일) · 그 뒤로는 연체
+const BIKE_LATE_FEE = 3;
+const bikeOverdue = () => (S.bikeRented ? S.dayCount - (S.bikeRentDay ?? S.dayCount) : 0);
+function bikeNewDay() {
+  if (!S.bikeRented) return;
+  const d = bikeOverdue();
+  if (d === 1) {
+    setTimeout(() => { sfx.bell(); toast('🚲 자전거를 빌린 지 하루가 지났어요! 오늘 광장 옆 대여소에 반납해 주세요', 4.5); }, 3200);
+  } else if (d >= 2) {
+    S.coins -= BIKE_LATE_FEE;
+    S.bikeFee += BIKE_LATE_FEE;
+    persist();
+    setTimeout(() => { sfx.no(); toast(`🚲 자전거 반납이 늦었어요… 연체료 🪙 ${BIKE_LATE_FEE}개가 빠져나갔어요 (반납할 때까지 매일)`, 5); }, 3200);
+  }
+}
 function setRiding(on) {
   if (on === riding) return;
   riding = on;

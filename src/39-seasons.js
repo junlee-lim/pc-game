@@ -270,6 +270,8 @@ function setSeason(i, announce = true) {
   }
 }
 function newDay() {
+  S.dayCount++;
+  bikeNewDay();
   S.seasonDay++;
   if (S.seasonDay > DAYS_PER_SEASON) { setSeason(S.season + 1); return; }
   persist();

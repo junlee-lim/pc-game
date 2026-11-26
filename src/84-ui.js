@@ -235,6 +235,18 @@ interact({ x: 0, z: -29.3, r: 3.2, label: '데크에 앉아 불꽃놀이 보기'
 /* =========================================================
    입력
    ========================================================= */
+// 왼쪽 아래 조작법 카드 접기/펴기
+function setKeysHidden(h) {
+  $('keys').classList.toggle('collapsed', h);
+  $('keysToggle').textContent = h ? '⌨️ 조작법 보기' : '–';
+  $('keysToggle').title = h ? '조작법 펼치기' : '조작법 접기';
+  save.set('keysHidden', h);
+}
+setKeysHidden(save.get('keysHidden', false));
+$('keysToggle').addEventListener('click', (e) => {
+  setKeysHidden(!$('keys').classList.contains('collapsed'));
+  e.currentTarget.blur(); // Space 점프가 버튼을 다시 누르지 않도록
+});
 const keys = new Set();
 let state = 'loading';
 let helpOpen = false;

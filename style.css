@@ -448,3 +448,33 @@ kbd {
 }
 .bm-arrow:hover { background: var(--pink-soft); }
 #bigmap .foot { margin-top: 8px; color: var(--ink-soft); font-size: 14px; }
+
+/* ---------- 조작법 접기 · 자전거 대여 표시 ---------- */
+#keys { pointer-events: auto; padding-right: 40px; }
+#keysToggle {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 13px;
+  border: 2px solid #ecd4bb;
+  background: #fff;
+  color: var(--ink);
+  font: 16px/1 "Jua", sans-serif;
+  cursor: pointer;
+}
+#keysToggle:hover { background: var(--pink-soft); border-color: var(--pink); }
+#keys.collapsed { padding: 0; border: none; background: none; box-shadow: none; }
+#keys.collapsed .keys-body { display: none; }
+#keys.collapsed #keysToggle {
+  position: static;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 17px;
+  font-size: 15px;
+  box-shadow: var(--shadow);
+}
+.stats .row.small.warn { color: #e0566e; }
+.stats b.neg { color: #e0566e; }
