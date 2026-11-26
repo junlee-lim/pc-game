@@ -218,6 +218,7 @@ function openWardrobe() {
         right: S.equipped[it.slot] === it.id ? '✅ 착용 중' : '입기',
         act: () => { S.equipped[it.slot] = S.equipped[it.slot] === it.id ? null : it.id; refreshEquip(); persist(); sfx.select(); return true; },
       })),
+      { label: '🐻 내 모습 바꾸기', right: '색 · 귀 모양', act: () => { setTimeout(() => openLookMenu(), 0); return false; } },
       { label: '🧺 모두 벗기', act: () => { S.equipped = {}; refreshEquip(); persist(); return true; } },
       { label: '닫기', act: () => false },
     ],

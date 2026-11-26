@@ -99,47 +99,35 @@ function makeCreature({ color = 0xfff1df, ears = 'bear', accent = 0xffb4c8, scal
   const body = new THREE.Group();
   root.add(body);
   const base = mat(color);
-  const b = withOutline(add(new THREE.SphereGeometry(0.72, 24, 18), base, 0, 0.78, 0, body));
+  const baseMs = [], accMs = []; // 몸 색 · 볼터치 색을 쓰는 부분 (모습 바꾸기에서 색을 갈아 끼워요)
+  const B = (m) => (baseMs.push(m), m);
+  const A = (m) => (accMs.push(m), m);
+  const b = withOutline(B(add(new THREE.SphereGeometry(0.72, 24, 18), base, 0, 0.78, 0, body)));
   b.scale.set(1, 0.92, 0.95);
   add(new THREE.SphereGeometry(0.42, 18, 14), 0xffffff, 0, 0.72, 0.42, body).scale.set(1, 0.95, 0.5);
   const head = new THREE.Group();
   head.position.set(0, 1.78, 0);
   body.add(head);
-  withOutline(add(new THREE.SphereGeometry(0.66, 26, 20), base, 0, 0, 0, head), 1.05);
-  // 귀
-  const earGeo = ears === 'cat' ? new THREE.ConeGeometry(0.2, 0.38, 12) : new THREE.SphereGeometry(0.2, 14, 12);
+  withOutline(B(add(new THREE.SphereGeometry(0.66, 26, 20), base, 0, 0, 0, head)), 1.05);
   for (const s of [-1, 1]) {
-    let e;
-    if (ears === 'bunny') {
-      e = add(new THREE.SphereGeometry(0.16, 14, 12), base, s * 0.24, 0.72, -0.05, head);
-      e.scale.set(0.8, 2.4, 0.6);
-      e.rotation.z = -s * 0.15;
-      add(new THREE.SphereGeometry(0.09, 10, 8), accent, s * 0.24, 0.72, 0.03, head).scale.set(0.8, 2.6, 0.3);
-    } else if (ears === 'cat') {
-      e = add(earGeo, base, s * 0.36, 0.56, -0.02, head);
-      e.rotation.z = -s * 0.35;
-    } else {
-      e = add(earGeo, base, s * 0.42, 0.5, -0.05, head);
-      add(new THREE.SphereGeometry(0.11, 10, 8), accent, s * 0.42, 0.5, 0.08, head).scale.z = 0.4;
-    }
-    withOutline(e, 1.08);
     // 눈
     const eye = add(new THREE.SphereGeometry(0.085, 12, 10), 0x3b2a25, s * 0.23, 0.04, 0.6, head, false);
     eye.scale.set(1, 1.25, 0.5);
     add(new THREE.SphereGeometry(0.03, 8, 6), 0xffffff, s * 0.23 + 0.025, 0.08, 0.645, head, false);
     // 볼터치
-    add(new THREE.SphereGeometry(0.11, 12, 8), accent, s * 0.39, -0.12, 0.5, head, false).scale.set(1, 0.6, 0.35);
-    // 팔·발
-    add(new THREE.SphereGeometry(0.19, 12, 10), base, s * 0.7, 0.85, 0.12, body);
+    A(add(new THREE.SphereGeometry(0.11, 12, 8), accent, s * 0.39, -0.12, 0.5, head, false)).scale.set(1, 0.6, 0.35);
+    // 팔
+    B(add(new THREE.SphereGeometry(0.19, 12, 10), base, s * 0.7, 0.85, 0.12, body));
   }
   add(new THREE.SphereGeometry(0.045, 8, 6), 0x3b2a25, 0, -0.1, 0.645, head, false).scale.set(1.3, 0.7, 0.5);
   const feet = [-1, 1].map((s) => {
-    const f = add(new THREE.SphereGeometry(0.22, 12, 10), base, s * 0.3, 0.12, 0.1, root);
+    const f = B(add(new THREE.SphereGeometry(0.22, 12, 10), base, s * 0.3, 0.12, 0.1, root));
     f.scale.set(1, 0.6, 1.3);
     return f;
   });
-  if (ears === 'cat') add(new THREE.SphereGeometry(0.16, 10, 8), base, 0, 0.55, -0.72, body);
-  if (ears === 'bunny') add(new THREE.SphereGeometry(0.2, 10, 8), 0xffffff, 0, 0.5, -0.68, body);
+  // 귀 · 꼬리 (종류에 따라 다시 만들 수 있게 따로 묶어 둬요)
+  const earG = new THREE.Group(); head.add(earG);
+  const tailG = new THREE.Group(); body.add(tailG);
   const hatSlot = new THREE.Group(); hatSlot.position.set(0, 0.55, 0); head.add(hatSlot);
   const faceSlot = new THREE.Group(); faceSlot.position.set(0, 0.04, 0.62); head.add(faceSlot);
   const handSlot = new THREE.Group(); handSlot.position.set(0.75, 0.85, 0.15); body.add(handSlot);
@@ -151,9 +139,39 @@ function makeCreature({ color = 0xfff1df, ears = 'bear', accent = 0xffb4c8, scal
   tail.rotation.z = 0.2;
   const scarfG = [scarf, tail];
   scarfG.forEach((m) => (m.visible = false));
-  const creature = { root, body, head, feet, hatSlot, faceSlot, handSlot, scarf: scarfG, phase: Math.random() * 10 };
+  const creature = { root, body, head, feet, hatSlot, faceSlot, handSlot, scarf: scarfG, phase: Math.random() * 10, look: null };
+  creature.setLook = (look) => setCreatureLook(creature, look, baseMs, accMs, earG, tailG);
+  creature.setLook({ color, ears, accent });
   CREATURES.push(creature);
   return creature;
+}
+function setCreatureLook(c, { color, ears, accent }, baseMs, accMs, earG, tailG) {
+  const prev = c.look || {};
+  c.look = { color, ears, accent };
+  const base = mat(color);
+  if (prev.color !== color) baseMs.forEach((m) => (m.material = base));
+  if (prev.accent !== accent) accMs.forEach((m) => (m.material = mat(accent)));
+  if (prev.ears === ears && prev.color === color && prev.accent === accent) return;
+  for (const g of [earG, tailG]) while (g.children.length) g.remove(g.children[0]);
+  const earGeo = ears === 'cat' ? new THREE.ConeGeometry(0.2, 0.38, 12) : new THREE.SphereGeometry(0.2, 14, 12);
+  for (const s of [-1, 1]) {
+    let e;
+    if (ears === 'bunny') {
+      e = add(new THREE.SphereGeometry(0.16, 14, 12), base, s * 0.24, 0.72, -0.05, earG);
+      e.scale.set(0.8, 2.4, 0.6);
+      e.rotation.z = -s * 0.15;
+      add(new THREE.SphereGeometry(0.09, 10, 8), accent, s * 0.24, 0.72, 0.03, earG).scale.set(0.8, 2.6, 0.3);
+    } else if (ears === 'cat') {
+      e = add(earGeo, base, s * 0.36, 0.56, -0.02, earG);
+      e.rotation.z = -s * 0.35;
+    } else {
+      e = add(earGeo, base, s * 0.42, 0.5, -0.05, earG);
+      add(new THREE.SphereGeometry(0.11, 10, 8), accent, s * 0.42, 0.5, 0.08, earG).scale.z = 0.4;
+    }
+    withOutline(e, 1.08);
+  }
+  if (ears === 'cat') add(new THREE.SphereGeometry(0.16, 10, 8), base, 0, 0.55, -0.72, tailG);
+  if (ears === 'bunny') add(new THREE.SphereGeometry(0.2, 10, 8), 0xffffff, 0, 0.5, -0.68, tailG);
 }
 function animateCreature(c, moving, speed, dt, t) {
   if (moving) {

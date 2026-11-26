@@ -45,12 +45,13 @@ const S = {
   garden: save.get('garden', [null, null, null, null, null, null]),
   houseLv: save.get('houseLv', 1), rentDue: save.get('rentDue', null),
   bdayGift: save.get('bdayGift', {}),   // 생일 선물을 준 날
+  look: save.get('look', null),         // 내 모습 { color, ears, accent } (처음엔 null → 시작할 때 골라요)
 };
 if (S.bikeRented && S.bikeRentDay === null) S.bikeRentDay = S.dayCount;
 function persist() {
   save.set('coins', S.coins); save.set('full', Math.round(S.full)); save.set('energy', Math.round(S.energy));
   save.set('owned', S.owned); save.set('equipped', S.equipped);
-  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented', 'layout', 'season', 'seasonDay', 'tokens', 'snowman', 'friends', 'friendDay', 'giftDay', 'favKnown', 'stars', 'sandStage', 'sandDay', 'visited', 'dayCount', 'bikeRentDay', 'bikeFee', 'wishDay', 'wishN', 'skyItems', 'skyLayout', 'clock', 'xp', 'level', 'daily', 'questDay', 'jobDay', 'jobN', 'garden', 'houseLv', 'rentDue', 'bdayGift']) save.set(k, S[k]);
+  for (const k of ['bag', 'bugDex', 'fishDex', 'furniture', 'quest', 'questsDone', 'bikeRented', 'layout', 'season', 'seasonDay', 'tokens', 'snowman', 'friends', 'friendDay', 'giftDay', 'favKnown', 'stars', 'sandStage', 'sandDay', 'visited', 'dayCount', 'bikeRentDay', 'bikeFee', 'wishDay', 'wishN', 'skyItems', 'skyLayout', 'clock', 'xp', 'level', 'daily', 'questDay', 'jobDay', 'jobN', 'garden', 'houseLv', 'rentDue', 'bdayGift', 'look']) save.set(k, S[k]);
 }
 const bagAdd = (k, n = 1) => { S.bag[k] = Math.max(0, (S.bag[k] || 0) + n); if (!S.bag[k]) delete S.bag[k]; persist(); };
 const slotGroups = { hat: player.hatSlot, face: player.faceSlot, hand: player.handSlot };

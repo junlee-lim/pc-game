@@ -187,6 +187,9 @@ kbd {
   width: min(420px, calc(100vw - 32px));
   padding: 20px 22px 16px;
 }
+/* 내 모습 바꾸기: 가운데 캐릭터가 보이도록 오른쪽에 */
+#menu.side { left: auto; right: 24px; transform: translateY(-50%); }
+@media (max-width: 900px) { #menu.side { top: auto; bottom: 16px; right: 16px; transform: none; } }
 #menu h2 { margin: 0 0 4px; font-size: 26px; font-weight: normal; }
 #menu .desc { margin: 0 0 14px; color: var(--ink-soft); font-size: 16px; line-height: 1.5; }
 #menu ul { list-style: none; margin: 0; padding: 0; }
@@ -513,9 +516,8 @@ body.photo-mode #hud, body.photo-mode #onlineBadge, body.photo-mode #chatInput, 
 }
 #onlineBadge {
   position: fixed;
-  left: 50%;
-  top: 12px;
-  transform: translateX(-50%);
+  right: 16px;
+  bottom: 16px;
   padding: 6px 14px;
   font-size: 15px;
   pointer-events: none;
