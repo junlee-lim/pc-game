@@ -491,7 +491,7 @@ kbd {
 #xpGain { position: absolute; right: 0; top: -18px; font-size: 14px; color: #f0a020; opacity: 0; white-space: nowrap; pointer-events: none; }
 #xpGain.pop { animation: xpPop 1.6s ease-out; }
 @keyframes xpPop { 0% { opacity: 0; transform: translateY(6px); } 15% { opacity: 1; transform: translateY(0); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-8px); } }
-body.photo-mode #hud, body.photo-mode #onlineBadge, body.photo-mode #chatInput, body.photo-mode #labels, body.photo-mode #bubbles, body.photo-mode #prompt, body.photo-mode #toast, body.photo-mode #scene-msg { display: none !important; }
+body.photo-mode #hud, body.photo-mode #onlineBadge, body.photo-mode #chatLog, body.photo-mode #chatInput, body.photo-mode #labels, body.photo-mode #bubbles, body.photo-mode #prompt, body.photo-mode #toast, body.photo-mode #scene-msg { display: none !important; }
 #photoHint {
   position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
   padding: 8px 16px; border-radius: 16px; font-size: 15px; color: #fff;
@@ -537,3 +537,25 @@ body.photo-mode #hud, body.photo-mode #onlineBadge, body.photo-mode #chatInput, 
   border: 2.5px solid var(--pink);
   outline: none;
 }
+#chatLog {
+  position: fixed;
+  right: 16px;
+  bottom: 62px;
+  width: min(380px, calc(100vw - 32px));
+  max-height: 168px;
+  overflow: hidden;
+  padding: 8px 12px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: rgba(255, 248, 236, 0.78);
+  border-radius: 14px;
+  pointer-events: none;
+}
+#chatLog > div { overflow-wrap: anywhere; }
+#chatLog .t { color: var(--ink-soft); font-size: 12px; margin-right: 6px; }
+#chatLog b { font-weight: normal; color: #e86a92; }
+#chatLog b.me { color: #3aa35a; }
+#chatLog .sys { color: var(--ink-soft); font-size: 14px; }
+/* 채팅창을 열면 더 많이, 스크롤해서 볼 수 있어요 */
+#chatLog.open { max-height: 50vh; overflow-y: auto; background: rgba(255, 248, 236, 0.95); pointer-events: auto; bottom: 150px; }
