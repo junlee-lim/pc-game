@@ -69,6 +69,7 @@ const DIRECT = {
   gift: (m) => ({ gid: Math.round(num(m.gid, 1e9)), kind: m.kind === 'item' ? 'item' : 'bag', key: id20(m.key) }),
   giftres: (m) => ({ gid: Math.round(num(m.gid, 1e9)), ok: !!m.ok, why: str(m.why, 40) }),
   visit: () => ({}),
+  whisper: (m) => ({ text: str(m.text, 60) }),
   visitres: (m) => ({ ok: !!m.ok, why: str(m.why, 40), house: m.ok ? cleanHouse(m.house) : null }),
 };
 const pub = (p) => ({ id: p.id, name: p.name, ...p.st });
@@ -123,9 +124,12 @@ wss.on('connection', (ws) => {
         // 받을 사람이 없으면 바로 실패로 알려 줘요
         if (m.t === 'gift') send(ws, { t: 'giftres', from: m.to, gid: DIRECT.gift(m).gid, ok: false, why: 'gone' });
         if (m.t === 'visit') send(ws, { t: 'visitres', from: m.to, ok: false, why: 'gone' });
+        if (m.t === 'whisper') send(ws, { t: 'whisperfail', from: m.to });
         return;
       }
-      send(target[0], { t: m.t, from: me.id, ...DIRECT[m.t](m) });
+      const out = DIRECT[m.t](m);
+      if (m.t === 'whisper' && !out.text) return;
+      send(target[0], { t: m.t, from: me.id, ...out });
     } else if (m.t === 'name') {
       me.name = cleanName(m.name);
       broadcast({ t: 'name', id: me.id, name: me.name });

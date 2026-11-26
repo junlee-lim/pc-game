@@ -584,3 +584,25 @@ body.photo-mode #hud, body.photo-mode #onlineBadge, body.photo-mode #chatLog, bo
 #chatLog.open .cl-msgs { max-height: 40vh; overflow-y: auto; }
 #onlineBadge.clickable { pointer-events: auto; cursor: pointer; }
 #onlineBadge .new { color: #e86a92; }
+/* 🤫 귓속말 */
+#chatLog [data-pid] { cursor: pointer; }
+#chatLog .fr[data-pid]:hover { border-color: #b28dff; background: #f4eeff; }
+#chatLog b[data-pid]:hover { text-decoration: underline; }
+#chatLog .wh { color: #8a5cd6; }
+#chatLog .wh b { color: #8a5cd6; }
+#chatInput.whisper { border-color: #b28dff; }
+#whisperTag {
+  position: fixed;
+  left: 50%;
+  bottom: 152px;
+  transform: translateX(-50%);
+  padding: 3px 12px;
+  font-size: 14px;
+  color: #fff;
+  background: #b28dff;
+  border-radius: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+#whisperTag .x { opacity: 0.85; font-size: 12px; }
+body.photo-mode #whisperTag { display: none !important; }

@@ -87,7 +87,7 @@
     <div><kbd>F</kbd> — 내 집 안에서 가구 배치하기 &nbsp; <kbd>K</kbd> — 친구 수첩</div>
     <div><kbd>N</kbd> 또는 오른쪽 위 지도 클릭 — 큰 지도 보기 &nbsp; <kbd>P</kbd> — 사진 모드</div>
     <div><kbd>M</kbd> — 소리 켜기/끄기 &nbsp; <kbd>H</kbd> — 이 창 열기/닫기</div>
-    <div><kbd>T</kbd> — 🌐 온라인 채팅 (채팅창 ✕ 로 숨기기 · T 로 다시 보기) · 채팅창에 <code>/이름 새이름</code> 으로 이름 바꾸기</div>
+    <div><kbd>T</kbd> — 🌐 온라인 채팅 (채팅창에서 친구 이름을 누르면 🤫 귓속말 · ✕ 로 숨기기 · T 로 다시 보기) · 채팅창에 <code>/이름 새이름</code> 으로 이름 바꾸기</div>
     <div>🌐 온라인 친구 가까이에서 <kbd>E</kbd> — 🎁 선물하기 · 🏠 친구 집에 놀러 가기 (지도에도 친구가 보여요)</div>
     <div class="tip">
       🎆 북쪽 호숫가에서 밤하늘 불꽃축제를, 🍢 동쪽 먹자골목에서 길거리 음식을,<br />
@@ -7192,9 +7192,10 @@ const clFriends = chatLog.querySelector('.cl-friends'), clMsgs = chatLog.querySe
 const LOG_MAX = 50, LOG_SHOW = 6;
 const logLines = [];
 let chatHidden = save.get('chatHidden', false), unread = 0;
-function addLog(name, text, sys = false) {
+// extra: { pid: 보낸 친구 번호, wh: 'to'(내가 보낸 귓속말) | 'from'(받은 귓속말) }
+function addLog(name, text, sys = false, extra = {}) {
   const d = new Date();
-  logLines.push({ name, text, sys, time: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` });
+  logLines.push({ name, text, sys, ...extra, time: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` });
   if (logLines.length > LOG_MAX) logLines.shift();
   if (chatHidden && !sys) { unread++; refreshBadge(); }
   renderLog();
@@ -7221,7 +7222,7 @@ function renderFriends() {
   const peers = [...ON.peers.values()].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
   clTitle.textContent = `💬 채팅 · 👥 ${peers.length + 1}명`;
   const html = `<span class="fr me">${lookDot(player.look)}${escHtml(ON.name)} <small>(나)</small></span>` +
-    (peers.length ? peers.map((p) => `<span class="fr">${lookDot(p.c.look)}${escHtml(p.name)} <small>${escHtml(peerPlace(p))}</small></span>`).join('')
+    (peers.length ? peers.map((p) => `<span class="fr" data-pid="${p.id}" title="눌러서 귓속말">${lookDot(p.c.look)}${escHtml(p.name)} <small>${escHtml(peerPlace(p))}</small></span>`).join('')
       : '<span class="fr none">아직 접속한 친구가 없어요</span>');
   if (html !== lastFriendsHtml) { lastFriendsHtml = html; clFriends.innerHTML = html; }
 }
@@ -7231,14 +7232,40 @@ function renderLog() {
   chatLog.classList.toggle('hidden', !ON.url || !ON.everConnected || (chatHidden && !open) || state === 'title' || state === 'loading');
   renderFriends();
   const lines = open ? logLines : logLines.slice(-LOG_SHOW);
+  // 친구 이름(data-pid)을 누르면 그 친구에게 귓속말을 써요
+  const nameTag = (l) => `<b${l.pid ? ` data-pid="${l.pid}" title="눌러서 귓속말"` : ''} class="${l.name === ON.name ? 'me' : ''}">${escHtml(l.name)}</b>`;
   clMsgs.innerHTML = lines.length ? lines.map((l) => l.sys
     ? `<div class="sys"><span class="t">${l.time}</span>${escHtml(l.text)}</div>`
-    : `<div><span class="t">${l.time}</span><b class="${l.name === ON.name ? 'me' : ''}">${escHtml(l.name)}</b> ${escHtml(l.text)}</div>`).join('')
+    : l.wh === 'to' ? `<div class="wh"><span class="t">${l.time}</span>🤫 ${nameTag(l)}님에게 귓속말: ${escHtml(l.text)}</div>`
+    : l.wh === 'from' ? `<div class="wh"><span class="t">${l.time}</span>🤫 ${nameTag(l)}님의 귓속말: ${escHtml(l.text)}</div>`
+    : `<div><span class="t">${l.time}</span>${nameTag(l)} ${escHtml(l.text)}</div>`).join('')
     : '<div class="sys">아직 대화가 없어요. <kbd>T</kbd> 를 눌러 말을 걸어 보세요!</div>';
   clMsgs.scrollTop = clMsgs.scrollHeight;
 }
 // 채팅을 쓰는 중에 창을 눌러도 입력칸이 닫히지 않게 (스크롤은 그대로 돼요)
 chatLog.addEventListener('mousedown', (e) => { if (!chatBox.classList.contains('hidden')) e.preventDefault(); });
+// 🤫 귓속말: 채팅창에서 친구 이름을 누르면 그 친구에게만 보내요
+const whisperTag = document.createElement('div');
+whisperTag.id = 'whisperTag'; whisperTag.className = 'hidden';
+document.body.appendChild(whisperTag);
+let whisperTo = null;
+function setWhisper(pid) {
+  const p = pid ? ON.peers.get(pid) : null;
+  whisperTo = p ? p.id : null;
+  whisperTag.classList.toggle('hidden', !p || chatBox.classList.contains('hidden'));
+  if (p) whisperTag.innerHTML = `🤫 <b>${escHtml(p.name)}</b>님에게만 귓속말 <span class="x">· 친구 이름을 다시 누르면 모두에게</span>`;
+  chatBox.classList.toggle('whisper', !!p);
+  chatBox.placeholder = p ? `${p.name}님에게 귓속말 (Enter 보내기 · Esc 닫기)` : '하고 싶은 말 (Enter 보내기 · Esc 닫기 · /이름 새이름)';
+}
+chatLog.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-pid]');
+  if (!el) return;
+  const pid = +el.dataset.pid;
+  if (!ON.peers.has(pid)) { toast('그 친구는 지금 없어요'); return; }
+  if (chatBox.classList.contains('hidden')) openChat('', pid);
+  else { setWhisper(whisperTo === pid ? null : pid); chatBox.focus(); }
+  sfx.select();
+});
 chatLog.querySelector('.cl-x').addEventListener('click', () => {
   if (!chatBox.classList.contains('hidden')) closeChat();
   setChatHidden(true);
@@ -7254,32 +7281,50 @@ function refreshBadge() {
   onBadge.innerHTML = ON.connected ? `🌐 온라인 <b>${n}</b>명 · ${escHtml(ON.name)} · <kbd>T</kbd> 채팅${tail}` : '🌐 서버에 연결하는 중…';
 }
 
-function openChat(prefill = '') {
+function openChat(prefill = '', pid = null) {
   if (state !== 'play') return;
   if (chatHidden) setChatHidden(false);
   keys.clear();
   chatBox.value = prefill;
   chatBox.classList.remove('hidden');
+  setWhisper(pid);
   chatBox.focus();
   renderLog();
 }
-function closeChat() { chatBox.classList.add('hidden'); chatBox.blur(); keys.clear(); renderLog(); }
+function closeChat() { chatBox.classList.add('hidden'); chatBox.blur(); keys.clear(); setWhisper(null); renderLog(); }
 chatBox.addEventListener('keydown', (e) => {
   e.stopPropagation(); // 채팅을 쓰는 동안엔 게임 조작을 멈춰요
   if (e.code === 'Escape') { e.preventDefault(); closeChat(); return; }
   if (e.key !== 'Enter' || e.isComposing) return;
   e.preventDefault();
   const text = chatBox.value.trim();
+  const to = whisperTo;
   closeChat();
   if (!text) return;
   const nm = text.match(/^\/(이름|name)\s+(.+)$/i);
   if (nm) { setOnlineName(nm[2]); return; }
+  // "/귓 이름 할 말" 로도 귓속말을 보낼 수 있어요
+  const wm = text.match(/^\/(귓|w)\s+(\S+)\s+(.+)$/i);
+  if (wm) {
+    const p = [...ON.peers.values()].find((q) => q.name === wm[2]);
+    if (!p) { sfx.no(); toast(`"${wm[2]}" 이름의 친구가 없어요`); return; }
+    sendWhisper(p.id, wm[3]);
+    return;
+  }
+  if (to) { sendWhisper(to, text); return; }
   say(player, escHtml(text), 4.5);
   if (ON.connected) addLog(ON.name, text.slice(0, 60));
   netSend({ t: 'chat', text });
   if (!ON.connected) toast(ON.url ? '🌐 아직 서버에 연결되지 않았어요' : '🌐 온라인 서버로 접속해야 친구에게 보여요');
 });
 chatBox.addEventListener('blur', () => { if (!chatBox.classList.contains('hidden')) closeChat(); });
+function sendWhisper(pid, text) {
+  const p = ON.peers.get(pid);
+  if (!ON.connected || !p) { sfx.no(); toast('🤫 그 친구가 떠나서 귓속말을 못 보냈어요'); return; }
+  text = text.slice(0, 60);
+  netSend({ t: 'whisper', to: pid, text });
+  addLog(p.name, text, false, { pid, wh: 'to' });
+}
 function setOnlineName(v) {
   const name = String(v).replace(/[<>\u0000-\u001f]/g, '').trim().slice(0, 12);
   if (!name) return;
@@ -7387,7 +7432,17 @@ function connectOnline() {
     } else if (m.t === 'chat' || m.t === 'emo') {
       const p = ON.peers.get(m.id);
       if (p && p.c.root.visible) say(p.c, escHtml(m.t === 'chat' ? m.text : m.e), m.t === 'chat' ? 5 : 2.5, m.t === 'chat' ? escHtml(p.name) : '');
-      if (p && m.t === 'chat') addLog(p.name, m.text);
+      if (p && m.t === 'chat') addLog(p.name, m.text, false, { pid: p.id });
+    } else if (m.t === 'whisper') {
+      const p = ON.peers.get(m.from);
+      if (p && m.text) {
+        addLog(p.name, m.text, false, { pid: p.id, wh: 'from' });
+        sfx.select();
+        if (chatHidden) toast(`🤫 ${p.name}님의 귓속말: ${m.text}`, 3.5);
+      }
+    } else if (m.t === 'whisperfail') {
+      const p = ON.peers.get(m.from);
+      toast(`🤫 ${p ? p.name + '님이' : '친구가'} 떠나서 귓속말을 못 보냈어요`);
     } else if (m.t === 'gift') onGift(m);
     else if (m.t === 'giftres') onGiftRes(m);
     else if (m.t === 'visit') onVisit(m);
