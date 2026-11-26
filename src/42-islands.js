@@ -146,6 +146,7 @@ const islCoins = [];
 for (const I of Object.values(ISL)) for (let i = 0; i < 4; i++) {
   const m = new THREE.Mesh(islCoinGeo, islCoinMat);
   m.castShadow = true;
+  m.visible = false; // 첫 프레임에 각 섬 위에 놓여요
   scene.add(m);
   islCoins.push({ m, I, t: 0, base: 0 });
 }
