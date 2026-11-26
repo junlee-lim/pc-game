@@ -78,11 +78,37 @@ function updatePlayer(dt) {
     }
     bikeAnimate(moving, speed, dt);
   } else {
-    airborne = false; pvy = 0;
-    p.y = lerp(p.y, gy, damp(20, dt));
-    animateCreature(player, moving, speed, dt, elapsed);
+    if (airborne) {
+      // 폴짝! (Space 점프)
+      airTime += dt;
+      pvy -= 24 * dt;
+      p.y += pvy * dt;
+      if (p.y <= gy) { p.y = gy; airborne = false; pvy = 0; landT = 0.16; sfx.step(); }
+    } else {
+      pvy = 0;
+      p.y = lerp(p.y, gy, damp(20, dt));
+    }
+    animateCreature(player, moving && !airborne, speed, dt, elapsed);
+    if (airborne) {
+      player.body.scale.set(0.9, 1.12, 0.9);
+      player.feet.forEach((f) => (f.position.z = 0.1));
+    } else if (landT > 0) {
+      landT -= dt;
+      const k = Math.max(landT, 0) / 0.16;
+      player.body.scale.set(1 + 0.22 * k, 1 - 0.22 * k, 1 + 0.22 * k);
+    }
   }
 }
+
+let landT = 0;
+function tryJump() {
+  if (airborne || insideHouse && riding) return;
+  airborne = true;
+  airTime = 0;
+  pvy = riding ? 6.5 : 7.5;
+  sfx.hop();
+}
+playKeyHooks.push((code) => { if (code === 'Space') { tryJump(); return true; } return false; });
 
 function updateNPCs(dt) {
   const pp = player.root.position;
